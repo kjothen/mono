@@ -7,6 +7,7 @@
     [com.repldriven.mono.bank-api.api-keys.components :as
      api-keys.components]
     [com.repldriven.mono.bank-api.api-keys.examples :as api-keys.examples]
+    [com.repldriven.mono.bank-api.api-keys.routes :as api-keys]
     [com.repldriven.mono.bank-api.auth :as auth]
     [com.repldriven.mono.bank-api.examples :as examples]
     [com.repldriven.mono.bank-api.organizations.components :as
@@ -67,7 +68,10 @@
             403 (schema/ErrorResponse [#'examples/Forbidden])
             500 (schema/ErrorResponse [#'examples/InternalServerError
                                        #'examples/BadResponse])}}]
-         (concat accounts/routes organizations/routes parties/routes))])
+         (concat accounts/routes
+                 api-keys/routes
+                 organizations/routes
+                 parties/routes))])
 
 (defn app
   [ctx]

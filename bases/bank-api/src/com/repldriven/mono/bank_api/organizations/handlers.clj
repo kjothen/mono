@@ -44,9 +44,14 @@
      (if (error/anomaly? result)
        {:status 500
         :body (error-response 500 result)}
-       {:status 201
-        :body {:organization (format-timestamps
-                              (:organization result))
-               :api-key {:id (get-in result [:api-key :id])
-                         :key-prefix (get-in result [:api-key :key-prefix])
-                         :raw-key (:raw-key result)}}}))))
+       (let [api-key (:api-key result)]
+         {:status 201
+          :body {:organization (format-timestamps
+                                (:organization result))
+                 :api-key {:id (:id api-key)
+                           :key-prefix (:key-prefix api-key)
+                           :name (:name api-key)
+                           :raw-key (:raw-key result)
+                           :created-at (millis->iso
+                                        (:created-at
+                                         api-key))}}})))))

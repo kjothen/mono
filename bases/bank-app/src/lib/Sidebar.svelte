@@ -5,6 +5,7 @@
     { id: "organizations", label: "Organizations" },
     { id: "parties", label: "Parties" },
     { id: "accounts", label: "Accounts" },
+    { id: "api-keys", label: "API Keys" },
   ];
 </script>
 

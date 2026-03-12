@@ -56,8 +56,7 @@
                                 "organization"
                                 "organization-id")
                    raw-key (aget body "api-key" "raw-key")]
-               (save-key org-id raw-key)
-               (reset! api-key raw-key))))
+               (save-key org-id raw-key))))
          res))))
 
 (defn list-organizations
@@ -153,3 +152,12 @@
               #js {"Authorization"
                    (str "Bearer " @api-key)}})
         (.then parse-response))))
+
+(defn list-api-keys
+  []
+  (-> (js/fetch
+       "/v1/api-keys"
+       #js {:headers
+            #js {"Authorization"
+                 (str "Bearer " @api-key)}})
+      (.then parse-response)))

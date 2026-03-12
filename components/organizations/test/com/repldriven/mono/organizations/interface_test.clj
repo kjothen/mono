@@ -35,29 +35,3 @@
                    raw-key (:raw-key result)
                    _ (is (string? raw-key))
                    _ (is (.startsWith ^String raw-key "sk_live_"))])))))
-
-(deftest verify-api-key-test
-  (with-test-system
-   [sys "classpath:organizations/application-test.yml"]
-   (let [config (fdb-config sys)]
-     (testing "round-trip: create then verify"
-       (nom-test> [result (SUT/create-organization config "Verify Org")
-                   verified (SUT/verify-api-key config (:raw-key result))
-                   _ (is (some? verified))
-                   _ (is (= (:id (:api-key result)) (:id verified)))]))
-     (testing "returns nil for unknown key"
-       (is (nil? (SUT/verify-api-key config "sk_live_nonexistent")))))))
-
-(deftest find-api-key-by-hash-test
-  (with-test-system
-   [sys "classpath:organizations/application-test.yml"]
-   (let [config (fdb-config sys)]
-     (testing "finds key by hash"
-       (nom-test> [result (SUT/create-organization config "Hash Org")
-                   found (SUT/find-api-key-by-hash config
-                                                   (:key-hash (:api-key
-                                                               result)))
-                   _ (is (some? found))
-                   _ (is (= (:id (:api-key result)) (:id found)))
-                   _ (is (= (:organization-id (:organization result))
-                            (:organization-id found)))])))))

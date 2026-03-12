@@ -20,6 +20,7 @@
     components/command-processor {:local/root "components/command-processor"}
     components/processor {:local/root "components/processor"}
     components/mqtt {:local/root "components/mqtt"}
+    components/api-keys {:local/root "components/api-keys"}
     components/organizations {:local/root "components/organizations"}
     components/party {:local/root "components/party"}
     components/pulsar {:local/root "components/pulsar"}
@@ -73,6 +74,8 @@
                        "components/migrator/test-resources"
                        "components/mqtt/test"
                        "components/mqtt/test-resources"
+                       "components/api-keys/test"
+                       "components/api-keys/test-resources"
                        "components/organizations/test"
                        "components/organizations/test-resources"
                        "components/party/test"

@@ -2,7 +2,7 @@
   (:require
     [com.repldriven.mono.cache.interface :as cache]
     [com.repldriven.mono.encryption.interface :as encryption]
-    [com.repldriven.mono.organizations.interface :as organizations]
+    [com.repldriven.mono.api-keys.interface :as api-keys]
     [com.repldriven.mono.utility.interface :as util]
 
     [clojure.string :as str]))
@@ -22,7 +22,7 @@
         api-key (cache/lookup
                  api-key-cache
                  key-hash
-                 #(organizations/find-api-key-by-hash
+                 #(api-keys/find-api-key-by-hash
                    {:record-db record-db
                     :record-store record-store}
                    key-hash))]

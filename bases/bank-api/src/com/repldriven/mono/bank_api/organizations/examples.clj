@@ -18,4 +18,4 @@
 (def CreateOrganizationRequest (select-keys Organization [:name]))
 
 (def CreateOrganizationResponse
-  {:organization Organization :api-key api-key-examples/ApiKey})
+  {:organization Organization :api-key api-key-examples/CreateApiKey})

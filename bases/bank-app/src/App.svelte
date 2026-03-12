@@ -6,12 +6,14 @@
   import CreateParty from "./lib/CreateParty.svelte";
   import PartyList from "./lib/PartyList.svelte";
   import AccountList from "./lib/AccountList.svelte";
+  import ApiKeyList from "./lib/ApiKeyList.svelte";
 
   let currentPage = $state("organizations");
   let organizations = $state([]);
   let selectedOrgId = $state(null);
   let partyListRef = $state();
   let accountListRef = $state();
+  let apiKeyListRef = $state();
 
   let hasApiKey = $derived(selectedOrgId != null);
 
@@ -20,6 +22,7 @@
     set_org(orgId);
     partyListRef?.load();
     accountListRef?.load();
+    apiKeyListRef?.load();
   }
 
   function handleOrgCreated(orgs) {
@@ -70,6 +73,13 @@
         onSelect={(id) => selectOrg(id)}
       />
       <AccountList bind:this={accountListRef} />
+    {:else if currentPage === "api-keys"}
+      <OrgSelector
+        {organizations}
+        {selectedOrgId}
+        onSelect={(id) => selectOrg(id)}
+      />
+      <ApiKeyList bind:this={apiKeyListRef} />
     {/if}
   </main>
 </div>

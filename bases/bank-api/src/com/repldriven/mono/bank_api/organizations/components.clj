@@ -27,7 +27,7 @@
   [:map
    {:json-schema/example examples/CreateOrganizationResponse}
    [:organization [:ref "Organization"]]
-   [:api-key [:ref "ApiKeyResponse"]]])
+   [:api-key [:ref "CreateApiKeyResponse"]]])
 
 (def registry
   (components-registry [#'CreateOrganizationRequest #'Organization
