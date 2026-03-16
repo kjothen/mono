@@ -283,6 +283,14 @@ that follows the Polylith architecture.
 
 ## Coding Guidelines
 
+- **Naming**: Naming is hard, so try not to name at all by using thread macros.
+  Names MUST be narrow, for example, functions in command would be named
+  `processs`, `send`, etc and not `process-command`, `send-command`, etc.
+  "Elements of Clojure" by Zachary Tellman gets _everything_ right about names,
+  in particular, "if a function crosses data scope boundaries, there should
+  be a verb in the name. If it pulls data from another scope, it should
+  describe the datatype it returns. If it pushes data into another scope,
+  it should describe the effect it has.
 - **Referential transparency**: For an expression to be referentially
   transparent, we must be able to bind the expression to a name, substitute
   that name for any or all occurrences of the original expression (within the
@@ -298,9 +306,6 @@ that follows the Polylith architecture.
   `json/read-str` or `http-client/res->body` returns string keys
   (clojure.data.json default) — callers of those functions check with
   string keys.
-- **Naming**: Naming is hard, so try not to name at all by using thread macros.
-  Names should be narrow. "Elements of Clojure" by Zachary Tellman gets _everything_
-  right about names.
 
 ## Git Workflow
 

@@ -7,11 +7,11 @@
   [["/organizations"
     {:openapi {:tags ["Organizations"] :security [{"adminAuth" []}]}}
     [""
-     {:get {:summary "List organizations"
-            :openapi {:operationId "ListOrganizations"}
+     {:get {:summary "Retrieve organizations"
+            :openapi {:operationId "RetrieveOrganizations"}
             :responses {200 {:body [:ref "OrganizationList"]}}
             :handler queries/list-organizations}
-      :post {:summary "Create an organization"
+      :post {:summary "Create a new organization"
              :openapi {:operationId "CreateOrganization"}
              :parameters {:body [:ref "CreateOrganizationRequest"]}
              :responses {201 {:body [:ref "CreateOrganizationResponse"]}}

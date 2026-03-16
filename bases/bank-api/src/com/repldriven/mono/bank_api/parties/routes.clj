@@ -17,12 +17,12 @@
   [["/parties"
     {:openapi {:tags ["Parties"] :security [{"orgAuth" []}]}}
     [""
-     {:get {:summary "List parties"
-            :openapi {:operationId "ListParties"}
+     {:get {:summary "Retrieve parties"
+            :openapi {:operationId "RetrieveParties"}
             :parameters {:query list-parties-query-schema}
             :responses {200 {:body [:ref "PartyList"]}}
             :handler queries/list-parties}
-      :post {:summary "Create a party"
+      :post {:summary "Create a new party"
              :openapi {:operationId "CreateParty"}
              :interceptors [telemetry/require-idempotency-key]
              :parameters {:body [:ref "CreatePartyRequest"]}
@@ -32,7 +32,7 @@
     ["/{party-id}"
      {:parameters {:path {:party-id [:ref "PartyId"]}}}
      [""
-      {:get {:summary "Get a party"
+      {:get {:summary "Retrieve a party"
              :openapi {:operationId "RetrieveParty"}
              :responses {200 {:body [:ref "Party"]}
                          404 (ErrorResponse [#'PartyNotFound])}

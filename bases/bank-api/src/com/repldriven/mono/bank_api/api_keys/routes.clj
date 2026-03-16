@@ -6,7 +6,7 @@
   [["/api-keys"
     {:openapi {:tags ["API Keys"] :security [{"orgAuth" []}]}}
     [""
-     {:get {:summary "List API keys"
-            :openapi {:operationId "ListApiKeys"}
+     {:get {:summary "Retrieve API keys"
+            :openapi {:operationId "RetrieveApiKeys"}
             :responses {200 {:body [:ref "ApiKeyList"]}}
             :handler queries/list-api-keys}}]]])

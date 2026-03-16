@@ -13,8 +13,8 @@
   [["/account-products"
     {:openapi {:tags ["Account Products"] :security [{"orgAuth" []}]}}
     [""
-     {:get {:summary "Retrieve all products"
-            :openapi {:operationId "ListAllAccountProductVersions"}
+     {:get {:summary "Retrieve products"
+            :openapi {:operationId "RetrieveAccountProducts"}
             :responses {200 {:body [:ref "AccountProductVersionList"]}}
             :handler queries/list-all-versions}
       :post {:summary "Draft a new product"
@@ -26,14 +26,14 @@
      {:parameters {:path {:product-id string?}}}
      [""
       {:get {:summary "Retrieve published product"
-             :openapi {:operationId "GetAccountProduct"}
+             :openapi {:operationId "RetrieveAccountProduct"}
              :responses {200 {:body [:ref "AccountProductVersion"]}
                          404 (ErrorResponse [#'NoPublishedVersion])}
              :handler queries/get-published-version}}]
      ["/versions"
       [""
        {:get {:summary "Retrieve product versions"
-              :openapi {:operationId "ListAccountProductVersions"}
+              :openapi {:operationId "RetrieveAccountProductVersions"}
               :responses {200 {:body [:ref "AccountProductVersionList"]}}
               :handler queries/list-versions}
         :post {:summary "Draft a new product version"
@@ -45,7 +45,7 @@
        {:parameters {:path {:version-id string?}}}
        [""
         {:get {:summary "Retrieve a product version"
-               :openapi {:operationId "GetAccountProductVersion"}
+               :openapi {:operationId "RetrieveAccountProductVersion"}
                :responses {200 {:body [:ref "AccountProductVersion"]}
                            404 (ErrorResponse [#'VersionNotFound])}
                :handler queries/get-version}}]

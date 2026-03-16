@@ -18,13 +18,13 @@
   [["/accounts"
     {:openapi {:tags ["Accounts"] :security [{"orgAuth" []}]}}
     [""
-     {:get {:summary "List accounts"
-            :openapi {:operationId "ListAccounts"}
+     {:get {:summary "Retrieve accounts"
+            :openapi {:operationId "RetrieveAccounts"}
             :parameters {:query list-accounts-query-schema}
             :responses {200 {:body [:ref "AccountList"]}}
             :handler queries/list-accounts}
       :post {:summary "Open a new account"
-             :openapi {:operationId "OpenAccount"}
+             :openapi {:operationId "CreateAccount"}
              :interceptors [telemetry/require-idempotency-key]
              :parameters {:body [:ref "CreateAccountRequest"]}
              :responses {200 {:body [:ref "CreateAccountResponse"]}
@@ -35,7 +35,7 @@
     ["/{account-id}"
      {:parameters {:path {:account-id [:ref "AccountId"]}}}
      [""
-      {:get {:summary "Get an account"
+      {:get {:summary "Retrieve an account"
              :openapi {:operationId "RetrieveAccount"}
              :responses {200 {:body [:ref "Account"]}
                          404 (ErrorResponse [#'AccountNotFound])}
