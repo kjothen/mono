@@ -1,8 +1,8 @@
 {:aliases
  {:dev
   {:extra-deps
-   {components/account-products {:local/root "components/account-products"}
-    components/accounts {:local/root "components/accounts"}
+   {components/cash-account-products {:local/root "components/cash-account-products"}
+    components/cash-accounts {:local/root "components/cash-accounts"}
     components/avro {:local/root "components/avro"}
     components/cache {:local/root "components/cache"}
     components/cli {:local/root "components/cli"}
@@ -54,10 +54,10 @@
    :extra-paths ["development/resources"]
    :jvm-opts
    ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"]}
-  :test {:extra-paths ["components/account-products/test"
-                       "components/account-products/test-resources"
-                       "components/accounts/test"
-                       "components/accounts/test-resources"
+  :test {:extra-paths ["components/cash-account-products/test"
+                       "components/cash-account-products/test-resources"
+                       "components/cash-accounts/test"
+                       "components/cash-accounts/test-resources"
                        "components/avro/test"
                        "components/cache/test"
                        "components/cli/test"

@@ -1,6 +1,6 @@
 (ns com.repldriven.mono.bank-monolith.main
   (:require
-    com.repldriven.mono.accounts.interface
+    com.repldriven.mono.cash-accounts.interface
     com.repldriven.mono.command.interface
     com.repldriven.mono.command-processor.interface
     com.repldriven.mono.fdb.interface

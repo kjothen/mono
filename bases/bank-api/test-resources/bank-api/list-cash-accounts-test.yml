@@ -1,0 +1,17 @@
+system:
+  fdb: !include testcontainers/fdb-test.yml
+  server:
+    handler: !system/required-component
+    interceptors: !system/component
+      system/component-kind: server/interceptors
+      record-db: !system/ref fdb.record-db
+      record-store: !system/ref fdb.store
+      auth:
+        role: !keyword org
+        organization-id: org_test_list_cash_accounts
+    jetty-adapter: !system/component
+      system/component-kind: server/jetty-adapter
+      handler: !system/ref server.handler
+      interceptors: !system/ref server.interceptors
+      options:
+        port: 0

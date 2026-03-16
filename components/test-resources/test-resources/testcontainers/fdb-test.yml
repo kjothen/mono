@@ -18,8 +18,8 @@ store: !system/component
   system/component-kind: fdb/store
   descriptor: com.repldriven.mono.schemas.schemas.SchemaProto
   record-types: !strs
-    accounts:
-      record-type: Account
+    cash-accounts:
+      record-type: CashAccount
       primary-key: [organization_id, account_id]
       indexes:
         - name: party_id_idx
@@ -52,11 +52,11 @@ store: !system/component
           field: organization_id
         - name: ApiKey_by_hash
           field: key_hash
-    account-product-versions:
-      record-type: AccountProductVersion
+    cash-account-product-versions:
+      record-type: CashAccountProductVersion
       primary-key: [organization_id, product_id, version_id]
       indexes:
-        - name: AccountProductVersion_by_org
+        - name: CashAccountProductVersion_by_org
           field: organization_id
 
 meta-store: !system/component
@@ -65,8 +65,8 @@ meta-store: !system/component
   path: meta
   descriptor: com.repldriven.mono.schemas.schemas.SchemaProto
   record-types: !strs
-    accounts:
-      record-type: Account
+    cash-accounts:
+      record-type: CashAccount
       primary-key: [organization_id, account_id]
       indexes:
         - name: party_id_idx
@@ -99,11 +99,11 @@ meta-store: !system/component
           field: organization_id
         - name: ApiKey_by_hash
           field: key_hash
-    account-product-versions:
-      record-type: AccountProductVersion
+    cash-account-product-versions:
+      record-type: CashAccountProductVersion
       primary-key: [organization_id, product_id, version_id]
       indexes:
-        - name: AccountProductVersion_by_org
+        - name: CashAccountProductVersion_by_org
           field: organization_id
 
 pet-store: !system/component

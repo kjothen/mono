@@ -35,26 +35,26 @@
   (assoc test-account-open :account-status :closing))
 
 (defn- command-processor
-  "Simulates Processor — subscribes to accounts-command
+  "Simulates Processor — subscribes to cash-accounts-command
   messages and replies with a fixed account payload."
   [sys account]
   (let [bus (system/instance sys [:message-bus :bus])
         schemas (system/instance sys [:avro :serde])
-        payload (avro/serialize (get schemas "account") account)]
+        payload (avro/serialize (get schemas "cash-account") account)]
     (message-bus/subscribe
      bus
-     :accounts-command
+     :cash-accounts-command
      (fn [data]
        (message-bus/send
         bus
-        :accounts-command-response
+        :cash-accounts-command-response
         (command/command-response data {:status "ACCEPTED" :payload payload}))))
-    {:stop (fn [] (message-bus/unsubscribe bus :accounts-command))}))
+    {:stop (fn [] (message-bus/unsubscribe bus :cash-accounts-command))}))
 
 (defn- open-account-request
   [party-id name currency product-id]
   (http/request {:method :post
-                 :url (str *base-url* "/v1/accounts")
+                 :url (str *base-url* "/v1/cash-accounts")
                  :headers {"Content-Type" "application/json"
                            "Idempotency-Key" (str (util/uuidv7))}
                  :body (json/write-str {"party-id" party-id
@@ -65,7 +65,7 @@
 (defn- close-account-request
   [account-id]
   (http/request {:method :post
-                 :url (str *base-url* "/v1/accounts/" account-id "/close")
+                 :url (str *base-url* "/v1/cash-accounts/" account-id "/close")
                  :headers {"Idempotency-Key" (str (util/uuidv7))}}))
 
 (defn- test-open-account
@@ -120,7 +120,8 @@
      (binding [*base-url* (server/http-local-url jetty)]
        (testing "GET /openapi.json returns valid OpenAPI spec"
          (test-open-api-spec))
-       (testing "POST /v1/accounts sends open-account command"
+       (testing "POST /v1/cash-accounts sends open-cash-account command"
          (test-open-account sys))
-       (testing "POST /v1/accounts/{id}/close sends close-account command"
+       (testing
+         "POST /v1/cash-accounts/{id}/close sends close-cash-account command"
          (test-close-account sys))))))

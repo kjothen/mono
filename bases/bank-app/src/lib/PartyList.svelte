@@ -1,5 +1,5 @@
 <script>
-  import { list_parties, open_account, list_account_products } from "./api.mjs";
+  import { list_parties, open_cash_account, list_cash_account_products } from "./api.mjs";
   import { timeAgo } from "./time.mjs";
   import { onMount } from "svelte";
 
@@ -20,7 +20,7 @@
 
   async function loadProducts() {
     try {
-      const res = await list_account_products();
+      const res = await list_cash_account_products();
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         publishedProducts = (res.body.versions ?? [])
           .filter(v => v.status === "published");
@@ -70,7 +70,7 @@
     closeDropdowns();
     try {
       const currencies = product["allowed-currencies"] ?? [];
-      await open_account({
+      await open_cash_account({
         "party-id": partyId,
         "name": party["display-name"],
         "currency": currencies.length > 0 ? currencies[0] : "GBP",

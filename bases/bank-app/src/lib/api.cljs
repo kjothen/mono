@@ -109,12 +109,12 @@
                    (str "Bearer " @api-key)}})
         (.then parse-response))))
 
-(defn open-account
+(defn open-cash-account
   [data]
   (let [{:strs [party-id name currency product-id]}
         (js->clj data)]
     (-> (js/fetch
-         "/v1/accounts"
+         "/v1/cash-accounts"
          #js {:method "POST"
               :headers
               #js {"Content-Type" "application/json"
@@ -130,10 +130,10 @@
                     "product-id" product-id})})
         (.then parse-response))))
 
-(defn close-account
+(defn close-cash-account
   [account-id]
   (-> (js/fetch
-       (str "/v1/accounts/" account-id "/close")
+       (str "/v1/cash-accounts/" account-id "/close")
        #js {:method "POST"
             :headers
             #js {"Content-Type" "application/json"
@@ -143,11 +143,11 @@
                  (str (random-uuid))}})
       (.then parse-response)))
 
-(defn list-accounts
+(defn list-cash-accounts
   [query-string]
   (let [url (if query-string
-              (str "/v1/accounts?" query-string)
-              "/v1/accounts")]
+              (str "/v1/cash-accounts?" query-string)
+              "/v1/cash-accounts")]
     (-> (js/fetch
          url
          #js {:headers
@@ -155,7 +155,7 @@
                    (str "Bearer " @api-key)}})
         (.then parse-response))))
 
-(defn create-account-product
+(defn create-cash-account-product
   [data]
   (let [{:strs [name account-type balance-sheet-side
                 allowed-currencies]}
@@ -167,7 +167,7 @@
                      (assoc "allowed-currencies"
                             allowed-currencies))]
     (-> (js/fetch
-         "/v1/account-products"
+         "/v1/cash-account-products"
          #js {:method "POST"
               :headers
               #js {"Content-Type" "application/json"
@@ -176,10 +176,10 @@
               :body (js/JSON.stringify (clj->js body))})
         (.then parse-response))))
 
-(defn list-account-products
+(defn list-cash-account-products
   []
   (-> (js/fetch
-       "/v1/account-products"
+       "/v1/cash-account-products"
        #js {:headers
             #js {"Authorization"
                  (str "Bearer " @api-key)}})
@@ -188,7 +188,7 @@
 (defn publish-version
   [product-id version-id]
   (-> (js/fetch
-       (str "/v1/account-products/"
+       (str "/v1/cash-account-products/"
             product-id
             "/versions/"
             version-id

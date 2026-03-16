@@ -5,8 +5,8 @@
   import OrganizationList from "./lib/OrganizationList.svelte";
   import CreateParty from "./lib/CreateParty.svelte";
   import PartyList from "./lib/PartyList.svelte";
-  import AccountList from "./lib/AccountList.svelte";
-  import AccountProductList from "./lib/AccountProductList.svelte";
+  import CashAccountList from "./lib/CashAccountList.svelte";
+  import CashAccountProductList from "./lib/CashAccountProductList.svelte";
   import ApiKeyList from "./lib/ApiKeyList.svelte";
 
   let currentPage = $state("organizations");
@@ -75,14 +75,14 @@
         {selectedOrgId}
         onSelect={(id) => selectOrg(id)}
       />
-      <AccountList bind:this={accountListRef} />
+      <CashAccountList bind:this={accountListRef} />
     {:else if currentPage === "products"}
       <OrgSelector
         {organizations}
         {selectedOrgId}
         onSelect={(id) => selectOrg(id)}
       />
-      <AccountProductList bind:this={productListRef} />
+      <CashAccountProductList bind:this={productListRef} />
     {:else if currentPage === "api-keys"}
       <OrgSelector
         {organizations}

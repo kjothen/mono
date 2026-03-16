@@ -1,15 +1,16 @@
 (ns com.repldriven.mono.bank-api.api
   (:require
-    [com.repldriven.mono.bank-api.account-products.components :as
-     account-products.components]
-    [com.repldriven.mono.bank-api.account-products.examples :as
-     account-products.examples]
-    [com.repldriven.mono.bank-api.account-products.routes :as
-     account-products]
-    [com.repldriven.mono.bank-api.accounts.components :as
-     accounts.components]
-    [com.repldriven.mono.bank-api.accounts.examples :as accounts.examples]
-    [com.repldriven.mono.bank-api.accounts.routes :as accounts]
+    [com.repldriven.mono.bank-api.cash-account-products.components :as
+     cash-account-products.components]
+    [com.repldriven.mono.bank-api.cash-account-products.examples :as
+     cash-account-products.examples]
+    [com.repldriven.mono.bank-api.cash-account-products.routes :as
+     cash-account-products]
+    [com.repldriven.mono.bank-api.cash-accounts.components :as
+     cash-accounts.components]
+    [com.repldriven.mono.bank-api.cash-accounts.examples :as
+     cash-accounts.examples]
+    [com.repldriven.mono.bank-api.cash-accounts.routes :as cash-accounts]
     [com.repldriven.mono.bank-api.api-keys.components :as
      api-keys.components]
     [com.repldriven.mono.bank-api.api-keys.examples :as api-keys.examples]
@@ -40,8 +41,8 @@
    {:options {:registry (merge (m/default-schemas)
                                {"Currency" schema/Currency
                                 "ErrorResponse" schema/ErrorResponseSchema}
-                               account-products.components/registry
-                               accounts.components/registry
+                               cash-account-products.components/registry
+                               cash-accounts.components/registry
                                api-keys.components/registry
                                organizations.components/registry
                                parties.components/registry)}}))
@@ -61,8 +62,8 @@
               "orgAuth"
               {:type :http :scheme :bearer :description "Organization API key"}}
              :examples (merge examples/registry
-                              account-products.examples/registry
-                              accounts.examples/registry
+                              cash-account-products.examples/registry
+                              cash-accounts.examples/registry
                               api-keys.examples/registry
                               organizations.examples/registry
                               parties.examples/registry)}}
@@ -77,8 +78,8 @@
             403 (schema/ErrorResponse [#'examples/Forbidden])
             500 (schema/ErrorResponse [#'examples/InternalServerError
                                        #'examples/BadResponse])}}]
-         (concat account-products/routes
-                 accounts/routes
+         (concat cash-account-products/routes
+                 cash-accounts/routes
                  api-keys/routes
                  organizations/routes
                  parties/routes))])

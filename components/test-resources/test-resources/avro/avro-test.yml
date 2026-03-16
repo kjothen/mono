@@ -1,11 +1,11 @@
 serde: !system/component
   system/component-kind: avro/serde
   schemas:
-    open-account: schemas/accounts/open-account.avsc.json
-    close-account: schemas/accounts/close-account.avsc.json
-    get-account: schemas/accounts/get-account.avsc.json
-    account: schemas/accounts/account.avsc.json
-    unknown-command: schemas/accounts/close-account.avsc.json
+    open-cash-account: schemas/cash-accounts/open-account.avsc.json
+    close-cash-account: schemas/cash-accounts/close-account.avsc.json
+    get-cash-account: schemas/cash-accounts/get-account.avsc.json
+    cash-account: schemas/cash-accounts/account.avsc.json
+    unknown-command: schemas/cash-accounts/close-account.avsc.json
     create-party: schemas/party/create-party.avsc.json
     party: schemas/party/party.avsc.json
     unknown-party-command: schemas/party/create-party.avsc.json

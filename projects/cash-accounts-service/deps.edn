@@ -1,0 +1,38 @@
+{:aliases
+ {:build {:deps {bases/build {:local/root "../../bases/build"}}
+          :exec-args {:lib 'com.repldriven.mono/cash-accounts-service
+                      :main com.repldriven.mono.service.main
+                      :major-minor-version "0.0"}
+          :ns-default com.repldriven.mono.build.build}
+  :test
+  {:extra-deps
+   {bases/external-test-runner {:local/root "../../bases/external-test-runner"}
+    component/test-resources {:local/root "../../components/test-resources"}
+    component/test-schemas {:local/root "../../components/test-schemas"}
+    component/test-system {:local/root "../../components/test-system"}
+    component/testcontainers {:local/root "../../components/testcontainers"}}}}
+ :deps {component/cash-accounts {:local/root "../../components/cash-accounts"}
+        component/avro {:local/root "../../components/avro"}
+        component/cli {:local/root "../../components/cli"}
+        component/command {:local/root "../../components/command"}
+        component/command-processor {:local/root "../../components/command-processor"}
+        component/fdb {:local/root "../../components/fdb"}
+        component/message-bus {:local/root "../../components/message-bus"}
+        component/processor {:local/root "../../components/processor"}
+        component/encryption {:local/root "../../components/encryption"}
+        component/env {:local/root "../../components/env"}
+        component/error {:local/root "../../components/error"}
+        component/http-client {:local/root "../../components/http-client"}
+        component/log {:local/root "../../components/log"}
+        component/pulsar {:local/root "../../components/pulsar"}
+        component/schemas {:local/root "../../components/schemas"}
+        component/system {:local/root "../../components/system"}
+        component/telemetry {:local/root "../../components/telemetry"}
+        component/utility {:local/root "../../components/utility"}
+        base/service {:local/root "../../bases/service"}
+        ;; protojure brings protobuf-java 4.x which breaks FDB Record Layer
+        ;; at runtime — pin to 3.x for binary compatibility
+        com.google.protobuf/protobuf-java {:mvn/version "3.25.8"}
+        org.clojure/clojure {:mvn/version "1.12.4"}
+        org.clojure/core.async {:mvn/version "1.8.741"}}
+ :paths ["resources"]}

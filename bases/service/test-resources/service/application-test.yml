@@ -2,9 +2,9 @@ system:
   message-bus: !include service/message-bus-test.yml
   fdb: !include testcontainers/fdb-test.yml
   avro: !include avro/avro-test.yml
-  accounts:
+  cash-accounts:
     processor: !system/component
-      system/component-kind: accounts/processor
+      system/component-kind: cash-accounts/processor
       record-db: !system/ref fdb.record-db
       record-store: !system/ref fdb.store
       schemas: !system/ref avro.serde
@@ -12,10 +12,10 @@ system:
       system/component-kind: command-processor/command-processor
       bus: !system/ref message-bus.bus
       processor: !system/local-ref processor
-      command-channel: !keyword accounts-command
-      command-response-channel: !keyword accounts-command-response
+      command-channel: !keyword cash-accounts-command
+      command-response-channel: !keyword cash-accounts-command-response
     dispatcher: !system/component
       system/component-kind: command/dispatcher
       bus: !system/ref message-bus.bus
-      command-channel: !keyword accounts-command
-      command-response-channel: !keyword accounts-command-response
+      command-channel: !keyword cash-accounts-command
+      command-response-channel: !keyword cash-accounts-command-response

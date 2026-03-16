@@ -1,6 +1,6 @@
 (ns ^:eftest/synchronized com.repldriven.mono.service.main-test
   (:require
-    com.repldriven.mono.accounts.interface
+    com.repldriven.mono.cash-accounts.interface
     com.repldriven.mono.message-bus.interface
     com.repldriven.mono.testcontainers.interface
 
@@ -13,8 +13,7 @@
 
 (deftest main-test
   (testing "System should start and process commands"
-    (let [sys (SUT/start "classpath:service/application-test.yml"
-                         :test)]
+    (let [sys (SUT/start "classpath:service/application-test.yml" :test)]
       (is (not (error/anomaly? sys)) "System should start")
       (is (system/system? sys) "System should be valid")
       (when (system/system? sys)

@@ -1,7 +1,7 @@
 (ns ^:eftest/synchronized com.repldriven.mono.service.processor-test
   (:require
     com.repldriven.mono.message-bus.interface
-    com.repldriven.mono.accounts.interface
+    com.repldriven.mono.cash-accounts.interface
     com.repldriven.mono.command-processor.interface
     com.repldriven.mono.testcontainers.interface
 
@@ -21,7 +21,7 @@
   command envelope via dispatcher, and blocks until the
   result is received."
   [sys command-name data]
-  (let [dispatcher (system/instance sys [:accounts :dispatcher])
+  (let [dispatcher (system/instance sys [:cash-accounts :dispatcher])
         schemas (system/instance sys [:avro :serde])
         schema (get schemas command-name)
         payload (avro/serialize schema data)
@@ -63,11 +63,11 @@
   [record-db store-fn product-id]
   (fdb/transact record-db
                 store-fn
-                "account-product-versions"
+                "cash-account-product-versions"
                 (fn [store]
                   (fdb/save-record
                    store
-                   (schema/AccountProductVersion->java
+                   (schema/CashAccountProductVersion->java
                     {:organization-id test-org-id
                      :product-id product-id
                      :version-id "prv_test_001"
@@ -93,13 +93,14 @@
         [_ ["send-command" "process-command"]]
         (let [schemas (system/instance sys [:avro :serde])]
           (nom-test> [result (send-command sys
-                                           "open-account"
+                                           "open-cash-account"
                                            {:organization-id test-org-id
                                             :party-id "cust-api-test"
                                             :name "API Test Account"
                                             :currency "GBP"
                                             :product-id test-product-id})
                       _ (is (= "ACCEPTED" (:status result)))
-                      decoded (avro/deserialize-same (get schemas "account")
+                      decoded (avro/deserialize-same (get schemas
+                                                          "cash-account")
                                                      (:payload result))
                       _ (is (some? (:account-id decoded)))])))))))

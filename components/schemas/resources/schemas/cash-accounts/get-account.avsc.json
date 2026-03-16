@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "GetCashAccount",
+  "namespace": "com.repldriven.mono.cash_accounts.cash_account_lifecycle",
+  "fields": [
+    {"name": "organization_id", "type": "string"},
+    {"name": "account_id",     "type": "string"}
+  ]
+}

@@ -2,8 +2,8 @@ syntax = "proto2";
 
 package com.repldriven.mono.schemas.schemas;
 
-import "schemas/account-products/account-product.proto";
-import "schemas/accounts/account.proto";
+import "schemas/cash-account-products/account-product.proto";
+import "schemas/cash-accounts/account.proto";
 import "schemas/idv/idv.proto";
 import "schemas/keys/api_key.proto";
 import "schemas/organizations/organization.proto";
@@ -18,7 +18,7 @@ option java_outer_classname = "SchemaProto";
 // for the FDB Record Layer. Named RecordTypeUnion so the Record
 // Layer recognises it without requiring proto annotations.
 message RecordTypeUnion {
-  optional com.repldriven.mono.schemas.accounts.Account _Account = 1;
+  optional com.repldriven.mono.schemas.cash_accounts.CashAccount _CashAccount = 1;
   optional com.repldriven.mono.schemas.persons.Person _Person = 2;
   optional com.repldriven.mono.schemas.organizations.Organization _Organization = 3;
   optional com.repldriven.mono.schemas.keys.ApiKey _ApiKey = 4;
@@ -27,5 +27,5 @@ message RecordTypeUnion {
   optional com.repldriven.mono.schemas.idv.Idv _Idv = 7;
   optional com.repldriven.mono.schemas.party.PartyNationalIdentifier _PartyNationalIdentifier = 8;
   reserved 9;
-  optional com.repldriven.mono.schemas.account_products.AccountProductVersion _AccountProductVersion = 10;
+  optional com.repldriven.mono.schemas.cash_account_products.CashAccountProductVersion _CashAccountProductVersion = 10;
 }

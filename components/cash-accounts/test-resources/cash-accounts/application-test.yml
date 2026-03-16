@@ -1,0 +1,18 @@
+system:
+  fdb: !include testcontainers/fdb-test.yml
+  avro: !include avro/avro-test.yml
+  cash-accounts:
+    processor: !system/component
+      system/component-kind: cash-accounts/processor
+      record-db: !system/ref fdb.record-db
+      record-store: !system/ref fdb.meta-store
+      schemas: !system/ref avro.serde
+    watcher-handler: !system/component
+      system/component-kind: cash-accounts/watcher-handler
+      record-store: !system/ref fdb.meta-store
+    watcher: !system/component
+      system/component-kind: fdb/watcher
+      record-db: !system/ref fdb.record-db
+      consumer-id: cash-accounts-watcher
+      store-name: cash-accounts
+      handler: !system/local-ref watcher-handler

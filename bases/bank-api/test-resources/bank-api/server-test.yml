@@ -7,7 +7,7 @@ interceptors: !system/component
     role: !keyword org
     organization-id: org_test_api
   dispatchers:
-    accounts: !system/ref accounts.dispatcher
+    cash-accounts: !system/ref cash-accounts.dispatcher
     parties: !system/ref parties.dispatcher
   avro: !system/ref avro.serde
 

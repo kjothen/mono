@@ -1,7 +1,8 @@
 (ns com.repldriven.mono.schemas.interface
   (:require
-    [com.repldriven.mono.schemas.account_products :as account-products]
-    [com.repldriven.mono.schemas.accounts :as accounts]
+    [com.repldriven.mono.schemas.cash_account_products
+     :as cash-account-products]
+    [com.repldriven.mono.schemas.cash_accounts :as cash-accounts]
     [com.repldriven.mono.schemas.idv :as idv]
     [com.repldriven.mono.schemas.keys :as keys]
     [com.repldriven.mono.schemas.organizations :as organizations]
@@ -12,11 +13,11 @@
 
     [protojure.protobuf :as proto])
   (:import
-    (com.repldriven.mono.schemas.account_products
-     AccountProductProto$AccountProductVersion)
-    (com.repldriven.mono.schemas.accounts
-     AccountProto$Account
-     AccountChangelogProto$AccountChangelog)
+    (com.repldriven.mono.schemas.cash_account_products
+     CashAccountProductProto$CashAccountProductVersion)
+    (com.repldriven.mono.schemas.cash_accounts
+     CashAccountProto$CashAccount
+     CashAccountChangelogProto$CashAccountChangelog)
     (com.repldriven.mono.schemas.idv
      IdvProto$Idv
      IdvChangelogProto$IdvChangelog)
@@ -32,14 +33,16 @@
      PersonIdentificationProto$PersonIdentification)
     (com.repldriven.mono.schemas.persons PersonProto$Person)))
 
-(def pb->AccountProductVersion account-products/pb->AccountProductVersion)
-(defn AccountProductVersion->pb
+(def pb->CashAccountProductVersion
+  cash-account-products/pb->CashAccountProductVersion)
+(defn CashAccountProductVersion->pb
   [m]
-  (proto/->pb (account-products/new-AccountProductVersion m)))
-(defn AccountProductVersion->java
+  (proto/->pb
+   (cash-account-products/new-CashAccountProductVersion m)))
+(defn CashAccountProductVersion->java
   [m]
-  (AccountProductProto$AccountProductVersion/parseFrom
-   (AccountProductVersion->pb m)))
+  (CashAccountProductProto$CashAccountProductVersion/parseFrom
+   (CashAccountProductVersion->pb m)))
 
 (def pb->Person persons/pb->Person)
 (defn Person->pb [m] (proto/->pb (persons/new-Person m)))
@@ -85,20 +88,24 @@
   [m]
   (IdvProto$Idv/parseFrom (Idv->pb m)))
 
-(def pb->Account accounts/pb->Account)
-(defn Account->pb [m] (proto/->pb (accounts/new-Account m)))
-(defn Account->java [m] (AccountProto$Account/parseFrom (Account->pb m)))
+(def pb->CashAccount cash-accounts/pb->CashAccount)
+(defn CashAccount->pb
+  [m]
+  (proto/->pb (cash-accounts/new-CashAccount m)))
+(defn CashAccount->java
+  [m]
+  (CashAccountProto$CashAccount/parseFrom (CashAccount->pb m)))
 
 ;; Changelog bridges
 
-(def pb->AccountChangelog accounts/pb->AccountChangelog)
-(defn AccountChangelog->pb
+(def pb->CashAccountChangelog cash-accounts/pb->CashAccountChangelog)
+(defn CashAccountChangelog->pb
   [m]
-  (proto/->pb (accounts/new-AccountChangelog m)))
-(defn AccountChangelog->java
+  (proto/->pb (cash-accounts/new-CashAccountChangelog m)))
+(defn CashAccountChangelog->java
   [m]
-  (AccountChangelogProto$AccountChangelog/parseFrom
-   (AccountChangelog->pb m)))
+  (CashAccountChangelogProto$CashAccountChangelog/parseFrom
+   (CashAccountChangelog->pb m)))
 
 (def pb->PartyChangelog party/pb->PartyChangelog)
 (defn PartyChangelog->pb

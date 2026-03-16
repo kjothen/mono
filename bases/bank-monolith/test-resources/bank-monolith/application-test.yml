@@ -72,10 +72,10 @@ system:
       admin: !system/local-ref admin
       schemas: !system/local-ref schemas
       topics:
-        - topic: "persistent://tenant-1/namespace-1/topic-accounts-command"
+        - topic: "persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command"
           partitions: 1
           schema: !keyword command
-        - topic: "persistent://tenant-1/namespace-1/topic-accounts-command-response"
+        - topic: "persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command-response"
           partitions: 1
           schema: !keyword command-response
         - topic: "persistent://tenant-1/namespace-1/topic-parties-command"
@@ -87,21 +87,21 @@ system:
 
     producers: !system/component
       system/component-kind: pulsar/producers
-      accounts-command:
+      cash-accounts-command:
         _: !system/local-ref topics
         client: !system/local-ref client
         conf:
           accessMode: !pulsar/access-mode Shared
           schema: !keyword command
-          topicName: "persistent://tenant-1/namespace-1/topic-accounts-command"
+          topicName: "persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command"
         schemas: !system/local-ref schemas
-      accounts-command-response:
+      cash-accounts-command-response:
         _: !system/local-ref topics
         client: !system/local-ref client
         conf:
           accessMode: !pulsar/access-mode Shared
           schema: !keyword command-response
-          topicName: "persistent://tenant-1/namespace-1/topic-accounts-command-response"
+          topicName: "persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command-response"
         schemas: !system/local-ref schemas
       parties-command:
         _: !system/local-ref topics
@@ -122,27 +122,27 @@ system:
 
     consumers: !system/component
       system/component-kind: pulsar/consumers
-      accounts-command:
+      cash-accounts-command:
         _: !system/local-ref topics
         client: !system/local-ref client
         conf:
           cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
           schema: !pulsar/schema AUTO_CONSUME
-          subscriptionName: bank-monolith-accounts-command
+          subscriptionName: bank-monolith-cash-accounts-command
           subscriptionType: !pulsar/subscription-type Shared
           topicNames:
-            ["persistent://tenant-1/namespace-1/topic-accounts-command"]
+            ["persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command"]
         schemas: !system/local-ref schemas
-      accounts-command-response:
+      cash-accounts-command-response:
         _: !system/local-ref topics
         client: !system/local-ref client
         conf:
           cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
           schema: !pulsar/schema AUTO_CONSUME
-          subscriptionName: bank-monolith-accounts-command-response
+          subscriptionName: bank-monolith-cash-accounts-command-response
           subscriptionType: !pulsar/subscription-type Shared
           topicNames:
-            ["persistent://tenant-1/namespace-1/topic-accounts-command-response"]
+            ["persistent://tenant-1/namespace-1/topic-cash-cash-accounts-command-response"]
         schemas: !system/local-ref schemas
       parties-command:
         _: !system/local-ref topics
@@ -169,10 +169,10 @@ system:
 
     message-bus-producers: !system/component
       system/component-kind: pulsar/message-bus-producers
-      accounts-command:
-        producer: !system/local-ref producers.accounts-command
-      accounts-command-response:
-        producer: !system/local-ref producers.accounts-command-response
+      cash-accounts-command:
+        producer: !system/local-ref producers.cash-accounts-command
+      cash-accounts-command-response:
+        producer: !system/local-ref producers.cash-accounts-command-response
       parties-command:
         producer: !system/local-ref producers.parties-command
       parties-command-response:
@@ -180,10 +180,10 @@ system:
 
     message-bus-consumers: !system/component
       system/component-kind: pulsar/message-bus-consumers
-      accounts-command:
-        consumer: !system/local-ref consumers.accounts-command
-      accounts-command-response:
-        consumer: !system/local-ref consumers.accounts-command-response
+      cash-accounts-command:
+        consumer: !system/local-ref consumers.cash-accounts-command
+      cash-accounts-command-response:
+        consumer: !system/local-ref consumers.cash-accounts-command-response
       parties-command:
         consumer: !system/local-ref consumers.parties-command
       parties-command-response:
@@ -197,9 +197,9 @@ system:
 
   fdb: !include testcontainers/fdb-test.yml
   avro: !include avro/avro-test.yml
-  accounts:
+  cash-accounts:
     processor: !system/component
-      system/component-kind: accounts/processor
+      system/component-kind: cash-accounts/processor
       record-db: !system/ref fdb.record-db
       record-store: !system/ref fdb.store
       schemas: !system/ref avro.serde
@@ -207,22 +207,22 @@ system:
       system/component-kind: command-processor/command-processor
       bus: !system/ref message-bus.bus
       processor: !system/local-ref processor
-      command-channel: !keyword accounts-command
-      command-response-channel: !keyword accounts-command-response
+      command-channel: !keyword cash-accounts-command
+      command-response-channel: !keyword cash-accounts-command-response
     watcher-handler: !system/component
-      system/component-kind: accounts/watcher-handler
+      system/component-kind: cash-accounts/watcher-handler
       record-store: !system/ref fdb.store
     watcher: !system/component
       system/component-kind: fdb/watcher
       record-db: !system/ref fdb.record-db
-      consumer-id: accounts-watcher
-      store-name: accounts
+      consumer-id: cash-accounts-watcher
+      store-name: cash-accounts
       handler: !system/local-ref watcher-handler
     dispatcher: !system/component
       system/component-kind: command/dispatcher
       bus: !system/ref message-bus.bus
-      command-channel: !keyword accounts-command
-      command-response-channel: !keyword accounts-command-response
+      command-channel: !keyword cash-accounts-command
+      command-response-channel: !keyword cash-accounts-command-response
   parties:
     processor: !system/component
       system/component-kind: party/processor
@@ -279,7 +279,7 @@ system:
       system/component-kind: server/interceptors
       admin-api-key: !env MONO_ADMIN_API_KEY
       dispatchers:
-        accounts: !system/ref accounts.dispatcher
+        cash-accounts: !system/ref cash-accounts.dispatcher
         parties: !system/ref parties.dispatcher
       avro: !system/ref avro.serde
       record-db: !system/ref fdb.record-db
