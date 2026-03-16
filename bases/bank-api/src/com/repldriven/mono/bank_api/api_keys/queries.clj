@@ -23,7 +23,7 @@
   (let [org-id (get-in request [:auth :organization-id])
         config {:record-db (:record-db request)
                 :record-store (:record-store request)}
-        result (api-keys/list-api-keys-by-org config org-id)]
+        result (api-keys/get-api-keys config org-id)]
     (if (error/anomaly? result)
       {:status 500 :body (error-response 500 result)}
       {:status 200

@@ -21,7 +21,7 @@
    [sys "classpath:organizations/application-test.yml"]
    (let [config (fdb-config sys)]
      (testing "creates organization and api-key atomically"
-       (nom-test> [result (SUT/create-organization config "Acme Corp")
+       (nom-test> [result (SUT/new-organization config "Acme Corp")
                    org (:organization result)
                    _ (is (= "Acme Corp" (:name org)))
                    _ (is (string? (:organization-id org)))

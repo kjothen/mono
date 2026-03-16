@@ -10,17 +10,17 @@
       (is (string? id))
       (is (.startsWith id "acc.")))))
 
-(deftest generate-api-key-test
-  (testing "generates prefixed API key"
-    (let [key (SUT/generate-api-key "sk_live_")]
+(deftest generate-token-test
+  (testing "generates prefixed token"
+    (let [key (SUT/generate-token "sk_live_")]
       (is (string? key))
       (is (.startsWith key "sk_live_")))))
 
-(deftest hash-api-key-test
+(deftest hash-token-test
   (testing "returns consistent hex SHA-256 hash"
     (let [key "sk_live_test123"
-          h1 (SUT/hash-api-key key)
-          h2 (SUT/hash-api-key key)]
+          h1 (SUT/hash-token key)
+          h2 (SUT/hash-token key)]
       (is (string? h1))
       (is (= 64 (count h1)))
       (is (= h1 h2)))))

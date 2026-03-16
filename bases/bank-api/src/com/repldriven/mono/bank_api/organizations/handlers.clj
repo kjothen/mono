@@ -38,7 +38,7 @@
    :else
    (let [{:keys [record-db record-store]} request
          {:keys [name]} (get-in request [:parameters :body])
-         result (organizations/create-organization
+         result (organizations/new-organization
                  {:record-db record-db :record-store record-store}
                  name)]
      (if (error/anomaly? result)

@@ -3,8 +3,7 @@
     [com.repldriven.mono.bank-api.errors :refer [error-response]]
 
     [com.repldriven.mono.error.interface :as error]
-    [com.repldriven.mono.fdb.interface :as fdb]
-    [com.repldriven.mono.schemas.interface :as schema])
+    [com.repldriven.mono.organizations.interface :as organizations])
   (:import
     (java.time Instant)))
 
@@ -20,18 +19,11 @@
 
 (defn list-organizations
   [request]
-  (let [{:keys [record-db record-store]} request
-        result (fdb/transact record-db
-                             record-store
-                             "organizations"
-                             (fn [store]
-                               (fdb/scan-records
-                                store
-                                {:limit 100})))]
+  (let [config {:record-db (:record-db request)
+                :record-store (:record-store request)}
+        result (organizations/get-organizations config)]
     (if (error/anomaly? result)
       {:status 500 :body (error-response 500 result)}
       {:status 200
        :body {:organizations
-              (mapv (comp format-timestamps
-                          schema/pb->Organization)
-                    (:records result))}})))
+              (mapv format-timestamps result)}})))

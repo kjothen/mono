@@ -17,12 +17,12 @@
 
 (defn- verify-org-key
   [request raw-key]
-  (let [key-hash (encryption/hash-api-key raw-key)
+  (let [key-hash (encryption/hash-token raw-key)
         {:keys [record-db record-store]} request
         api-key (cache/lookup
                  api-key-cache
                  key-hash
-                 #(api-keys/find-api-key-by-hash
+                 #(api-keys/get-api-key
                    {:record-db record-db
                     :record-store record-store}
                    key-hash))]

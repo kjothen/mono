@@ -5,30 +5,22 @@
 (def ^:private api-key-prefix "sk_live_")
 (def ^:private api-key-display-prefix-len 12)
 
-(defn generate-api-key
-  "Generates an API key and returns {:raw-key ... :key-hash
-  ... :key-prefix ...}."
-  []
-  (let [raw-key (encryption/generate-api-key api-key-prefix)
-        key-hash (encryption/hash-api-key raw-key)
+(defn new-api-key
+  "Creates a new ApiKey record map and its raw key.
+  Returns {:api-key <map> :raw-key <string>}. The raw-key
+  is only available at creation time."
+  [org-id key-name]
+  (let [raw-key (encryption/generate-token api-key-prefix)
+        key-hash (encryption/hash-token raw-key)
         key-prefix
         (subs raw-key
               0
-              (min api-key-display-prefix-len (count raw-key)))]
-    {:raw-key raw-key :key-hash key-hash :key-prefix key-prefix}))
-
-(defn new-api-key
-  "Creates a new ApiKey record map (without the raw key)."
-  [org-id api-key-name key-data]
-  (let [now (System/currentTimeMillis)]
-    {:id (encryption/generate-id "sk")
-     :organization-id org-id
-     :key-hash (:key-hash key-data)
-     :key-prefix (:key-prefix key-data)
-     :name api-key-name
-     :created-at now}))
-
-(defn hash-raw-key
-  "Hashes a raw API key string."
-  [raw-key]
-  (encryption/hash-api-key raw-key))
+              (min api-key-display-prefix-len (count raw-key)))
+        now (System/currentTimeMillis)]
+    {:api-key {:id (encryption/generate-id "sk")
+               :organization-id org-id
+               :key-hash key-hash
+               :key-prefix key-prefix
+               :name key-name
+               :created-at now}
+     :raw-key raw-key}))
