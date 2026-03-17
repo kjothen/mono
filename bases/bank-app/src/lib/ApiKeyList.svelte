@@ -31,7 +31,10 @@
 
 <section>
   <div class="header">
-    <h2>API Keys</h2>
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M10.5 1a4.5 4.5 0 0 0-4.38 5.57L2 10.7V14a1 1 0 0 0 1 1h2v-2h2v-2h1.59l.53-.53A4.5 4.5 0 1 0 10.5 1zm1 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+      API Keys
+    </h2>
     <button class="refresh" onclick={() => load()} disabled={loading}>
       {loading ? "Loading..." : "Refresh"}
     </button>
@@ -44,6 +47,7 @@
   <table>
     <thead>
       <tr>
+        <th>ID</th>
         <th>Key Prefix</th>
         <th>Name</th>
         <th>Created</th>
@@ -51,10 +55,11 @@
     </thead>
     <tbody>
       {#if apiKeys.length === 0 && !loading}
-        <tr><td colspan="3" class="empty">No API keys found</td></tr>
+        <tr><td colspan="4" class="empty">No API keys found</td></tr>
       {/if}
       {#each apiKeys as key}
         <tr>
+          <td class="mono">{key.id ?? ""}</td>
           <td class="mono">{key["key-prefix"]}</td>
           <td>{key.name}</td>
           <td title={key["created-at"]}>{time_ago(key["created-at"])}</td>
@@ -78,6 +83,9 @@
 
   h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .refresh {

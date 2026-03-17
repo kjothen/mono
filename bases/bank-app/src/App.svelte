@@ -8,6 +8,7 @@
   import CashAccountList from "./lib/CashAccountList.svelte";
   import CashAccountProductList from "./lib/CashAccountProductList.svelte";
   import ApiKeyList from "./lib/ApiKeyList.svelte";
+  import Toast from "./lib/Toast.svelte";
 
   let currentPage = $state("organizations");
   let organizations = $state([]);
@@ -16,8 +17,13 @@
   let accountListRef = $state();
   let productListRef = $state();
   let apiKeyListRef = $state();
+  let toastRef = $state();
 
   let hasApiKey = $derived(selectedOrgId != null);
+
+  function showToast(opts) {
+    toastRef?.show(opts);
+  }
 
   function selectOrg(orgId) {
     selectedOrgId = orgId;
@@ -43,6 +49,8 @@
   }
 </script>
 
+<Toast bind:this={toastRef} />
+
 <div class="layout">
   <Sidebar {currentPage} onNavigate={(page) => currentPage = page} />
   <main>
@@ -52,6 +60,7 @@
         onSelectDefault={(id) => selectOrg(id)}
         onCreated={handleOrgCreated}
         onLoaded={handleOrgsLoaded}
+        {showToast}
       />
     {:else if !hasApiKey}
       <div class="no-org">
@@ -66,9 +75,13 @@
         {selectedOrgId}
         onSelect={(id) => selectOrg(id)}
       />
-      <CreateParty onCreated={() => partyListRef?.load()} />
       <PartyList bind:this={partyListRef}
-                 onAccountOpened={() => accountListRef?.load()} />
+                 onAccountOpened={() => accountListRef?.load()}
+                 {showToast}>
+        {#snippet headerActions()}
+          <CreateParty onCreated={() => partyListRef?.load()} {showToast} />
+        {/snippet}
+      </PartyList>
     {:else if currentPage === "accounts"}
       <OrgSelector
         {organizations}
@@ -82,7 +95,7 @@
         {selectedOrgId}
         onSelect={(id) => selectOrg(id)}
       />
-      <CashAccountProductList bind:this={productListRef} />
+      <CashAccountProductList bind:this={productListRef} {showToast} />
     {:else if currentPage === "api-keys"}
       <OrgSelector
         {organizations}

@@ -120,3 +120,11 @@ stop-docker:
 
 start-bank-app:
     cd {{ justfile_directory() }}/bases/bank-app && npm install && npm run dev
+
+start-telemetry:
+  docker run -d --name jaeger \
+    -p 16686:16686 \
+    -p 4318:4318 \
+    jaegertracing/jaeger:latest \
+    --set receivers.otlp.protocols.http.endpoint=0.0.0.0:4318
+

@@ -1,8 +1,10 @@
 <script>
   import { create_party } from "./api.mjs";
+  import Modal from "./Modal.svelte";
 
-  let { onCreated } = $props();
+  let { onCreated, showToast } = $props();
 
+  let open = $state(false);
   let displayName = $state("Jane Doe");
   let givenName = $state("Jane");
   let middleNames = $state("");
@@ -12,9 +14,13 @@
   let niType = $state("NATIONAL_INSURANCE");
   let niValue = $state("TN000001A");
   let niCountry = $state("GBR");
-  let result = $state(null);
-  let httpStatus = $state(null);
   let submitting = $state(false);
+
+  function errorDetail(body) {
+    if (!body) return null;
+    return body.message ?? body.error ?? body.detail
+           ?? (typeof body === "string" ? body : JSON.stringify(body));
+  }
 
   function dobToInt(dateStr) {
     return parseInt(dateStr.replace(/-/g, ""), 10);
@@ -23,8 +29,6 @@
   async function handleSubmit(e) {
     e.preventDefault();
     submitting = true;
-    result = null;
-    httpStatus = null;
     try {
       const res = await create_party({
         "display-name": displayName,
@@ -39,23 +43,27 @@
           "issuing-country": niCountry,
         },
       });
-      httpStatus = res["http-status"];
-      result = res.body;
-      if (httpStatus >= 200 && httpStatus < 300) {
+      const status = res["http-status"];
+      if (status >= 200 && status < 300) {
+        open = false;
+        showToast?.({ type: "success", message: "Party created" });
         onCreated?.();
+      } else if (status >= 400 && status < 500) {
+        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${status}` });
+      } else {
+        showToast?.({ type: "error", message: errorDetail(res.body) ?? `HTTP ${status}` });
       }
     } catch (err) {
-      httpStatus = 0;
-      result = { status: "ERROR", error: err.message };
+      showToast?.({ type: "error", message: err.message });
     } finally {
       submitting = false;
     }
   }
 </script>
 
-<section>
-  <details>
-  <summary><h2>Create Party</h2></summary>
+<button class="new-btn" onclick={() => open = true}>+ New Party</button>
+
+<Modal {open} onClose={() => open = false} title="New Party">
   <form onsubmit={handleSubmit}>
     <label>
       Display Name
@@ -115,59 +123,21 @@
       {submitting ? "Creating..." : "Create Party"}
     </button>
   </form>
-
-  {#if result}
-    <div class="result"
-         class:success={httpStatus >= 200 && httpStatus < 300}
-         class:warning={httpStatus >= 400 && httpStatus < 500}
-         class:error={httpStatus >= 500 || httpStatus === 0}>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
-    </div>
-  {/if}
-  </details>
-</section>
+</Modal>
 
 <style>
-  section {
-    margin-bottom: 2rem;
-  }
-
-  details {
-    border: 1px solid var(--details-border);
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-  }
-
-  summary {
+  .new-btn {
+    padding: 0.5rem 1rem;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
     cursor: pointer;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 
-  summary::-webkit-details-marker {
-    display: none;
-  }
-
-  summary::before {
-    content: "\25B6";
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    transition: transform 0.15s;
-  }
-
-  details[open] > summary::before {
-    transform: rotate(90deg);
-  }
-
-  details[open] > summary {
-    margin-bottom: 1rem;
-  }
-
-  h2 {
-    margin: 0;
-    display: inline;
+  .new-btn:hover {
+    background: #15803d;
   }
 
   form {
@@ -206,7 +176,7 @@
     padding: 0 0.5rem;
   }
 
-  button {
+  button[type="submit"] {
     padding: 0.6rem 1.2rem;
     background: #2563eb;
     color: white;
@@ -216,39 +186,8 @@
     cursor: pointer;
   }
 
-  button:disabled {
+  button[type="submit"]:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-
-  .result {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 4px;
-  }
-
-  .success {
-    background: #dcfce7;
-    border: 1px solid #86efac;
-    color: #166534;
-  }
-
-  .warning {
-    background: #fef9c3;
-    border: 1px solid #fde047;
-    color: #854d0e;
-  }
-
-  .error {
-    background: #fee2e2;
-    border: 1px solid #fca5a5;
-    color: #991b1b;
-  }
-
-  pre {
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-    white-space: pre-wrap;
-    word-break: break-all;
   }
 </style>

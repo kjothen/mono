@@ -1,5 +1,5 @@
 <script>
-  import { list_cash_accounts, close_cash_account } from "./api.mjs";
+  import { list_cash_accounts, list_cash_account_products, close_cash_account } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount } from "svelte";
 
@@ -8,10 +8,29 @@
   let loading = $state(false);
   let error = $state(null);
   let currentQuery = $state(null);
+  let productTypes = $state({});
 
   function queryFromLink(url) {
     const idx = url.indexOf("?");
     return idx >= 0 ? url.substring(idx + 1) : null;
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await list_cash_account_products();
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        const map = {};
+        const versionNums = {};
+        for (const v of res.body.versions ?? []) {
+          const pid = v["product-id"];
+          if (!versionNums[pid] || v["version-number"] > versionNums[pid]) {
+            versionNums[pid] = v["version-number"];
+            map[pid] = v["account-type"];
+          }
+        }
+        productTypes = map;
+      }
+    } catch (_) { /* ignore */ }
   }
 
   export async function load(queryString) {
@@ -19,12 +38,15 @@
     error = null;
     currentQuery = queryString ?? null;
     try {
-      const res = await list_cash_accounts(queryString);
-      if (res["http-status"] >= 200 && res["http-status"] < 300) {
-        accounts = res.body["cash-accounts"] ?? [];
-        links = res.body.links ?? {};
+      const [acctRes] = await Promise.all([
+        list_cash_accounts(queryString),
+        loadProducts(),
+      ]);
+      if (acctRes["http-status"] >= 200 && acctRes["http-status"] < 300) {
+        accounts = acctRes.body["cash-accounts"] ?? [];
+        links = acctRes.body.links ?? {};
       } else {
-        error = res.body?.error ?? `HTTP ${res["http-status"]}`;
+        error = acctRes.body?.error ?? `HTTP ${acctRes["http-status"]}`;
         accounts = [];
         links = {};
       }
@@ -61,7 +83,10 @@
 
 <section>
   <div class="header">
-    <h2>Cash Accounts</h2>
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1H2V4zm0 3v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H2zm3 2h2a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2z"/></svg>
+      Cash Accounts
+    </h2>
     <button class="refresh" onclick={() => load(currentQuery)} disabled={loading}>
       {loading ? "Loading..." : "Refresh"}
     </button>
@@ -74,11 +99,11 @@
   <table>
     <thead>
       <tr>
-        <th>Org ID</th>
-        <th>Account ID</th>
-        <th>Party ID</th>
-        <th>SCAN</th>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
         <th>Currency</th>
+        <th>SCAN</th>
         <th>Status</th>
         <th>Created</th>
         <th>Updated</th>
@@ -91,11 +116,11 @@
       {/if}
       {#each accounts as acct}
         <tr>
-          <td class="mono">{acct["organization-id"]}</td>
           <td class="mono">{acct["account-id"]}</td>
-          <td class="mono">{acct["party-id"]}</td>
-          <td class="mono">{scanOf(acct) ?? ""}</td>
+          <td>{acct.name ?? ""}</td>
+          <td>{productTypes[acct["product-id"]] ?? ""}</td>
           <td>{acct.currency}</td>
+          <td class="mono">{scanOf(acct) ?? ""}</td>
           <td>
             <span class="status-badge"
                   class:opened={acct["account-status"] === "opened"}
@@ -153,6 +178,9 @@
 
   h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .refresh {

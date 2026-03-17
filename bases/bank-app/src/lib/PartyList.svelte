@@ -3,7 +3,7 @@
   import { time_ago } from "./time.mjs";
   import { onMount } from "svelte";
 
-  let { onAccountOpened } = $props();
+  let { onAccountOpened, headerActions, showToast } = $props();
 
   let parties = $state([]);
   let links = $state({});
@@ -22,8 +22,17 @@
     try {
       const res = await list_cash_account_products();
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
-        publishedProducts = (res.body.versions ?? [])
+        const published = (res.body.versions ?? [])
           .filter(v => v.status === "published");
+        const latestByProduct = new Map();
+        for (const v of published) {
+          const pid = v["product-id"];
+          const existing = latestByProduct.get(pid);
+          if (!existing || v["version-number"] > existing["version-number"]) {
+            latestByProduct.set(pid, v);
+          }
+        }
+        publishedProducts = [...latestByProduct.values()];
       }
     } catch (_) { /* ignore */ }
   }
@@ -64,20 +73,40 @@
     dropdownOpen = {};
   }
 
+  function handleWindowClick(e) {
+    const open = Object.keys(dropdownOpen).some(k => dropdownOpen[k]);
+    if (open && !e.target.closest(".dropdown")) {
+      closeDropdowns();
+    }
+  }
+
+  function errorDetail(body) {
+    if (!body) return null;
+    return body.message ?? body.error ?? body.detail
+           ?? (typeof body === "string" ? body : JSON.stringify(body));
+  }
+
   async function handleOpenAccount(party, product) {
     const partyId = party["party-id"];
     opening[partyId] = true;
     closeDropdowns();
     try {
       const currencies = product["allowed-currencies"] ?? [];
-      await open_cash_account({
+      const res = await open_cash_account({
         "party-id": partyId,
         "name": party["display-name"],
         "currency": currencies.length > 0 ? currencies[0] : "GBP",
         "product-id": product["product-id"],
       });
-      await load(currentQuery);
-      onAccountOpened?.();
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        showToast?.({ type: "success", message: "Account opened" });
+        await load(currentQuery);
+        onAccountOpened?.();
+      } else {
+        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${res["http-status"]}` });
+      }
+    } catch (err) {
+      showToast?.({ type: "error", message: err.message });
     } finally {
       delete opening[partyId];
     }
@@ -86,12 +115,20 @@
   onMount(() => load());
 </script>
 
+<svelte:window onclick={handleWindowClick} />
+
 <section>
   <div class="header">
-    <h2>Parties</h2>
-    <button class="refresh" onclick={() => load(currentQuery)} disabled={loading}>
-      {loading ? "Loading..." : "Refresh"}
-    </button>
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM2 13c0-3 2.5-5 6-5s6 2 6 5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/></svg>
+      Parties
+    </h2>
+    <div class="header-actions">
+      {#if headerActions}{@render headerActions()}{/if}
+      <button class="refresh" onclick={() => load(currentQuery)} disabled={loading}>
+        {loading ? "Loading..." : "Refresh"}
+      </button>
+    </div>
   </div>
 
   {#if error}
@@ -101,9 +138,9 @@
   <table>
     <thead>
       <tr>
-        <th>Org ID</th>
-        <th>Party ID</th>
+        <th>ID</th>
         <th>Display Name</th>
+        <th>Type</th>
         <th>Status</th>
         <th>Created</th>
         <th>Updated</th>
@@ -116,9 +153,9 @@
       {/if}
       {#each parties as party}
         <tr>
-          <td class="mono">{party["organization-id"]}</td>
           <td class="mono">{party["party-id"]}</td>
           <td>{party["display-name"]}</td>
+          <td>{party.type ?? ""}</td>
           <td>
             <span class="status-badge"
                   class:active={party.status === "active"}
@@ -140,7 +177,7 @@
                     class="action-btn"
                     onclick={() => toggleDropdown(party["party-id"])}
                   >
-                    Create Account &#9662;
+                    + New Account &#9662;
                   </button>
                   {#if dropdownOpen[party["party-id"]]}
                     <div class="dropdown-menu">
@@ -194,6 +231,14 @@
 
   h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
   }
 
   .refresh {

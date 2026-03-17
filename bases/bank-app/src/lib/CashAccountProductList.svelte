@@ -1,21 +1,79 @@
 <script>
-  import { list_cash_account_products, create_cash_account_product, publish_version } from "./api.mjs";
+  import { list_cash_account_products, create_cash_account_product, create_cash_account_product_version, publish_version } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount } from "svelte";
+  import Modal from "./Modal.svelte";
+
+  let { showToast } = $props();
 
   let versions = $state([]);
   let loading = $state(false);
   let error = $state(null);
 
-  // create form
+  let modalOpen = $state(false);
   let name = $state("Current Account");
   let accountType = $state("CURRENT");
   let balanceSheetSide = $state("LIABILITY");
   let allowedCurrencies = $state("GBP");
   let creating = $state(false);
-  let createError = $state(null);
 
   let publishing = $state({});
+
+  function isLatestVersion(v) {
+    const pid = v["product-id"];
+    const maxVersion = Math.max(
+      ...versions.filter(x => x["product-id"] === pid).map(x => x["version-number"])
+    );
+    return v["version-number"] === maxVersion;
+  }
+
+  let reviseModalOpen = $state(false);
+  let reviseVersion = $state(null);
+  let reviseName = $state("");
+  let reviseAccountType = $state("CURRENT");
+  let reviseBalanceSheetSide = $state("LIABILITY");
+  let reviseAllowedCurrencies = $state("");
+  let revising = $state(false);
+
+  function openReviseModal(v) {
+    reviseVersion = v;
+    reviseName = v.name;
+    reviseAccountType = (v["account-type"] ?? "").toUpperCase().replace(/-/g, "_");
+    reviseBalanceSheetSide = (v["balance-sheet-side"] ?? "").toUpperCase().replace(/-/g, "_");
+    reviseAllowedCurrencies = (v["allowed-currencies"] ?? []).join(", ");
+    reviseModalOpen = true;
+  }
+
+  async function handleRevise(e) {
+    e.preventDefault();
+    revising = true;
+    try {
+      const currencies = reviseAllowedCurrencies.split(",").map(s => s.trim()).filter(Boolean);
+      const res = await create_cash_account_product_version(reviseVersion["product-id"], {
+        "name": reviseName,
+        "account-type": reviseAccountType,
+        "balance-sheet-side": reviseBalanceSheetSide,
+        "allowed-currencies": currencies.length > 0 ? currencies : undefined,
+      });
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        reviseModalOpen = false;
+        showToast?.({ type: "success", message: "Version created" });
+        await load();
+      } else {
+        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${res["http-status"]}` });
+      }
+    } catch (err) {
+      showToast?.({ type: "error", message: err.message });
+    } finally {
+      revising = false;
+    }
+  }
+
+  function errorDetail(body) {
+    if (!body) return null;
+    return body.message ?? body.error ?? body.detail
+           ?? (typeof body === "string" ? body : JSON.stringify(body));
+  }
 
   export async function load() {
     loading = true;
@@ -39,7 +97,6 @@
   async function handleCreate(e) {
     e.preventDefault();
     creating = true;
-    createError = null;
     try {
       const currencies = allowedCurrencies.split(",").map(s => s.trim()).filter(Boolean);
       const res = await create_cash_account_product({
@@ -49,12 +106,14 @@
         "allowed-currencies": currencies.length > 0 ? currencies : undefined,
       });
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        modalOpen = false;
+        showToast?.({ type: "success", message: "Product created" });
         await load();
       } else {
-        createError = JSON.stringify(res.body);
+        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${res["http-status"]}` });
       }
     } catch (err) {
-      createError = err.message;
+      showToast?.({ type: "error", message: err.message });
     } finally {
       creating = false;
     }
@@ -76,33 +135,79 @@
 
 <section>
   <div class="header">
-    <h2>Cash Account Products</h2>
-    <button class="refresh" onclick={() => load()} disabled={loading}>
-      {loading ? "Loading..." : "Refresh"}
-    </button>
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3zm0 5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8zm1 4a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H3z"/></svg>
+      Cash Account Products
+    </h2>
+    <div class="header-actions">
+      <button class="new-btn" onclick={() => modalOpen = true}>+ New Product</button>
+      <button class="refresh" onclick={() => load()} disabled={loading}>
+        {loading ? "Loading..." : "Refresh"}
+      </button>
+    </div>
   </div>
 
-  <form class="create-form" onsubmit={handleCreate}>
-    <input type="text" bind:value={name} placeholder="Product name" required disabled={creating} />
-    <select bind:value={accountType} disabled={creating}>
-      <option value="CURRENT">Current</option>
-      <option value="SAVINGS">Savings</option>
-      <option value="TERM_DEPOSIT">Term Deposit</option>
-    </select>
-    <select bind:value={balanceSheetSide} disabled={creating}>
-      <option value="LIABILITY">Liability</option>
-      <option value="ASSET">Asset</option>
-    </select>
-    <input type="text" bind:value={allowedCurrencies} placeholder="Currencies (e.g. GBP,EUR)"
-           disabled={creating} />
-    <button type="submit" disabled={creating}>
-      {creating ? "Creating..." : "Create Product"}
-    </button>
-  </form>
+  <Modal open={modalOpen} onClose={() => modalOpen = false} title="New Product">
+    <form onsubmit={handleCreate}>
+      <label>
+        Product Name
+        <input type="text" bind:value={name} placeholder="Product name" required disabled={creating} />
+      </label>
+      <label>
+        Account Type
+        <select bind:value={accountType} disabled={creating}>
+          <option value="CURRENT">Current</option>
+          <option value="SAVINGS">Savings</option>
+          <option value="TERM_DEPOSIT">Term Deposit</option>
+        </select>
+      </label>
+      <label>
+        Balance Sheet Side
+        <select bind:value={balanceSheetSide} disabled={creating}>
+          <option value="LIABILITY">Liability</option>
+          <option value="ASSET">Asset</option>
+        </select>
+      </label>
+      <label>
+        Allowed Currencies
+        <input type="text" bind:value={allowedCurrencies} placeholder="e.g. GBP,EUR" disabled={creating} />
+      </label>
+      <button type="submit" disabled={creating}>
+        {creating ? "Creating..." : "Create Product"}
+      </button>
+    </form>
+  </Modal>
 
-  {#if createError}
-    <div class="error-msg">{createError}</div>
-  {/if}
+  <Modal open={reviseModalOpen} onClose={() => reviseModalOpen = false} title="Revise Product">
+    <form onsubmit={handleRevise}>
+      <label>
+        Product Name
+        <input type="text" bind:value={reviseName} placeholder="Product name" required disabled={revising} />
+      </label>
+      <label>
+        Account Type
+        <select bind:value={reviseAccountType} disabled={revising}>
+          <option value="CURRENT">Current</option>
+          <option value="SAVINGS">Savings</option>
+          <option value="TERM_DEPOSIT">Term Deposit</option>
+        </select>
+      </label>
+      <label>
+        Balance Sheet Side
+        <select bind:value={reviseBalanceSheetSide} disabled={revising}>
+          <option value="LIABILITY">Liability</option>
+          <option value="ASSET">Asset</option>
+        </select>
+      </label>
+      <label>
+        Allowed Currencies
+        <input type="text" bind:value={reviseAllowedCurrencies} placeholder="e.g. GBP,EUR" disabled={revising} />
+      </label>
+      <button type="submit" disabled={revising}>
+        {revising ? "Creating..." : "Create Version"}
+      </button>
+    </form>
+  </Modal>
 
   {#if error}
     <div class="error-msg">{error}</div>
@@ -111,7 +216,7 @@
   <table>
     <thead>
       <tr>
-        <th>Product ID</th>
+        <th>ID</th>
         <th>Name</th>
         <th>Type</th>
         <th>Version</th>
@@ -148,6 +253,10 @@
               >
                 {publishing[v["version-id"]] ? "Publishing..." : "Publish"}
               </button>
+            {:else if v.status === "published" && isLatestVersion(v)}
+              <button class="action-btn" onclick={() => openReviseModal(v)}>
+                Revise
+              </button>
             {/if}
           </td>
         </tr>
@@ -168,8 +277,30 @@
     margin-bottom: 1rem;
   }
 
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .new-btn {
+    padding: 0.4rem 0.8rem;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .new-btn:hover {
+    background: #15803d;
   }
 
   .refresh {
@@ -187,14 +318,20 @@
     cursor: not-allowed;
   }
 
-  .create-form {
+  form {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 1rem;
   }
 
-  .create-form input, .create-form select {
+  form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 500;
+  }
+
+  form input, form select {
     padding: 0.5rem;
     border: 1px solid var(--border-input);
     border-radius: 4px;
@@ -203,14 +340,9 @@
     color: var(--text);
   }
 
-  .create-form input:first-child {
-    flex: 1;
-    min-width: 150px;
-  }
-
-  .create-form button {
+  form button {
     padding: 0.5rem 1rem;
-    background: #16a34a;
+    background: #2563eb;
     color: white;
     border: none;
     border-radius: 4px;
@@ -218,7 +350,7 @@
     cursor: pointer;
   }
 
-  .create-form button:disabled {
+  form button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }

@@ -200,6 +200,29 @@
                  (str "Bearer " @api-key)}})
       (.then parse-response)))
 
+(defn create-cash-account-product-version
+  [product-id data]
+  (let [{:strs [name account-type balance-sheet-side
+                allowed-currencies]}
+        (js->clj data)
+        body (cond-> {"name" name
+                      "account-type" account-type
+                      "balance-sheet-side" balance-sheet-side}
+                     (seq allowed-currencies)
+                     (assoc "allowed-currencies"
+                            allowed-currencies))]
+    (-> (js/fetch
+         (str "/v1/cash-account-products/"
+              product-id
+              "/versions")
+         #js {:method "POST"
+              :headers
+              #js {"Content-Type" "application/json"
+                   "Authorization"
+                   (str "Bearer " @api-key)}
+              :body (js/JSON.stringify (clj->js body))})
+        (.then parse-response))))
+
 (defn list-api-keys
   []
   (-> (js/fetch

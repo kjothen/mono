@@ -273,6 +273,12 @@ system:
       consumer-id: idv-watcher
       store-name: idvs
       handler: !system/local-ref watcher-handler
+  telemetry:
+    otel-sdk: !profile
+      dev: !system/component
+        system/component-kind: telemetry/otel-sdk
+        service-name: bank-monolith
+        endpoint: http://localhost:4318/v1/traces
   server:
     handler: !system/required-component
     interceptors: !system/component

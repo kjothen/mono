@@ -2,16 +2,23 @@
   import { create_organization, list_organizations } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount } from "svelte";
+  import Modal from "./Modal.svelte";
 
-  let { selectedOrgId, onSelectDefault, onCreated, onLoaded } = $props();
+  let { selectedOrgId, onSelectDefault, onCreated, onLoaded, showToast } = $props();
 
   let organizations = $state([]);
   let loading = $state(false);
   let error = $state(null);
 
+  let modalOpen = $state(false);
   let orgName = $state("");
   let creating = $state(false);
-  let createError = $state(null);
+
+  function errorDetail(body) {
+    if (!body) return null;
+    return body.message ?? body.error ?? body.detail
+           ?? (typeof body === "string" ? body : JSON.stringify(body));
+  }
 
   async function load() {
     loading = true;
@@ -35,18 +42,19 @@
     e.preventDefault();
     if (!orgName.trim()) return;
     creating = true;
-    createError = null;
     try {
       const res = await create_organization(orgName.trim());
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         orgName = "";
+        modalOpen = false;
+        showToast?.({ type: "success", message: "Organization created" });
         await load();
         onCreated?.(organizations);
       } else {
-        createError = res.body?.error ?? `HTTP ${res["http-status"]}`;
+        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${res["http-status"]}` });
       }
     } catch (err) {
-      createError = err.message;
+      showToast?.({ type: "error", message: err.message });
     } finally {
       creating = false;
     }
@@ -57,28 +65,35 @@
 
 <section>
   <div class="header">
-    <h2>Organizations</h2>
-    <button class="refresh" onclick={() => load()} disabled={loading}>
-      {loading ? "Loading..." : "Refresh"}
-    </button>
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3zm1 2h2v2H4V3zm0 4h2v2H4V7zm0 4h2v2H4v-2zm4-8h2v2H8V3zm0 4h2v2H8V7zm0 4h2v2H8v-2z"/></svg>
+      Organizations
+    </h2>
+    <div class="header-actions">
+      <button class="new-btn" onclick={() => modalOpen = true}>+ New Organization</button>
+      <button class="refresh" onclick={() => load()} disabled={loading}>
+        {loading ? "Loading..." : "Refresh"}
+      </button>
+    </div>
   </div>
 
-  <form class="create-form" onsubmit={handleCreate}>
-    <input
-      type="text"
-      bind:value={orgName}
-      placeholder="Organization name"
-      required
-      disabled={creating}
-    />
-    <button type="submit" disabled={creating || !orgName.trim()}>
-      {creating ? "Creating..." : "Create"}
-    </button>
-  </form>
-
-  {#if createError}
-    <div class="error-msg">{createError}</div>
-  {/if}
+  <Modal open={modalOpen} onClose={() => modalOpen = false} title="New Organization">
+    <form onsubmit={handleCreate}>
+      <label>
+        Organization Name
+        <input
+          type="text"
+          bind:value={orgName}
+          placeholder="Organization name"
+          required
+          disabled={creating}
+        />
+      </label>
+      <button type="submit" disabled={creating || !orgName.trim()}>
+        {creating ? "Creating..." : "Create Organization"}
+      </button>
+    </form>
+  </Modal>
 
   {#if error}
     <div class="error-msg">{error}</div>
@@ -87,7 +102,7 @@
   <table>
     <thead>
       <tr>
-        <th>Organization ID</th>
+        <th>ID</th>
         <th>Name</th>
         <th>Status</th>
         <th>Created</th>
@@ -141,8 +156,30 @@
     margin-bottom: 1rem;
   }
 
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   h2 {
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .new-btn {
+    padding: 0.4rem 0.8rem;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .new-btn:hover {
+    background: #15803d;
   }
 
   .refresh {
@@ -160,14 +197,20 @@
     cursor: not-allowed;
   }
 
-  .create-form {
+  form {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    flex-direction: column;
+    gap: 1rem;
   }
 
-  .create-form input {
-    flex: 1;
+  form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-weight: 500;
+  }
+
+  form input {
     padding: 0.5rem;
     border: 1px solid var(--border-input);
     border-radius: 4px;
@@ -176,9 +219,9 @@
     color: var(--text);
   }
 
-  .create-form button {
+  form button {
     padding: 0.5rem 1rem;
-    background: #16a34a;
+    background: #2563eb;
     color: white;
     border: none;
     border-radius: 4px;
@@ -186,7 +229,7 @@
     cursor: pointer;
   }
 
-  .create-form button:disabled {
+  form button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
