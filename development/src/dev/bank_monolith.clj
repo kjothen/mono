@@ -1,8 +1,6 @@
 (ns dev.bank-monolith
-  (:require
-    com.repldriven.mono.testcontainers.interface
-
-    [com.repldriven.mono.bank-monolith.main :as main]))
+  (:require com.repldriven.mono.testcontainers.interface
+            [com.repldriven.mono.bank-monolith.main :as main]))
 
 ;; before starting the system:
 ;; * on Mac OS X, start docker (just start-docker),
@@ -16,9 +14,7 @@
 ;; required images for FDB, Pulsar, etc
 
 (comment
-  (def sys
-    (main/start "classpath:bank-monolith/application-test.yml"
-                :dev))
+  (def sys (main/start "classpath:bank-monolith/application-test.yml" :dev))
   (tap> sys)
   (main/stop sys))
 

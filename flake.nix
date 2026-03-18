@@ -23,14 +23,14 @@
         # Fetch pre-built FDB binary directly from GitHub releases
         fdbArch = if pkgs.stdenv.isAarch64 then "arm64" else "x86_64";
         fdbBinary = pkgs.stdenv.mkDerivation {
-          name = "foundationdb-7.3.27";
+          name = "foundationdb-7.3.63";
           src = pkgs.fetchurl {
-            url = "https://github.com/apple/foundationdb/releases/download/7.3.27/FoundationDB-7.3.27_${fdbArch}.pkg";
+            url = "https://github.com/apple/foundationdb/releases/download/7.3.63/FoundationDB-7.3.63_${fdbArch}.pkg";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                "sha256-WFEDEjy4rbDygTxHwbEuxnV5JLSoiA8Asc0D0e0lVv0="
+                "sha256-t8ZXQq1qmuHt3TRwMaiUZUatNdWUpMeOFEjdkJQoITU="
               else
-                "sha256-Vyh8Peqxgk9/G7w3KKRTjRcdqdWjY5dYE77weozxVlM="; # x86 hash
+                "sha256-BjD9kDZG9MXHd8I0HsNnGJni3Mfso7StilPIbrTouqY=";
           };
           buildInputs = [
             pkgs.xar
