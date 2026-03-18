@@ -1,7 +1,6 @@
 (ns com.repldriven.mono.api-keys.interface
-  (:require
-    [com.repldriven.mono.api-keys.domain :as domain]
-    [com.repldriven.mono.api-keys.store :as store]))
+  (:require [com.repldriven.mono.api-keys.domain :as domain]
+            [com.repldriven.mono.api-keys.store :as store]))
 
 (defn new-api-key
   "Creates a new ApiKey record map and its raw key.

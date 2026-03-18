@@ -97,10 +97,6 @@
     }
   }
 
-  function stripPrefix(value, prefix) {
-    return value?.startsWith(prefix) ? value.slice(prefix.length) : value;
-  }
-
   function scanOf(acct) {
     const addr = (acct["payment-addresses"] ?? [])[0];
     const scan = addr?.identifier?.scan;
@@ -199,13 +195,13 @@
                   <tbody>
                     {#each balances[acct["account-id"]] as bal}
                       <tr>
-                        <td>{stripPrefix(bal["balance-type"], "balance-type-")}</td>
+                        <td>{bal["balance-type"]}</td>
                         <td>
                           <span class="status-badge"
-                                class:opened={bal["balance-status"] === "balance-status-posted"}
-                                class:opening={bal["balance-status"] === "balance-status-pending-incoming" || bal["balance-status"] === "balance-status-pending-outgoing"}
-                                class:closed={bal["balance-status"] === "balance-status-closed"}>
-                            {stripPrefix(bal["balance-status"], "balance-status-")}
+                                class:opened={bal["balance-status"] === "posted"}
+                                class:opening={bal["balance-status"] === "pending-incoming" || bal["balance-status"] === "pending-outgoing"}
+                                class:closed={bal["balance-status"] === "closed"}>
+                            {bal["balance-status"]}
                           </span>
                         </td>
                         <td>{bal.currency}</td>

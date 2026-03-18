@@ -1,8 +1,6 @@
 (ns com.repldriven.mono.system.interface-test
-  (:require
-    [com.repldriven.mono.system.interface :as SUT]
-
-    [clojure.test :refer [deftest is testing]]))
+  (:require [com.repldriven.mono.system.interface :as SUT]
+            [clojure.test :refer [deftest is testing]]))
 
 (deftest system-predicate
   (testing "system? returns false for non-system values"
@@ -21,4 +19,4 @@
 (deftest system-lifecycle
   (testing "A started empty system passes system?"
     (SUT/with-system [sys (SUT/start {:system/defs {}})]
-      (is (SUT/system? sys)))))
+                     (is (SUT/system? sys)))))

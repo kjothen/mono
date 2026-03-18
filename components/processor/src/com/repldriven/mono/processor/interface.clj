@@ -1,6 +1,5 @@
 (ns com.repldriven.mono.processor.interface
-  (:require
-    [com.repldriven.mono.processor.protocol :as protocol]))
+  (:require [com.repldriven.mono.processor.protocol :as protocol]))
 
 (def Processor protocol/Processor)
 

@@ -1,14 +1,11 @@
 (ns com.repldriven.mono.fdb.counter
-  (:import
-    (com.apple.foundationdb MutationType)
-    (com.apple.foundationdb.record.provider.foundationdb
-     FDBStoreTimer$Waits)
-    (com.apple.foundationdb.tuple Tuple)
-    (java.nio ByteBuffer ByteOrder)))
+  (:import (com.apple.foundationdb MutationType)
+           (com.apple.foundationdb.record.provider.foundationdb
+             FDBStoreTimer$Waits)
+           (com.apple.foundationdb.tuple Tuple)
+           (java.nio ByteBuffer ByteOrder)))
 
-(defn- pack
-  [parts]
-  (.pack (Tuple/from (into-array Object parts))))
+(defn- pack [parts] (.pack (Tuple/from (into-array Object parts))))
 
 (defn- long->little-endian
   [n]
@@ -32,7 +29,6 @@
         tr (.ensureActive ctx)
         key (pack key-parts)]
     (.mutate tr MutationType/ADD key (long->little-endian 1))
-    (-> (.asyncToSync ctx
-                      FDBStoreTimer$Waits/WAIT_LOAD_SYSTEM_KEY
-                      (.get tr key))
-        little-endian->long)))
+    (->
+      (.asyncToSync ctx FDBStoreTimer$Waits/WAIT_LOAD_SYSTEM_KEY (.get tr key))
+      little-endian->long)))

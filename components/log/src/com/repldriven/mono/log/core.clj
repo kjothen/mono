@@ -1,9 +1,7 @@
 (ns com.repldriven.mono.log.core
-  (:require
-    [clojure.tools.logging :as log]
-    [com.repldriven.mono.error.interface :as error])
-  (:import
-    (org.slf4j.bridge SLF4JBridgeHandler)))
+  (:require [clojure.tools.logging :as log]
+            [com.repldriven.mono.error.interface :as error])
+  (:import (org.slf4j.bridge SLF4JBridgeHandler)))
 
 ;; Install JUL to SLF4J bridge at namespace load time
 (when-not *compile-files*
@@ -39,6 +37,6 @@
      ;; It's opts, return a function
      (fn [anom] (anomaly anom anom-or-opts))))
   ([anom opts]
-   (let [{:keys [level message] :or {level :error}} opts
+   (let [{:keys [level message], :or {level :error}} opts
          msg (if message (str message " - " (pr-str anom)) (pr-str anom))]
      (log/log level msg))))

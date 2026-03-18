@@ -1,10 +1,7 @@
 (ns com.repldriven.mono.pulsar.message-bus
-  (:require
-    [com.repldriven.mono.message-bus.interface :as message-bus]
-
-    [com.repldriven.mono.pulsar.core :as pulsar]
-
-    [clojure.core.async :as async]))
+  (:require [com.repldriven.mono.message-bus.interface :as message-bus]
+            [com.repldriven.mono.pulsar.core :as pulsar]
+            [clojure.core.async :as async]))
 
 (defrecord PulsarProducer [producer]
   message-bus/Producer

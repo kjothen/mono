@@ -1,8 +1,7 @@
 (ns com.repldriven.mono.server.core
-  (:require
-    [com.repldriven.mono.server.jetty :as jetty]
-    [com.repldriven.mono.server.openapi :as openapi]
-    [com.repldriven.mono.server.router :as router]))
+  (:require [com.repldriven.mono.server.jetty :as jetty]
+            [com.repldriven.mono.server.openapi :as openapi]
+            [com.repldriven.mono.server.router :as router]))
 
 (def standard-router-data router/standard-router-data)
 (def standard-executor router/standard-executor)

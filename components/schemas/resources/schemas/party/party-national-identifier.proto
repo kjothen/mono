@@ -18,10 +18,10 @@ message PartyNationalIdentifier {
 
   enum IdentifierType {
     IDENTIFIER_TYPE_UNKNOWN = 0;
-    NATIONAL_INSURANCE      = 1;
-    PASSPORT                = 2;
-    DRIVING_LICENCE         = 3;
-    NATIONAL_ID_CARD        = 4;
-    TAX_ID                  = 5;
+    IDENTIFIER_TYPE_NATIONAL_INSURANCE = 1;
+    IDENTIFIER_TYPE_PASSPORT           = 2;
+    IDENTIFIER_TYPE_DRIVING_LICENCE    = 3;
+    IDENTIFIER_TYPE_NATIONAL_ID_CARD   = 4;
+    IDENTIFIER_TYPE_TAX_ID             = 5;
   }
 }

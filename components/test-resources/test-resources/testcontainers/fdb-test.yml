@@ -62,6 +62,18 @@ store: !system/component
       indexes:
         - name: CashAccountProductVersion_by_org
           field: organization_id
+    transactions:
+      record-type: Transaction
+      indexes:
+        - name: Transaction_by_idempotency_key
+          field: idempotency_key
+          unique: true
+    transaction-legs:
+      record-type: TransactionLeg
+      primary-key: [transaction_id, leg_id]
+      indexes:
+        - name: TransactionLeg_by_account
+          field: account_id
 
 meta-store: !system/component
   system/component-kind: fdb/meta-store
@@ -113,6 +125,18 @@ meta-store: !system/component
       indexes:
         - name: CashAccountProductVersion_by_org
           field: organization_id
+    transactions:
+      record-type: Transaction
+      indexes:
+        - name: Transaction_by_idempotency_key
+          field: idempotency_key
+          unique: true
+    transaction-legs:
+      record-type: TransactionLeg
+      primary-key: [transaction_id, leg_id]
+      indexes:
+        - name: TransactionLeg_by_account
+          field: account_id
 
 pet-store: !system/component
   system/component-kind: fdb/store

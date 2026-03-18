@@ -1,15 +1,10 @@
 (ns com.repldriven.mono.bank-api.api-keys.queries
-  (:require
-    [com.repldriven.mono.bank-api.errors :refer [error-response]]
+  (:require [com.repldriven.mono.bank-api.errors :refer [error-response]]
+            [com.repldriven.mono.api-keys.interface :as api-keys]
+            [com.repldriven.mono.error.interface :as error])
+  (:import (java.time Instant)))
 
-    [com.repldriven.mono.api-keys.interface :as api-keys]
-    [com.repldriven.mono.error.interface :as error])
-  (:import
-    (java.time Instant)))
-
-(defn- millis->iso
-  [ms]
-  (when (pos? ms) (str (Instant/ofEpochMilli ms))))
+(defn- millis->iso [ms] (when (pos? ms) (str (Instant/ofEpochMilli ms))))
 
 (defn- format-api-key
   [k]
@@ -21,10 +16,9 @@
 (defn list-api-keys
   [request]
   (let [org-id (get-in request [:auth :organization-id])
-        config {:record-db (:record-db request)
+        config {:record-db (:record-db request),
                 :record-store (:record-store request)}
         result (api-keys/get-api-keys config org-id)]
     (if (error/anomaly? result)
-      {:status 500 :body (error-response 500 result)}
-      {:status 200
-       :body {:api-keys (mapv format-api-key result)}})))
+      {:status 500, :body (error-response 500 result)}
+      {:status 200, :body {:api-keys (mapv format-api-key result)}})))

@@ -1,31 +1,20 @@
 (ns com.repldriven.mono.bank-api.api-keys.components
-  (:require
-    [com.repldriven.mono.bank-api.api-keys.examples :as examples]
-
-    [com.repldriven.mono.bank-api.schema :refer
-     [components-registry]]))
+  (:require [com.repldriven.mono.bank-api.api-keys.examples :as examples]
+            [com.repldriven.mono.bank-api.schema :refer [components-registry]]))
 
 (def ApiKeyResponse
-  [:map
-   {:json-schema/example examples/ApiKey}
-   [:id string?]
-   [:key-prefix string?]
-   [:name string?]
+  [:map {:json-schema/example examples/ApiKey} [:id string?]
+   [:key-prefix string?] [:name string?]
    [:created-at {:optional true} [:maybe string?]]
    [:revoked-at {:optional true} [:maybe string?]]])
 
 (def CreateApiKeyResponse
-  [:map
-   {:json-schema/example examples/CreateApiKey}
-   [:id string?]
-   [:key-prefix string?]
-   [:name string?]
-   [:raw-key string?]
+  [:map {:json-schema/example examples/CreateApiKey} [:id string?]
+   [:key-prefix string?] [:name string?] [:raw-key string?]
    [:created-at {:optional true} [:maybe string?]]])
 
 (def ApiKeyList
-  [:map
-   {:json-schema/example examples/ApiKeyList}
+  [:map {:json-schema/example examples/ApiKeyList}
    [:api-keys [:vector [:ref "ApiKeyResponse"]]]])
 
 (def registry

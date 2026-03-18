@@ -8,9 +8,9 @@
     {"name": "party_id",        "type": "string"},
     {"name": "status",          "type": {"type": "enum",
                                           "name": "IdvStatus",
-                                          "symbols": ["PENDING", "IN_REVIEW",
-                                                       "ACCEPTED", "REJECTED",
-                                                       "FAILED"]}},
+                                          "symbols": ["IDV_STATUS_PENDING", "IDV_STATUS_IN_REVIEW",
+                                                       "IDV_STATUS_ACCEPTED", "IDV_STATUS_REJECTED",
+                                                       "IDV_STATUS_FAILED"]}},
     {"name": "created_at",   "type": {"type": "long", "logicalType": "timestamp-millis"}},
     {"name": "completed_at", "type": ["null", {"type": "long", "logicalType": "timestamp-millis"}], "default": null},
     {"name": "updated_at",   "type": {"type": "long", "logicalType": "timestamp-millis"}}

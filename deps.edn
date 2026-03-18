@@ -38,6 +38,7 @@
     components/test-system {:local/root "components/test-system"}
     components/test-resources {:local/root "components/test-resources"}
     components/testcontainers {:local/root "components/testcontainers"}
+    components/transactions {:local/root "components/transactions"}
     components/utility {:local/root "components/utility"}
     components/vault {:local/root "components/vault"}
     bases/bank-api {:local/root "bases/bank-api"}
@@ -100,6 +101,8 @@
                        "components/test-resources/test-resources"
                        "components/testcontainers/test"
                        "components/testcontainers/test-resources"
+                       "components/transactions/test"
+                       "components/transactions/test-resources"
                        "components/utility/test"
                        "components/vault/test"
                        "components/vault/test-resources"

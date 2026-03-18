@@ -1,18 +1,16 @@
 (ns com.repldriven.mono.error.interface-test
-  (:require
-    [com.repldriven.mono.error.interface :as error]
-
-    [clojure.test :refer [deftest is testing]]))
+  (:require [com.repldriven.mono.error.interface :as error]
+            [clojure.test :refer [deftest is testing]]))
 
 (deftest fail-test
   (testing "map payload"
-    (is (= [:error/anomaly :foo/bar {:message "x" :reason "y"}]
-           (error/fail :foo/bar {:message "x" :reason "y"}))))
+    (is (= [:error/anomaly :foo/bar {:message "x", :reason "y"}]
+           (error/fail :foo/bar {:message "x", :reason "y"}))))
   (testing "string payload becomes :message"
     (is (= [:error/anomaly :foo/bar {:message "oops"}]
            (error/fail :foo/bar "oops"))))
   (testing "keyword-value pairs"
-    (is (= [:error/anomaly :foo/bar {:a 1 :b 2}]
+    (is (= [:error/anomaly :foo/bar {:a 1, :b 2}]
            (error/fail :foo/bar :a 1 :b 2))))
   (testing "no payload"
     (is (= [:error/anomaly :foo/bar {}] (error/fail :foo/bar)))))
@@ -28,8 +26,8 @@
   (is (nil? (error/kind "not an anomaly"))))
 
 (deftest payload-test
-  (is (= {:message "x" :reason "y"}
-         (error/payload (error/fail :foo/bar {:message "x" :reason "y"}))))
+  (is (= {:message "x", :reason "y"}
+         (error/payload (error/fail :foo/bar {:message "x", :reason "y"}))))
   (is (nil? (error/payload "not an anomaly"))))
 
 (deftest try-nom-test
@@ -45,11 +43,11 @@
   (testing "catches specified exception type"
     (let [result (error/try-nom-ex :foo/bar IllegalArgumentException
                                    "bad arg" (throw (IllegalArgumentException.
-                                                     "boom")))]
+                                                      "boom")))]
       (is (error/anomaly? result))
       (is (= :foo/bar (error/kind result)))))
   (testing "does not catch other exception types"
     (is (thrown? RuntimeException
                  (error/try-nom-ex :foo/bar IllegalArgumentException
                                    "bad arg" (throw (RuntimeException.
-                                                     "boom")))))))
+                                                      "boom")))))))

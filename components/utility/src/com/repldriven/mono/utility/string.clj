@@ -1,10 +1,8 @@
 (ns com.repldriven.mono.utility.string
-  (:require
-    [clojure.java.io :as io]
-    [clojure.string :as str])
-  (:import
-    (java.io ByteArrayInputStream)
-    (java.nio.charset StandardCharsets)))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str])
+  (:import (java.io ByteArrayInputStream)
+           (java.nio.charset StandardCharsets)))
 
 (defn string->stream
   "Convert a string to an InputStream with the specified encoding."
@@ -33,4 +31,4 @@
         (map (fn [kv]
                (let [[k v] (mapv str/trim (str/split kv #"="))]
                  [(keyword k) v]))
-             props)))
+          props)))

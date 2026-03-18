@@ -1,19 +1,18 @@
 (ns com.repldriven.mono.fdb.record
   (:refer-clojure :exclude [load])
-  (:require
-    [com.repldriven.mono.error.interface :as error])
-  (:import
-    (com.apple.foundationdb.record EndpointType
-                                   ExecuteProperties
-                                   ScanProperties
-                                   TupleRange)
-    (com.apple.foundationdb.record.provider.foundationdb FDBDatabase
-                                                         FDBStoreTimer$Waits)
-    (com.apple.foundationdb.record.query RecordQuery)
-    (com.apple.foundationdb.record.query.expressions Query)
-    (com.apple.foundationdb.tuple Tuple)
-    (com.google.protobuf MessageLite)
-    (java.util.function Function)))
+  (:require [com.repldriven.mono.error.interface :as error])
+  (:import (com.apple.foundationdb.record EndpointType
+                                          ExecuteProperties
+                                          ScanProperties
+                                          TupleRange)
+           (com.apple.foundationdb.record.provider.foundationdb
+             FDBDatabase
+             FDBStoreTimer$Waits)
+           (com.apple.foundationdb.record.query RecordQuery)
+           (com.apple.foundationdb.record.query.expressions Query)
+           (com.apple.foundationdb.tuple Tuple)
+           (com.google.protobuf MessageLite)
+           (java.util.function Function)))
 
 (defn open-store
   "Opens a record store by calling the store function (returned by
@@ -33,8 +32,7 @@
   Returns serialized bytes or nil. For use inside transact.
   Accepts one or more primary key parts for composite keys."
   [store & primary-key-parts]
-  (some-> (.loadRecord store
-                       (Tuple/from (into-array Object primary-key-parts)))
+  (some-> (.loadRecord store (Tuple/from (into-array Object primary-key-parts)))
           record->bytes))
 
 (defn save
@@ -75,11 +73,12 @@
              :fdb/transact
              "Failed to execute transaction"))
   ([^FDBDatabase record-db open-store-fn store-name f category message]
-   (error/try-nom
-    category
-    message
-    (.run record-db
-          ^Function (fn [ctx] (f (open-store open-store-fn ctx store-name)))))))
+   (error/try-nom category
+                  message
+                  (.run record-db
+                        ^Function
+                        (fn [ctx]
+                          (f (open-store open-store-fn ctx store-name)))))))
 
 (defn transact-multi
   "Runs f within a single FDB transaction, passing a function
@@ -128,54 +127,43 @@
   operate within that prefix scope."
   [store {:keys [prefix after before limit]}]
   (let [reverse? (some? before)
-        prefix-tuple (when (seq prefix)
-                       (Tuple/from (into-array Object prefix)))
+        prefix-tuple (when (seq prefix) (Tuple/from (into-array Object prefix)))
         base-range (when prefix-tuple (prefix-range prefix-tuple))
-        range (cond
-               (and prefix-tuple after)
-               (TupleRange.
-                (cursor-tuple prefix after)
-                (.getHigh ^TupleRange base-range)
-                EndpointType/RANGE_EXCLUSIVE
-                (.getHighEndpoint ^TupleRange base-range))
-               (and prefix-tuple before)
-               (TupleRange.
-                (.getLow ^TupleRange base-range)
-                (cursor-tuple prefix before)
-                (.getLowEndpoint ^TupleRange base-range)
-                EndpointType/RANGE_EXCLUSIVE)
-               prefix-tuple
-               base-range
-               after
-               (TupleRange.
-                (Tuple/from (into-array Object [after]))
-                nil
-                EndpointType/RANGE_EXCLUSIVE
-                EndpointType/TREE_END)
-               before
-               (TupleRange.
-                nil
-                (Tuple/from
-                 (into-array Object [before]))
-                EndpointType/TREE_START
-                EndpointType/RANGE_EXCLUSIVE)
-               :else
-               TupleRange/ALL)
+        range (cond (and prefix-tuple after)
+                      (TupleRange. (cursor-tuple prefix after)
+                                   (.getHigh ^TupleRange base-range)
+                                   EndpointType/RANGE_EXCLUSIVE
+                                   (.getHighEndpoint ^TupleRange base-range))
+                    (and prefix-tuple before)
+                      (TupleRange. (.getLow ^TupleRange base-range)
+                                   (cursor-tuple prefix before)
+                                   (.getLowEndpoint ^TupleRange base-range)
+                                   EndpointType/RANGE_EXCLUSIVE)
+                    prefix-tuple base-range
+                    after (TupleRange. (Tuple/from (into-array Object [after]))
+                                       nil
+                                       EndpointType/RANGE_EXCLUSIVE
+                                       EndpointType/TREE_END)
+                    before (TupleRange. nil
+                                        (Tuple/from (into-array Object
+                                                                [before]))
+                                        EndpointType/TREE_START
+                                        EndpointType/RANGE_EXCLUSIVE)
+                    :else TupleRange/ALL)
         execute-props (-> (ExecuteProperties/newBuilder)
                           (.setReturnedRowLimit (inc limit))
                           .build)
         scan-props (ScanProperties. execute-props reverse?)
-        records
-        (->>
-          (.scanRecords store ^TupleRange range nil ^ScanProperties scan-props)
-          .asList
-          (.asyncToSync (.getContext store)
-                        FDBStoreTimer$Waits/WAIT_SCAN_RECORDS)
-          (mapv record->bytes))
+        records (->> (.scanRecords store
+                                   ^TupleRange range
+                                   nil
+                                   ^ScanProperties scan-props)
+                     .asList
+                     (.asyncToSync (.getContext store)
+                                   FDBStoreTimer$Waits/WAIT_SCAN_RECORDS)
+                     (mapv record->bytes))
         has-more (> (count records) limit)
         page (cond-> (if has-more (subvec records 0 limit) records)
-                     reverse?
-                     rseq
-                     reverse?
-                     vec)]
-    {:records page :has-more has-more}))
+               reverse? rseq
+               reverse? vec)]
+    {:records page, :has-more has-more}))

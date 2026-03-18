@@ -19,14 +19,14 @@ message Party {
 
   enum PartyType {
     PARTY_TYPE_UNKNOWN = 0;
-    PERSON = 1;
+    PARTY_TYPE_PERSON = 1;
   }
 
   enum PartyStatus {
     PARTY_STATUS_UNKNOWN = 0;
-    PENDING = 1;
-    ACTIVE = 2;
-    SUSPENDED = 3;
-    CLOSED = 4;
+    PARTY_STATUS_PENDING = 1;
+    PARTY_STATUS_ACTIVE = 2;
+    PARTY_STATUS_SUSPENDED = 3;
+    PARTY_STATUS_CLOSED = 4;
   }
 }

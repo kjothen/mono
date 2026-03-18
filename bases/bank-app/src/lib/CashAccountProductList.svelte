@@ -12,17 +12,17 @@
 
   let modalOpen = $state(false);
   let name = $state("Current Account");
-  let accountType = $state("CURRENT");
-  let balanceSheetSide = $state("LIABILITY");
+  let accountType = $state("current");
+  let balanceSheetSide = $state("liability");
   let allowedCurrencies = $state("GBP");
   let creating = $state(false);
 
   const defaultBalanceProducts = [
-    { type: "BALANCE_TYPE_DEFAULT",          status: "BALANCE_STATUS_POSTED",           label: "Default / Posted" },
-    { type: "BALANCE_TYPE_DEFAULT",          status: "BALANCE_STATUS_PENDING_INCOMING",  label: "Default / Pending Incoming" },
-    { type: "BALANCE_TYPE_DEFAULT",          status: "BALANCE_STATUS_PENDING_OUTGOING",  label: "Default / Pending Outgoing" },
-    { type: "BALANCE_TYPE_INTEREST_ACCRUED", status: "BALANCE_STATUS_POSTED",           label: "Interest Accrued / Posted" },
-    { type: "BALANCE_TYPE_INTEREST_PAID",    status: "BALANCE_STATUS_POSTED",           label: "Interest Paid / Posted" },
+    { type: "default",          status: "posted",           label: "Default / Posted" },
+    { type: "default",          status: "pending-incoming",  label: "Default / Pending Incoming" },
+    { type: "default",          status: "pending-outgoing",  label: "Default / Pending Outgoing" },
+    { type: "interest-accrued", status: "posted",           label: "Interest Accrued / Posted" },
+    { type: "interest-paid",    status: "posted",           label: "Interest Paid / Posted" },
   ];
 
   let selectedBalanceProducts = $state(defaultBalanceProducts.map(() => true));
@@ -40,8 +40,8 @@
   let reviseModalOpen = $state(false);
   let reviseVersion = $state(null);
   let reviseName = $state("");
-  let reviseAccountType = $state("CURRENT");
-  let reviseBalanceSheetSide = $state("LIABILITY");
+  let reviseAccountType = $state("current");
+  let reviseBalanceSheetSide = $state("liability");
   let reviseAllowedCurrencies = $state("");
   let reviseSelectedBalanceProducts = $state(defaultBalanceProducts.map(() => true));
   let revising = $state(false);
@@ -49,14 +49,14 @@
   function openReviseModal(v) {
     reviseVersion = v;
     reviseName = v.name;
-    reviseAccountType = (v["account-type"] ?? "").toUpperCase().replace(/-/g, "_");
-    reviseBalanceSheetSide = (v["balance-sheet-side"] ?? "").toUpperCase().replace(/-/g, "_");
+    reviseAccountType = v["account-type"] ?? "";
+    reviseBalanceSheetSide = v["balance-sheet-side"] ?? "";
     reviseAllowedCurrencies = (v["allowed-currencies"] ?? []).join(", ");
     const existing = v["balance-products"] ?? [];
     reviseSelectedBalanceProducts = defaultBalanceProducts.map(bp =>
       existing.some(e =>
-        e["balance-type"] === bp.type.toLowerCase().replace(/_/g, "-") &&
-        e["balance-status"] === bp.status.toLowerCase().replace(/_/g, "-")));
+        e["balance-type"] === bp.type &&
+        e["balance-status"] === bp.status));
     reviseModalOpen = true;
   }
 
@@ -180,16 +180,16 @@
       <label>
         Account Type
         <select bind:value={accountType} disabled={creating}>
-          <option value="CURRENT">Current</option>
-          <option value="SAVINGS">Savings</option>
-          <option value="TERM_DEPOSIT">Term Deposit</option>
+          <option value="current">Current</option>
+          <option value="savings">Savings</option>
+          <option value="term-deposit">Term Deposit</option>
         </select>
       </label>
       <label>
         Balance Sheet Side
         <select bind:value={balanceSheetSide} disabled={creating}>
-          <option value="LIABILITY">Liability</option>
-          <option value="ASSET">Asset</option>
+          <option value="liability">Liability</option>
+          <option value="asset">Asset</option>
         </select>
       </label>
       <fieldset class="checkbox-group" disabled={creating}>
@@ -220,16 +220,16 @@
       <label>
         Account Type
         <select bind:value={reviseAccountType} disabled={revising}>
-          <option value="CURRENT">Current</option>
-          <option value="SAVINGS">Savings</option>
-          <option value="TERM_DEPOSIT">Term Deposit</option>
+          <option value="current">Current</option>
+          <option value="savings">Savings</option>
+          <option value="term-deposit">Term Deposit</option>
         </select>
       </label>
       <label>
         Balance Sheet Side
         <select bind:value={reviseBalanceSheetSide} disabled={revising}>
-          <option value="LIABILITY">Liability</option>
-          <option value="ASSET">Asset</option>
+          <option value="liability">Liability</option>
+          <option value="asset">Asset</option>
         </select>
       </label>
       <fieldset class="checkbox-group" disabled={revising}>

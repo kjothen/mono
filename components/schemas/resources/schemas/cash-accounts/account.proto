@@ -36,9 +36,9 @@ message CashAccount {
 
   enum CashAccountStatus {
     CASH_ACCOUNT_STATUS_UNKNOWN = 0;
-    OPENING = 1;
-    OPENED = 2;
-    CLOSING = 3;
-    CLOSED = 4;
+    CASH_ACCOUNT_STATUS_OPENING = 1;
+    CASH_ACCOUNT_STATUS_OPENED = 2;
+    CASH_ACCOUNT_STATUS_CLOSING = 3;
+    CASH_ACCOUNT_STATUS_CLOSED = 4;
   }
 }

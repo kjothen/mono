@@ -1,6 +1,5 @@
 (ns com.repldriven.mono.api-keys.domain
-  (:require
-    [com.repldriven.mono.encryption.interface :as encryption]))
+  (:require [com.repldriven.mono.encryption.interface :as encryption]))
 
 (def ^:private api-key-prefix "sk_live_")
 (def ^:private api-key-display-prefix-len 12)
@@ -13,14 +12,12 @@
   (let [raw-key (encryption/generate-token api-key-prefix)
         key-hash (encryption/hash-token raw-key)
         key-prefix
-        (subs raw-key
-              0
-              (min api-key-display-prefix-len (count raw-key)))
+          (subs raw-key 0 (min api-key-display-prefix-len (count raw-key)))
         now (System/currentTimeMillis)]
-    {:api-key {:id (encryption/generate-id "sk")
-               :organization-id org-id
-               :key-hash key-hash
-               :key-prefix key-prefix
-               :name key-name
-               :created-at now}
+    {:api-key {:id (encryption/generate-id "sk"),
+               :organization-id org-id,
+               :key-hash key-hash,
+               :key-prefix key-prefix,
+               :name key-name,
+               :created-at now},
      :raw-key raw-key}))

@@ -1,6 +1,5 @@
 (ns com.repldriven.mono.pulsar.system.reader.yml
-  (:require
-    [com.repldriven.mono.env.interface :as env]))
+  (:require [com.repldriven.mono.env.interface :as env]))
 
 ;; yml-reader defmethods
 (defmethod env/yml-reader :!pulsar/crypto-failure-action

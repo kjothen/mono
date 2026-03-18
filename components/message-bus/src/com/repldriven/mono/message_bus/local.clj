@@ -1,8 +1,6 @@
 (ns com.repldriven.mono.message-bus.local
-  (:require
-    [com.repldriven.mono.message-bus.protocol :as proto]
-
-    [clojure.core.async :as async]))
+  (:require [com.repldriven.mono.message-bus.protocol :as proto]
+            [clojure.core.async :as async]))
 
 (defrecord LocalProducer [ch]
   proto/Producer

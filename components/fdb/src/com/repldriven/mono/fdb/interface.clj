@@ -1,11 +1,9 @@
 (ns com.repldriven.mono.fdb.interface
-  (:require
-    com.repldriven.mono.fdb.system.core
-
-    [com.repldriven.mono.fdb.changelog :as changelog]
-    [com.repldriven.mono.fdb.counter :as counter]
-    [com.repldriven.mono.fdb.kv :as kv]
-    [com.repldriven.mono.fdb.record :as record]))
+  (:require com.repldriven.mono.fdb.system.core
+            [com.repldriven.mono.fdb.changelog :as changelog]
+            [com.repldriven.mono.fdb.counter :as counter]
+            [com.repldriven.mono.fdb.kv :as kv]
+            [com.repldriven.mono.fdb.record :as record]))
 
 ;; KV layer
 
@@ -43,11 +41,7 @@
   ([record-db consumer-id store-name handler]
    (changelog/process record-db consumer-id store-name handler))
   ([record-db consumer-id store-name handler opts]
-   (changelog/process record-db
-                      consumer-id
-                      store-name
-                      handler
-                      opts)))
+   (changelog/process record-db consumer-id store-name handler opts)))
 
 (defn allocate-counter
   [store & key-parts]

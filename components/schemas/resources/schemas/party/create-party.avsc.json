@@ -4,7 +4,9 @@
   "namespace": "com.repldriven.mono.party",
   "fields": [
     {"name": "organization_id", "type": "string"},
-    {"name": "type", "type": "string"},
+    {"name": "type", "type": {"type": "enum",
+                                       "name": "PartyType",
+                                       "symbols": ["PARTY_TYPE_PERSON"]}},
     {"name": "display_name", "type": "string"},
     {"name": "given_name", "type": "string"},
     {"name": "middle_names", "type": ["null", "string"], "default": null},
@@ -15,7 +17,13 @@
       "type": "record",
       "name": "NationalIdentifier",
       "fields": [
-        {"name": "type", "type": "string"},
+        {"name": "type", "type": {"type": "enum",
+                                               "name": "IdentifierType",
+                                               "symbols": ["IDENTIFIER_TYPE_NATIONAL_INSURANCE",
+                                                            "IDENTIFIER_TYPE_PASSPORT",
+                                                            "IDENTIFIER_TYPE_DRIVING_LICENCE",
+                                                            "IDENTIFIER_TYPE_NATIONAL_ID_CARD",
+                                                            "IDENTIFIER_TYPE_TAX_ID"]}},
         {"name": "value", "type": "string"},
         {"name": "issuing_country", "type": "string"}
       ]

@@ -11,7 +11,7 @@
   let familyName = $state("Doe");
   let dateOfBirth = $state("1990-01-15");
   let nationality = $state("GB");
-  let niType = $state("NATIONAL_INSURANCE");
+  let niType = $state("national-insurance");
   let niValue = $state("TN000001A");
   let niCountry = $state("GBR");
   let submitting = $state(false);
@@ -102,7 +102,7 @@
       <label>
         Type
         <select bind:value={niType} required>
-          <option value="NATIONAL_INSURANCE">National Insurance</option>
+          <option value="national-insurance">National Insurance</option>
         </select>
       </label>
 

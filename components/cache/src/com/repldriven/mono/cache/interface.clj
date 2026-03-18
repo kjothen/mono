@@ -1,6 +1,5 @@
 (ns com.repldriven.mono.cache.interface
-  (:require
-    [com.repldriven.mono.cache.core :as core]))
+  (:require [com.repldriven.mono.cache.core :as core]))
 
 (defn create
   "Returns an atom wrapping a TTL cache with the given

@@ -27,14 +27,14 @@ message CashAccountProductVersion {
 
   enum AccountType {
     ACCOUNT_TYPE_UNKNOWN = 0;
-    CURRENT = 1;
-    SAVINGS = 2;
-    TERM_DEPOSIT = 3;
+    ACCOUNT_TYPE_CURRENT = 1;
+    ACCOUNT_TYPE_SAVINGS = 2;
+    ACCOUNT_TYPE_TERM_DEPOSIT = 3;
   }
 
   enum BalanceSheetSide {
     BALANCE_SHEET_SIDE_UNKNOWN = 0;
-    ASSET = 1;
-    LIABILITY = 2;
+    BALANCE_SHEET_SIDE_ASSET = 1;
+    BALANCE_SHEET_SIDE_LIABILITY = 2;
   }
 }

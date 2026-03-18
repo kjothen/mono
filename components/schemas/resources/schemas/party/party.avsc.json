@@ -7,12 +7,12 @@
     {"name": "party_id",     "type": "string"},
     {"name": "type",         "type": {"type": "enum",
                                        "name": "PartyType",
-                                       "symbols": ["PERSON"]}},
+                                       "symbols": ["PARTY_TYPE_PERSON"]}},
     {"name": "display_name", "type": "string"},
     {"name": "status",       "type": {"type": "enum",
                                        "name": "PartyStatus",
-                                       "symbols": ["PENDING", "ACTIVE",
-                                                    "SUSPENDED", "CLOSED"]}},
+                                       "symbols": ["PARTY_STATUS_PENDING", "PARTY_STATUS_ACTIVE",
+                                                    "PARTY_STATUS_SUSPENDED", "PARTY_STATUS_CLOSED"]}},
     {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},
     {"name": "updated_at", "type": {"type": "long", "logicalType": "timestamp-millis"}}
   ]

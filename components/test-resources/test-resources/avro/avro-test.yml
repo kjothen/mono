@@ -13,3 +13,6 @@ serde: !system/component
     get-idv: schemas/idv/get-idv.avsc.json
     idv: schemas/idv/idv.avsc.json
     unknown-idv-command: schemas/idv/initiate-idv.avsc.json
+    record-transaction: schemas/transactions/record-transaction.avsc.json
+    transaction: schemas/transactions/transaction.avsc.json
+    unknown-transaction-command: schemas/transactions/record-transaction.avsc.json
