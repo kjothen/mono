@@ -1,4 +1,4 @@
 {:aliases {:test {:extra-deps {} :extra-paths ["test" "test-resources"]}}
- :deps {org.foundationdb/fdb-java              {:mvn/version "7.3.63"}
+ :deps {org.foundationdb/fdb-java              {:mvn/version "7.3.75"}
         org.foundationdb/fdb-record-layer-core {:mvn/version "4.10.4.0"}}
  :paths ["src"]}

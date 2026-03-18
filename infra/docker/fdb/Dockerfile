@@ -1,6 +1,6 @@
 FROM debian:12-slim
 
-ARG FDB_VERSION=7.3.63
+ARG FDB_VERSION=7.3.75
 RUN ARCH=$(uname -m) && \
   TINI_ARCH=$([ "$ARCH" = "aarch64" ] && echo "arm64" || echo "amd64") && \
   FDB_ARCH=$ARCH && \

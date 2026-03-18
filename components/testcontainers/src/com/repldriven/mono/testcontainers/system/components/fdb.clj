@@ -9,7 +9,7 @@
     (org.testcontainers.containers.wait.strategy Wait)
     (org.testcontainers.images.builder ImageFromDockerfile)))
 
-(def fdb-version "7.3.63")
+(def fdb-version "7.3.75")
 (def default-image-name (str "queenswood/foundationdb:" fdb-version))
 
 (defn- workspace-root
