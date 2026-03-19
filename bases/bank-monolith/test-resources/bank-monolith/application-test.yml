@@ -195,7 +195,7 @@ system:
       producers: !system/ref pulsar.message-bus-producers
       consumers: !system/ref pulsar.message-bus-consumers
 
-  fdb: !include testcontainers/fdb-test.yml
+  fdb: !include bank/fdb-test.yml
   avro: !include avro/avro-test.yml
   cash-accounts:
     processor: !system/component
@@ -273,6 +273,20 @@ system:
       consumer-id: idv-watcher
       store-name: idvs
       handler: !system/local-ref watcher-handler
+  queenswood:
+    bootstrap: !system/component
+      system/component-kind: queenswood/bootstrap
+      record-db: !system/ref fdb.record-db
+      record-store: !system/ref fdb.store
+      organization-name: Queenswood
+      party-display-name: Queenswood
+      product-name: Internal Account
+      account-type: account-type-current
+      balance-sheet-side: balance-sheet-side-liability
+      currency: GBP
+      balance-products:
+        - balance-type: balance-type-default
+          balance-status: balance-status-posted
   telemetry:
     otel-sdk: !profile
       dev: !system/component
@@ -284,6 +298,7 @@ system:
     interceptors: !system/component
       system/component-kind: server/interceptors
       admin-api-key: !env MONO_ADMIN_API_KEY
+      queenswood: !system/ref queenswood.bootstrap
       dispatchers:
         cash-accounts: !system/ref cash-accounts.dispatcher
         parties: !system/ref parties.dispatcher

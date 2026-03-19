@@ -1,6 +1,6 @@
 set shell := ["zsh", "-cu"]
 
-HOME := env_var('HOME')
+DOMAIN_ALIASES := ":+bank"
 
 list:
     just --list
@@ -8,11 +8,11 @@ list:
 # Start nREPL server for Conjure connection
 repl:
     find . -name .nrepl-port -not -path ./.nrepl-port -delete
-    clojure -M:dev:test:nrepl -Sforce -P
+    clojure -M{{ DOMAIN_ALIASES }}:dev:test:nrepl -Sforce -P
 
 # Start Rebel Readline REPL with colors and completion
 rebel:
-    clj -M:dev:test:rebel
+    clj -M{{ DOMAIN_ALIASES }}:dev:test:rebel
 
 # Start polylith shell
 shell:
@@ -78,7 +78,7 @@ poly-test-check:
 nvd project="":
     #!/usr/bin/env zsh
     if [[ -z "{{ project }}" ]]; then
-      classpath=$(clojure -Spath -A:dev)
+      classpath=$(clojure -Spath -A{{ DOMAIN_ALIASES }}:dev)
     else
       classpath=$(cd projects/{{ project }} && clojure -Spath)
     fi
@@ -86,7 +86,7 @@ nvd project="":
 
 # Linter
 lint-eastwood:
-    clojure -M:dev:test:lint/eastwood
+    clojure -M{{ DOMAIN_ALIASES }}:dev:test:lint/eastwood
 lint-clj-kondo:
     clojure -M:lint/clj-kondo --lint bases components projects deps.edn workspace.edn
 lint:
@@ -107,7 +107,7 @@ format:
     fi
 
 force-prep:
-    clj -X:deps prep :aliases '[:dev]' :force true
+    clj -X:deps prep :aliases '[{{ DOMAIN_ALIASES }}:dev]' :force true
 
 # Start Docker via Colima
 start-docker:

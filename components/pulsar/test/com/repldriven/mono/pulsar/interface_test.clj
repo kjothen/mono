@@ -19,9 +19,12 @@
           consumer-1 (system/instance sys [:pulsar :consumers :pet-1])
           consumer-2 (system/instance sys [:pulsar :consumers :pet-2])
           reader (system/instance sys [:pulsar :readers :pet])
-          msgs [{:name "Whiskers", :species "cat", :age-months 24}
-                {:name "Rex", :species "dog", :age-months 36}
-                {:name "Tweety", :species "bird", :age-months 12}]
+          msgs [{:pet-id "pet-1", :name "Whiskers", :species "cat",
+                 :age-months 24}
+                {:pet-id "pet-2", :name "Rex", :species "dog",
+                 :age-months 36}
+                {:pet-id "pet-3", :name "Tweety", :species "bird",
+                 :age-months 12}]
           props {"message" "pet-msg"}]
       (testing
         "Pulsar namespace configuration enforces encryption and topic schema"

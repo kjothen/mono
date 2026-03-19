@@ -100,7 +100,7 @@ jobs:
           COVERAGE: "true"
           COVERAGE_THRESHOLD: "50"
         run: |
-          clojure -X:deps prep :aliases '[:dev]'
+          clojure -X:deps prep :aliases '[:dev :+bank]'
           clojure -M:poly test project:${{ matrix.project }} :all
 
       - name: Publish test report

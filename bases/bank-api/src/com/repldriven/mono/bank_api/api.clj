@@ -1,32 +1,32 @@
 (ns com.repldriven.mono.bank-api.api
   (:require
-    [com.repldriven.mono.bank-api.balances.components :as balances.components]
-    [com.repldriven.mono.bank-api.balances.examples :as balances.examples]
-    [com.repldriven.mono.bank-api.balances.routes :as balances]
-    [com.repldriven.mono.bank-api.cash-account-products.components :as
-     cash-account-products.components]
-    [com.repldriven.mono.bank-api.cash-account-products.examples :as
-     cash-account-products.examples]
-    [com.repldriven.mono.bank-api.cash-account-products.routes :as
-     cash-account-products]
-    [com.repldriven.mono.bank-api.cash-accounts.components :as
-     cash-accounts.components]
-    [com.repldriven.mono.bank-api.cash-accounts.examples :as
-     cash-accounts.examples]
-    [com.repldriven.mono.bank-api.cash-accounts.routes :as cash-accounts]
-    [com.repldriven.mono.bank-api.api-keys.components :as api-keys.components]
-    [com.repldriven.mono.bank-api.api-keys.examples :as api-keys.examples]
-    [com.repldriven.mono.bank-api.api-keys.routes :as api-keys]
+    [com.repldriven.mono.bank-api.balance.components :as balance.components]
+    [com.repldriven.mono.bank-api.balance.examples :as balance.examples]
+    [com.repldriven.mono.bank-api.balance.routes :as balance]
+    [com.repldriven.mono.bank-api.cash-account-product.components :as
+     cash-account-product.components]
+    [com.repldriven.mono.bank-api.cash-account-product.examples :as
+     cash-account-product.examples]
+    [com.repldriven.mono.bank-api.cash-account-product.routes :as
+     cash-account-product]
+    [com.repldriven.mono.bank-api.cash-account.components :as
+     cash-account.components]
+    [com.repldriven.mono.bank-api.cash-account.examples :as
+     cash-account.examples]
+    [com.repldriven.mono.bank-api.cash-account.routes :as cash-account]
+    [com.repldriven.mono.bank-api.api-key.components :as api-key.components]
+    [com.repldriven.mono.bank-api.api-key.examples :as api-key.examples]
+    [com.repldriven.mono.bank-api.api-key.routes :as api-key]
     [com.repldriven.mono.bank-api.auth :as auth]
     [com.repldriven.mono.bank-api.examples :as examples]
-    [com.repldriven.mono.bank-api.organizations.components :as
-     organizations.components]
-    [com.repldriven.mono.bank-api.organizations.examples :as
-     organizations.examples]
-    [com.repldriven.mono.bank-api.organizations.routes :as organizations]
-    [com.repldriven.mono.bank-api.parties.components :as parties.components]
-    [com.repldriven.mono.bank-api.parties.examples :as parties.examples]
-    [com.repldriven.mono.bank-api.parties.routes :as parties]
+    [com.repldriven.mono.bank-api.organization.components :as
+     organization.components]
+    [com.repldriven.mono.bank-api.organization.examples :as
+     organization.examples]
+    [com.repldriven.mono.bank-api.organization.routes :as organization]
+    [com.repldriven.mono.bank-api.party.components :as party.components]
+    [com.repldriven.mono.bank-api.party.examples :as party.examples]
+    [com.repldriven.mono.bank-api.party.routes :as party]
     [com.repldriven.mono.bank-api.schema :as schema]
     [com.repldriven.mono.server.interface :as server]
     [com.repldriven.mono.telemetry.interface :as telemetry]
@@ -47,28 +47,29 @@
   "Creates a reitit TransformationProvider that composes
   base-transformer with api-transformer."
   [base-transformer]
-  (reify malli-coercion/TransformationProvider
-    (-transformer [_ {:keys [strip-extra-keys default-values]}]
-      (mt/transformer
-        (when strip-extra-keys (mt/strip-extra-keys-transformer))
-        base-transformer
-        api-transformer
-        (when default-values (mt/default-value-transformer))))))
+  (reify
+    malli-coercion/TransformationProvider
+      (-transformer [_ {:keys [strip-extra-keys default-values]}]
+        (mt/transformer (when strip-extra-keys
+                          (mt/strip-extra-keys-transformer))
+                        base-transformer
+                        api-transformer
+                        (when default-values (mt/default-value-transformer))))))
 
 (def ^:private coercion
   (malli-coercion/create
     {:transformers {:body {:default (->provider (mt/json-transformer))},
                     :string {:default (->provider (mt/string-transformer))},
-                    :response {:default (->provider nil)}}
+                    :response {:default (->provider nil)}},
      :options {:registry (merge (m/default-schemas)
                                 {"Currency" schema/Currency,
                                  "ErrorResponse" schema/ErrorResponseSchema}
-                                balances.components/registry
-                                cash-account-products.components/registry
-                                cash-accounts.components/registry
-                                api-keys.components/registry
-                                organizations.components/registry
-                                parties.components/registry)}}))
+                                balance.components/registry
+                                cash-account-product.components/registry
+                                cash-account.components/registry
+                                api-key.components/registry
+                                organization.components/registry
+                                party.components/registry)}}))
 
 (defn- routes
   [ctx]
@@ -86,12 +87,12 @@
                                       :scheme :bearer,
                                       :description "Organization API key"}},
                         :examples (merge examples/registry
-                                         balances.examples/registry
-                                         cash-account-products.examples/registry
-                                         cash-accounts.examples/registry
-                                         api-keys.examples/registry
-                                         organizations.examples/registry
-                                         parties.examples/registry)}},
+                                         balance.examples/registry
+                                         cash-account-product.examples/registry
+                                         cash-account.examples/registry
+                                         api-key.examples/registry
+                                         organization.examples/registry
+                                         party.examples/registry)}},
            :handler (server/standard-openapi-handler)}}]
    (into ["/v1"
           {:interceptors (concat telemetry/trace-span
@@ -102,12 +103,12 @@
                        403 (schema/ErrorResponse [#'examples/Forbidden]),
                        500 (schema/ErrorResponse [#'examples/InternalServerError
                                                   #'examples/BadResponse])}}]
-         (concat balances/routes
-                 cash-account-products/routes
-                 cash-accounts/routes
-                 api-keys/routes
-                 organizations/routes
-                 parties/routes))])
+         (concat balance/routes
+                 cash-account-product/routes
+                 cash-account/routes
+                 api-key/routes
+                 organization/routes
+                 party/routes))])
 
 (defn app
   [ctx]

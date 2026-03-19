@@ -1,5 +1,5 @@
 system:
-  fdb: !include testcontainers/fdb-test.yml
+  fdb: !include bank/fdb-test.yml
   server:
     handler: !system/required-component
     interceptors: !system/component

@@ -1,3 +1,3 @@
 bus: !system/component
   system/component-kind: message-bus/local-bus
-  channels: [cash-accounts-command, cash-accounts-command-response, parties-command, parties-command-response]
+  channels: [pets-command, pets-command-response]

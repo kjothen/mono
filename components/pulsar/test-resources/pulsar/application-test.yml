@@ -1,2 +1,2 @@
 system:
-  pulsar: !include testcontainers/pulsar-all-test.yml
+  pulsar: !include testcontainers/pulsar-test.yml

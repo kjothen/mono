@@ -68,10 +68,9 @@
                       "than the consumer produced (e.g. via async/take), nobody reads"
                     "c anymore and a plain >!! would block the loop — making"
                       ">!! stop :stop deadlock too.")
-                  (let [[_ p] (async/alts!! [[c
-                                              {:message v,
-                                               :data (message/deserialize v)}]
-                                             stop])]
+                  (let [[_ p] (async/alts!!
+                                [[c {:message v, :data (message/deserialize v)}]
+                                 stop])]
                     (when (not= p stop) (recur))))
               :else (recur))))
         (finally (async/close! c) (async/close! stop))))

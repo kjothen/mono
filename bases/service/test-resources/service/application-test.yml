@@ -1,21 +1,21 @@
 system:
   message-bus: !include service/message-bus-test.yml
   fdb: !include testcontainers/fdb-test.yml
-  avro: !include avro/avro-test.yml
-  cash-accounts:
+  avro: !include avro/avro-pet-test.yml
+  pets:
     processor: !system/component
-      system/component-kind: cash-accounts/processor
+      system/component-kind: pets/processor
       record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.store
+      record-store: !system/ref fdb.pet-store
       schemas: !system/ref avro.serde
     command-processor: !system/component
       system/component-kind: command-processor/command-processor
       bus: !system/ref message-bus.bus
       processor: !system/local-ref processor
-      command-channel: !keyword cash-accounts-command
-      command-response-channel: !keyword cash-accounts-command-response
+      command-channel: !keyword pets-command
+      command-response-channel: !keyword pets-command-response
     dispatcher: !system/component
       system/component-kind: command/dispatcher
       bus: !system/ref message-bus.bus
-      command-channel: !keyword cash-accounts-command
-      command-response-channel: !keyword cash-accounts-command-response
+      command-channel: !keyword pets-command
+      command-response-channel: !keyword pets-command-response

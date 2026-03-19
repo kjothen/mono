@@ -7,32 +7,35 @@
   :test
   {:extra-deps
    {bases/external-test-runner {:local/root "../../bases/external-test-runner"}
+    component/bank-test-resources {:local/root "../../components/bank-test-resources"}
     component/test-resources {:local/root "../../components/test-resources"}
-    component/test-schemas {:local/root "../../components/test-schemas"}
+    component/test-schema {:local/root "../../components/test-schema"}
     component/test-system {:local/root "../../components/test-system"}
     component/testcontainers {:local/root "../../components/testcontainers"}}}}
- :deps {component/balances {:local/root "../../components/balances"}
-        component/cash-account-products {:local/root "../../components/cash-account-products"}
-        component/cash-accounts {:local/root "../../components/cash-accounts"}
+ :deps {component/bank-balance {:local/root "../../components/bank-balance"}
+        component/bank-cash-account-product {:local/root "../../components/bank-cash-account-product"}
+        component/bank-cash-account {:local/root "../../components/bank-cash-account"}
         component/avro {:local/root "../../components/avro"}
         component/cache {:local/root "../../components/cache"}
         component/cli {:local/root "../../components/cli"}
         component/command {:local/root "../../components/command"}
         component/command-processor {:local/root "../../components/command-processor"}
+        component/command-schema {:local/root "../../components/command-schema"}
         component/encryption {:local/root "../../components/encryption"}
         component/env {:local/root "../../components/env"}
         component/error {:local/root "../../components/error"}
         component/fdb {:local/root "../../components/fdb"}
-        component/idv {:local/root "../../components/idv"}
+        component/bank-idv {:local/root "../../components/bank-idv"}
         component/http-client {:local/root "../../components/http-client"}
         component/log {:local/root "../../components/log"}
-        component/api-keys {:local/root "../../components/api-keys"}
-        component/organizations {:local/root "../../components/organizations"}
-        component/party {:local/root "../../components/party"}
+        component/bank-api-key {:local/root "../../components/bank-api-key"}
+        component/bank-organization {:local/root "../../components/bank-organization"}
+        component/bank-party {:local/root "../../components/bank-party"}
+        component/bank-queenswood {:local/root "../../components/bank-queenswood"}
         component/message-bus {:local/root "../../components/message-bus"}
         component/processor {:local/root "../../components/processor"}
         component/pulsar {:local/root "../../components/pulsar"}
-        component/schemas {:local/root "../../components/schemas"}
+        component/bank-schema {:local/root "../../components/bank-schema"}
         component/server {:local/root "../../components/server"}
         component/system {:local/root "../../components/system"}
         component/telemetry {:local/root "../../components/telemetry"}

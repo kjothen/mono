@@ -3,7 +3,7 @@
             [com.repldriven.mono.fdb.interface :as SUT]
             [com.repldriven.mono.error.interface :as error]
             [com.repldriven.mono.system.interface :as system]
-            [com.repldriven.mono.test-schemas.interface :as test-schema]
+            [com.repldriven.mono.test-schema.interface :as test-schema]
             [com.repldriven.mono.test-system.interface :refer
              [with-test-system nom-test>]]
             [com.repldriven.mono.utility.interface :as utility]

@@ -1,0 +1,55 @@
+(ns ^:eftest/synchronized
+  com.repldriven.mono.bank-queenswood.interface-test
+  (:require
+    com.repldriven.mono.bank-queenswood.interface
+
+    [com.repldriven.mono.bank-queenswood.core :as core]
+    com.repldriven.mono.testcontainers.interface
+
+    [com.repldriven.mono.system.interface :as system]
+    [com.repldriven.mono.test-system.interface :refer
+     [with-test-system nom-test>]]
+
+    [clojure.test :refer [deftest is testing]]))
+
+(defn- seed-config
+  []
+  {:organization-name "Queenswood",
+   :party-display-name "Queenswood",
+   :product-name "Internal Account",
+   :account-type :account-type-current,
+   :balance-sheet-side :balance-sheet-side-liability,
+   :currency "GBP",
+   :balance-products [{:balance-type :balance-type-default,
+                       :balance-status :balance-status-posted}]})
+
+(defn- fdb-config
+  [sys]
+  {:record-db (system/instance sys [:fdb :record-db]),
+   :record-store (system/instance sys [:fdb :store])})
+
+(deftest bootstrap-test
+  (with-test-system
+    [sys "classpath:bank-queenswood/application-test.yml"]
+    (let [result (system/instance sys [:queenswood :bootstrap])]
+      (testing "bootstrap returns map of IDs"
+        (nom-test>
+          [_ (is (map? result)) _
+           (is (string? (:organization-id result))) _
+           (is (string? (:party-id result))) _
+           (is (string? (:product-id result))) _
+           (is (string? (:version-id result))) _
+           (is (string? (:account-id result)))]))
+      (testing "bootstrap is idempotent on re-run"
+        (let [config (fdb-config sys)
+              seed (seed-config)]
+          (nom-test>
+            [result2 (core/bootstrap config seed) _
+             (is (= (:organization-id result)
+                     (:organization-id result2))) _
+             (is (= (:party-id result) (:party-id result2)))
+             _
+             (is (= (:product-id result)
+                     (:product-id result2))) _
+             (is (= (:account-id result)
+                     (:account-id result2)))]))))))

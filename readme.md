@@ -255,7 +255,7 @@ pipelines without defensive `try/catch` noise.
 
 | Component             | Purpose                                           |
 | --------------------- | ------------------------------------------------- |
-| `api-keys`            | API key generation, hashing, and verification     |
+| `bank-api-key`        | API key generation, hashing, and verification     |
 | `vault`               | HashiCorp Vault for secrets and key management    |
 | `encryption`          | AES-256, RSA, base64                              |
 | `pulsar-vault-crypto` | Tenant-scoped Pulsar message encryption via Vault |
@@ -265,7 +265,7 @@ pipelines without defensive `try/catch` noise.
 | Component | Purpose                                                                               |
 | --------- | ------------------------------------------------------------------------------------- |
 | `avro`    | Apache Avro schema-based serialisation                                                |
-| `schemas` | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct) |
+| `bank-schema` | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct) |
 | `json`    | JSON read/write with anomaly errors                                                   |
 
 ### Observability
@@ -278,12 +278,14 @@ pipelines without defensive `try/catch` noise.
 
 | Component               | Purpose                                                                   |
 | ----------------------- | ------------------------------------------------------------------------- |
-| `cash-accounts`         | Account lifecycle — open, close, suspend, reopen, archive                 |
-| `cash-account-products` | Product and version management — draft, publish, balance product config   |
-| `balances`              | Account balance management — create, query by type/currency/status        |
-| `organizations`         | Organisation management — create org, API key generation and verification |
-| `party`                 | Party creation and management                                             |
-| `idv`                   | Identity verification processing                                          |
+| `bank-cash-account`         | Account lifecycle — open, close, suspend, reopen, archive                 |
+| `bank-cash-account-product` | Product and version management — draft, publish, balance product config   |
+| `bank-balance`              | Account balance management — create, query by type/currency/status        |
+| `bank-organization`         | Organisation management — create org, API key generation and verification |
+| `bank-party`                | Party creation and management                                             |
+| `bank-idv`                  | Identity verification processing                                          |
+| `bank-queenswood`           | Queenswood bootstrap and seed data                                        |
+| `bank-transaction`          | Transaction recording with double-entry legs                              |
 
 ### Testing
 
@@ -291,8 +293,10 @@ pipelines without defensive `try/catch` noise.
 | ---------------- | ---------------------------------------------------------- |
 | `test-system`    | `with-test-system` lifecycle macro, `nom-test>` assertions |
 | `testcontainers` | Declarative container infrastructure for integration tests |
+| `bank-test-resources` | Bank-specific test configuration (FDB stores, Avro schemas) |
 | `test-resources` | Shared test configuration                                  |
-| `test-schemas`   | Protobuf test fixtures                                     |
+| `test-schema`    | Protobuf test fixtures and pet command processor           |
+| `command-schema` | Command Avro schemas (envelope, response, command)         |
 
 ## Deployed Applications
 
@@ -301,7 +305,7 @@ pipelines without defensive `try/catch` noise.
 | `bank-monolith`         | `bank-monolith` | Full Queenswood system (API + processors)     |
 | `bank-web`              | `bank-api`      | HTTP API for accounts, products, and balances |
 | `bank-app`              | `bank-app`      | Svelte front-end for the banking application  |
-| `cash-accounts-service` | `service`       | Async command handler for account operations  |
+| `bank-cash-account-service` | `service`       | Async command handler for account operations  |
 
 ## Getting Started
 

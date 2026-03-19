@@ -87,10 +87,10 @@
     (nom-test> [res (close-account-request "acc-test-id") _
                 (is (= 200 (:status res))) body (http/res->edn res) _
                 (is (= {:account-id "acc-test-id",
-                       :party-id "acc-test",
-                       :name "Test Account",
-                       :currency "GBP",
-                       :account-status "closing"}
+                        :party-id "acc-test",
+                        :name "Test Account",
+                        :currency "GBP",
+                        :account-status "closing"}
                        (select-keys body
                                     [:account-id :party-id :name :currency
                                      :account-status])))])

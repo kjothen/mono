@@ -1,0 +1,10 @@
+{
+    "type": "record",
+    "name": "CreatePet",
+    "namespace": "com.repldriven.mono",
+    "fields": [
+        { "name": "name", "type": "string" },
+        { "name": "species", "type": "string" },
+        { "name": "age_months", "type": ["null", "long"], "default": null }
+    ]
+}

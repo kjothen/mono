@@ -4,7 +4,7 @@
             [com.repldriven.mono.bank-api.cursor :as cursor]
             [com.repldriven.mono.fdb.interface :as fdb]
             [com.repldriven.mono.http-client.interface :as http]
-            [com.repldriven.mono.schemas.interface :as schema]
+            [com.repldriven.mono.bank-schema.interface :as schema]
             [com.repldriven.mono.server.interface :as server]
             [com.repldriven.mono.system.interface :as system]
             [com.repldriven.mono.test-system.interface :refer

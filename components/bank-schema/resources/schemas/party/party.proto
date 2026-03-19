@@ -1,0 +1,33 @@
+syntax = "proto2";
+
+package com.repldriven.mono.schemas.party;
+
+import "record_metadata_options.proto";
+
+option java_outer_classname = "PartyProto";
+
+message Party {
+  option (com.apple.foundationdb.record.record).usage = RECORD;
+
+  required string organization_id = 7;
+  required string party_id = 1;
+  required PartyType type = 2;
+  required string display_name = 3;
+  required PartyStatus status = 4;
+  required int64 created_at = 5;
+  required int64 updated_at = 6;
+
+  enum PartyType {
+    PARTY_TYPE_UNKNOWN = 0;
+    PARTY_TYPE_PERSON = 1;
+    PARTY_TYPE_INTERNAL = 2;
+  }
+
+  enum PartyStatus {
+    PARTY_STATUS_UNKNOWN = 0;
+    PARTY_STATUS_PENDING = 1;
+    PARTY_STATUS_ACTIVE = 2;
+    PARTY_STATUS_SUSPENDED = 3;
+    PARTY_STATUS_CLOSED = 4;
+  }
+}

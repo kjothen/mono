@@ -1,7 +1,7 @@
 (ns com.repldriven.mono.bank-api.auth
   (:require [com.repldriven.mono.cache.interface :as cache]
             [com.repldriven.mono.encryption.interface :as encryption]
-            [com.repldriven.mono.api-keys.interface :as api-keys]
+            [com.repldriven.mono.bank-api-key.interface :as bank-api-key]
             [com.repldriven.mono.utility.interface :as util]
             [clojure.string :as str]))
 
@@ -19,10 +19,10 @@
         {:keys [record-db record-store]} request
         api-key (cache/lookup api-key-cache
                               key-hash
-                              #(api-keys/get-api-key {:record-db record-db,
-                                                      :record-store
-                                                        record-store}
-                                                     key-hash))]
+                              #(bank-api-key/get-api-key {:record-db record-db,
+                                                          :record-store
+                                                            record-store}
+                                                         key-hash))]
     (when (and (map? api-key) (zero? (:revoked-at api-key 0)))
       {:role :org, :organization-id (:organization-id api-key)})))
 

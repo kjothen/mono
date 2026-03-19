@@ -1,0 +1,11 @@
+{
+    "type": "record",
+    "name": "Pet",
+    "namespace": "com.repldriven.mono",
+    "fields": [
+        { "name": "pet_id", "type": "string" },
+        { "name": "name", "type": "string" },
+        { "name": "species", "type": "string" },
+        { "name": "age_months", "type": ["null", "long"], "default": null }
+    ]
+}

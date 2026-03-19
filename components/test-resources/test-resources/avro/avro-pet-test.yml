@@ -1,0 +1,5 @@
+serde: !system/component
+  system/component-kind: avro/serde
+  schemas:
+    create-pet: schemas/pets/create-pet.avsc.json
+    pet: schemas/pets/pet.avsc.json

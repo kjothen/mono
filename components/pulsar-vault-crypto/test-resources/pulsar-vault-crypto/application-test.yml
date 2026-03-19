@@ -1,3 +1,3 @@
 system:
-  vault: !include testcontainers/pulsar-vault-keys-test.yml
-  pulsar: !include testcontainers/pulsar-vault-all-test.yml
+  vault: !include testcontainers/vault-crypto-keys-test.yml
+  pulsar: !include testcontainers/pulsar-vault-crypto-test.yml
