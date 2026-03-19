@@ -1,4 +1,4 @@
 {:aliases {:test {:extra-deps {}
                      :extra-paths ["test" "test-resources"]}}
- :deps {}
+ :deps {clj-commons/clj-yaml {:mvn/version "1.0.29"}}
  :paths ["src" "resources"]}

@@ -106,6 +106,9 @@ format:
         echo "No Clojure files found"
     fi
 
+export-openapi path="docs/openapi.yaml":
+    clojure -Sdeps '{:aliases {:dev {:main-opts []}}}' -M{{ DOMAIN_ALIASES }}:dev -m com.repldriven.mono.bank-api.export-spec {{ path }}
+
 force-prep:
     clj -X:deps prep :aliases '[{{ DOMAIN_ALIASES }}:dev]' :force true
 

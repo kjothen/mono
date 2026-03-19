@@ -1,0 +1,81 @@
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Clojure
+        uses: DeLaGuardo/setup-clojure@13.5
+        with:
+          cli: latest
+
+      - name: Setup Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: '25.8'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install protoc-gen-clojure
+        run: |
+          sudo curl -L https://github.com/protojure/protoc-plugin/releases/latest/download/protoc-gen-clojure -o /usr/local/bin/protoc-gen-clojure
+          sudo chmod +x /usr/local/bin/protoc-gen-clojure
+
+      - name: Install FoundationDB client library
+        run: |
+          curl -LO https://github.com/apple/foundationdb/releases/download/7.3.75/foundationdb-clients_7.3.75-1_amd64.deb
+          sudo dpkg -i foundationdb-clients_7.3.75-1_amd64.deb
+
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+          key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn') }}
+          restore-keys: |
+            ${{ runner.os }}-clojure-
+
+      - name: Prep and export OpenAPI spec
+        run: |
+          clojure -X:deps prep :aliases '[:dev :+bank]'
+          clojure -Sdeps '{:aliases {:dev {:main-opts []}}}' -M:dev:+bank -m com.repldriven.mono.bank-api.export-spec docs/openapi.yaml
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -49,3 +49,6 @@ projects/**/.lsp
 .rebel_readline_history
 .eastwood
 .direnv/
+
+# Generated OpenAPI spec
+docs/openapi.yaml
