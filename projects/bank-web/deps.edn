@@ -39,5 +39,5 @@
         component/utility {:local/root "../../components/utility"}
         base/bank-api {:local/root "../../bases/bank-api"}
         org.clojure/clojure {:mvn/version "1.12.4"}
-        org.clojure/core.async {:mvn/version "1.8.741"}}
+        org.clojure/core.async {:mvn/version "1.9.865"}}
  :paths ["resources"]}

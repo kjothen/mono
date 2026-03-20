@@ -40,7 +40,7 @@
     ;; at runtime — pin to 3.x for binary compatibility
     com.google.protobuf/protobuf-java {:mvn/version "3.25.8"}
     org.clojure/clojure {:mvn/version "1.12.4"}
-    org.clojure/core.async {:mvn/version "1.8.741"}
+    org.clojure/core.async {:mvn/version "1.9.865"}
     djblue/portal {:mvn/version "0.63.0"}}
    :main-opts ["-e" "(require '[portal.nrepl :as portal])"]
    :extra-paths ["development/resources"]
