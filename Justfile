@@ -5,6 +5,10 @@ DOMAIN_ALIASES := ":+bank"
 list:
     just --list
 
+# Remove the bank exemplar and configure for a new domain
+fork domain:
+    bb scripts/fork-domain.bb {{ domain }}
+
 # Start nREPL server for Conjure connection
 repl:
     find . -name .nrepl-port -not -path ./.nrepl-port -delete

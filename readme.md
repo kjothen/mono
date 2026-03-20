@@ -11,6 +11,34 @@ Systems are described as data — YAML/EDN configuration files drive lifecycle,
 dependency injection, and environment management, with no global state and no
 framework magic.
 
+## How to Use It
+
+Fork this repo and strip the banking exemplar to start building your own
+domain:
+
+```bash
+# 1. Fork and clone the repo
+gh repo fork kjothen/mono --clone
+cd mono
+
+# 2. Remove the bank exemplar and scaffold your domain
+just fork <your-domain>
+```
+
+This deletes all `bank-*` components, bases, and projects, rewires
+`deps.edn`, `workspace.edn`, CI workflows, and the Justfile to your new
+domain name, and leaves empty alias scaffolds ready for your own code.
+
+From there:
+
+1. Add domain components under `components/<your-domain>-*/`
+2. Add domain bases under `bases/<your-domain>-*/`
+3. Add domain projects under `projects/<your-domain>-*/`
+4. Register your new bricks in the `:+<your-domain>` alias in `deps.edn`
+
+See [Getting Started](#getting-started) for prerequisites and how to run
+tests.
+
 ## Exemplar: Queenswood Bank
 
 The repo ships an end-to-end banking application — **Queenswood** — that
