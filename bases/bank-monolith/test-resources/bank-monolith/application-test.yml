@@ -249,99 +249,10 @@ system:
 
   fdb: !include bank/fdb-test.yml
   avro: !include avro/avro-test.yml
-  cash-accounts:
-    processor: !system/component
-      system/component-kind: cash-accounts/processor
-      record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.store
-      schemas: !system/ref avro.serde
-    command-processor: !system/component
-      system/component-kind: command-processor/command-processor
-      bus: !system/ref message-bus.bus
-      processor: !system/local-ref processor
-      command-channel: !keyword cash-accounts-command
-      command-response-channel: !keyword cash-accounts-command-response
-    watcher-handler: !system/component
-      system/component-kind: cash-accounts/watcher-handler
-      record-store: !system/ref fdb.store
-    watcher: !system/component
-      system/component-kind: fdb/watcher
-      record-db: !system/ref fdb.record-db
-      consumer-id: cash-accounts-watcher
-      store-name: cash-accounts
-      handler: !system/local-ref watcher-handler
-    dispatcher: !system/component
-      system/component-kind: command/dispatcher
-      bus: !system/ref message-bus.bus
-      command-channel: !keyword cash-accounts-command
-      command-response-channel: !keyword cash-accounts-command-response
-  parties:
-    processor: !system/component
-      system/component-kind: party/processor
-      record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.store
-      schemas: !system/ref avro.serde
-    command-processor: !system/component
-      system/component-kind: command-processor/command-processor
-      bus: !system/ref message-bus.bus
-      processor: !system/local-ref processor
-      command-channel: !keyword parties-command
-      command-response-channel: !keyword parties-command-response
-    watcher-handler: !system/component
-      system/component-kind: party/watcher-handler
-      record-store: !system/ref fdb.store
-    watcher: !system/component
-      system/component-kind: fdb/watcher
-      record-db: !system/ref fdb.record-db
-      consumer-id: parties-watcher
-      store-name: idvs
-      handler: !system/local-ref watcher-handler
-    dispatcher: !system/component
-      system/component-kind: command/dispatcher
-      bus: !system/ref message-bus.bus
-      command-channel: !keyword parties-command
-      command-response-channel: !keyword parties-command-response
-  transactions:
-    processor: !system/component
-      system/component-kind: transactions/processor
-      record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.store
-      schemas: !system/ref avro.serde
-    command-processor: !system/component
-      system/component-kind: command-processor/command-processor
-      bus: !system/ref message-bus.bus
-      processor: !system/local-ref processor
-      command-channel: !keyword transactions-command
-      command-response-channel: !keyword transactions-command-response
-    dispatcher: !system/component
-      system/component-kind: command/dispatcher
-      bus: !system/ref message-bus.bus
-      command-channel: !keyword transactions-command
-      command-response-channel: !keyword transactions-command-response
-  idv:
-    processor: !system/component
-      system/component-kind: idv/processor
-      record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.store
-      schemas: !system/ref avro.serde
-    party-watcher-handler: !system/component
-      system/component-kind: idv/party-watcher-handler
-      record-store: !system/ref fdb.store
-    party-watcher: !system/component
-      system/component-kind: fdb/watcher
-      record-db: !system/ref fdb.record-db
-      consumer-id: idv-party-watcher
-      store-name: parties
-      handler: !system/local-ref party-watcher-handler
-    watcher-handler: !system/component
-      system/component-kind: idv/watcher-handler
-      record-store: !system/ref fdb.store
-    watcher: !system/component
-      system/component-kind: fdb/watcher
-      record-db: !system/ref fdb.record-db
-      consumer-id: idv-watcher
-      store-name: idvs
-      handler: !system/local-ref watcher-handler
+  cash-accounts: !include bank/cash-account-test.yml
+  parties: !include bank/party-test.yml
+  transactions: !include bank/transaction-test.yml
+  idv: !include bank/idv-test.yml
   bootstrap: !include bank/bootstrap-internal-test.yml
   telemetry:
     otel-sdk: !profile

@@ -129,6 +129,8 @@
                  :balance-sheet-side
                  :balance-sheet-side-liability
                  :allowed-currencies currencies
+                 :allowed-payment-address-schemes
+                 [:payment-address-scheme-scan]
                  :balance-products
                  (org-type->balance-products org-type)})
        product-id (get-in product [:version :product-id])

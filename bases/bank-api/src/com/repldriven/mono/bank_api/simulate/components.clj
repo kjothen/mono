@@ -5,7 +5,7 @@
 
 (def SimulateInboundTransferRequest
   [:map {:json-schema/example examples/SimulateInboundTransferRequest}
-   [:amount int?] [:currency [:ref "Currency"]]])
+   [:account-id string?] [:amount int?] [:currency [:ref "Currency"]]])
 
 (def TransactionLeg
   [:map [:leg-id string?] [:transaction-id string?]

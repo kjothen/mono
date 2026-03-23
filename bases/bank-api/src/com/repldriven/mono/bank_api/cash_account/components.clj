@@ -14,7 +14,7 @@
    [:account-number string?]])
 
 (def PaymentAddress
-  [:map [:scheme string?]
+  [:map [:scheme [:ref "PaymentAddressScheme"]]
    [:identifier {:optional true}
     [:maybe
      [:map

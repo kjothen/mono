@@ -14,7 +14,7 @@
      :created-at now
      :updated-at now}))
 
-(defn accept-idv
+(defn accepted-idv
   "Returns IDV with status accepted."
   [idv]
   (assoc idv

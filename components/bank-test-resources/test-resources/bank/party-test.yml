@@ -1,0 +1,26 @@
+processor: !system/component
+  system/component-kind: party/processor
+  record-db: !system/ref fdb.record-db
+  record-store: !system/ref fdb.store
+  schemas: !system/ref avro.serde
+command-processor: !system/component
+  system/component-kind: command-processor/command-processor
+  bus: !system/ref message-bus.bus
+  processor: !system/local-ref processor
+  command-channel: !keyword parties-command
+  command-response-channel: !keyword parties-command-response
+watcher-handler: !system/component
+  system/component-kind: party/watcher-handler
+  record-store: !system/ref fdb.store
+watchers: !system/component
+  system/component-kind: fdb/watchers
+  idvs:
+    record-db: !system/ref fdb.record-db
+    consumer-id: parties-watcher
+    store-name: idvs
+    handler: !system/local-ref watcher-handler
+dispatcher: !system/component
+  system/component-kind: command/dispatcher
+  bus: !system/ref message-bus.bus
+  command-channel: !keyword parties-command
+  command-response-channel: !keyword parties-command-response

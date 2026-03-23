@@ -37,7 +37,7 @@
     fundSubmitting = true;
     fundError = null;
     try {
-      const res = await simulate_inbound_transfer(orgId, fundAmount, fundCurrency);
+      const res = await simulate_inbound_transfer(orgId, fundAccountId, fundAmount, fundCurrency);
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         showFundDialog = false;
         load(currentQuery);

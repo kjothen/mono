@@ -2,7 +2,8 @@
   (:require
     [com.repldriven.mono.bank-api.schema :refer [examples-registry]]))
 
-(def SimulateInboundTransferRequest {:amount 1000 :currency "GBP"})
+(def SimulateInboundTransferRequest
+  {:account-id "acc_01JMABC" :amount 1000 :currency "GBP"})
 
 (def SimulateInboundTransferResponse
   {:transaction-id "txn_01JMABC"

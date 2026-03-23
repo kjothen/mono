@@ -27,6 +27,12 @@
 
   let selectedBalanceProducts = $state(defaultBalanceProducts.map(() => true));
 
+  const paymentAddressSchemes = [
+    { scheme: "scan", label: "SCAN (UK Sort Code / Account Number)" },
+  ];
+
+  let selectedSchemes = $state(paymentAddressSchemes.map(() => true));
+
   let publishing = $state({});
 
   function isLatestVersion(v) {
@@ -44,6 +50,7 @@
   let reviseBalanceSheetSide = $state("liability");
   let reviseAllowedCurrencies = $state("");
   let reviseSelectedBalanceProducts = $state(defaultBalanceProducts.map(() => true));
+  let reviseSelectedSchemes = $state(paymentAddressSchemes.map(() => true));
   let revising = $state(false);
 
   function openReviseModal(v) {
@@ -57,6 +64,9 @@
       existing.some(e =>
         e["balance-type"] === bp.type &&
         e["balance-status"] === bp.status));
+    const existingSchemes = v["allowed-payment-address-schemes"] ?? [];
+    reviseSelectedSchemes = paymentAddressSchemes.map(s =>
+      existingSchemes.includes(s.scheme));
     reviseModalOpen = true;
   }
 
@@ -68,12 +78,16 @@
       const bps = defaultBalanceProducts
         .filter((_, i) => reviseSelectedBalanceProducts[i])
         .map(bp => ({ "balance-type": bp.type, "balance-status": bp.status }));
+      const schemes = paymentAddressSchemes
+        .filter((_, i) => reviseSelectedSchemes[i])
+        .map(s => s.scheme);
       const res = await create_cash_account_product_version(reviseVersion["product-id"], {
         "name": reviseName,
         "account-type": reviseAccountType,
         "balance-sheet-side": reviseBalanceSheetSide,
         "allowed-currencies": currencies.length > 0 ? currencies : undefined,
         "balance-products": bps.length > 0 ? bps : undefined,
+        "allowed-payment-address-schemes": schemes.length > 0 ? schemes : undefined,
       });
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         reviseModalOpen = false;
@@ -122,12 +136,16 @@
       const bps = defaultBalanceProducts
         .filter((_, i) => selectedBalanceProducts[i])
         .map(bp => ({ "balance-type": bp.type, "balance-status": bp.status }));
+      const schemes = paymentAddressSchemes
+        .filter((_, i) => selectedSchemes[i])
+        .map(s => s.scheme);
       const res = await create_cash_account_product({
         "name": name,
         "account-type": accountType,
         "balance-sheet-side": balanceSheetSide,
         "allowed-currencies": currencies.length > 0 ? currencies : undefined,
         "balance-products": bps.length > 0 ? bps : undefined,
+        "allowed-payment-address-schemes": schemes.length > 0 ? schemes : undefined,
       });
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         modalOpen = false;
@@ -201,6 +219,15 @@
           </label>
         {/each}
       </fieldset>
+      <fieldset class="checkbox-group" disabled={creating}>
+        <legend>Payment Addresses</legend>
+        {#each paymentAddressSchemes as s, i}
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={selectedSchemes[i]} />
+            {s.label}
+          </label>
+        {/each}
+      </fieldset>
       <label>
         Allowed Currencies
         <input type="text" bind:value={allowedCurrencies} placeholder="e.g. GBP,EUR" disabled={creating} />
@@ -238,6 +265,15 @@
           <label class="checkbox-label">
             <input type="checkbox" bind:checked={reviseSelectedBalanceProducts[i]} />
             {bp.label}
+          </label>
+        {/each}
+      </fieldset>
+      <fieldset class="checkbox-group" disabled={revising}>
+        <legend>Payment Addresses</legend>
+        {#each paymentAddressSchemes as s, i}
+          <label class="checkbox-label">
+            <input type="checkbox" bind:checked={reviseSelectedSchemes[i]} />
+            {s.label}
           </label>
         {/each}
       </fieldset>

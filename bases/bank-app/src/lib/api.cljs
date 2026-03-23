@@ -122,7 +122,7 @@
 (defn create-cash-account-product
   [data]
   (let [{:strs [name account-type balance-sheet-side allowed-currencies
-                balance-products]}
+                balance-products allowed-payment-address-schemes]}
         (js->clj data)
         body (cond-> {"name" name
                       "account-type" account-type
@@ -132,7 +132,10 @@
                             allowed-currencies)
                      (seq balance-products)
                      (assoc "balance-products"
-                            balance-products))]
+                            balance-products)
+                     (seq allowed-payment-address-schemes)
+                     (assoc "allowed-payment-address-schemes"
+                            allowed-payment-address-schemes))]
     (-> (js/fetch "/v1/cash-account-products"
                   #js {:method "POST"
                        :headers #js {"Content-Type" "application/json"
@@ -161,7 +164,7 @@
 (defn create-cash-account-product-version
   [product-id data]
   (let [{:strs [name account-type balance-sheet-side allowed-currencies
-                balance-products]}
+                balance-products allowed-payment-address-schemes]}
         (js->clj data)
         body (cond-> {"name" name
                       "account-type" account-type
@@ -171,7 +174,10 @@
                             allowed-currencies)
                      (seq balance-products)
                      (assoc "balance-products"
-                            balance-products))]
+                            balance-products)
+                     (seq allowed-payment-address-schemes)
+                     (assoc "allowed-payment-address-schemes"
+                            allowed-payment-address-schemes))]
     (-> (js/fetch (str "/v1/cash-account-products/" product-id "/versions")
                   #js {:method "POST"
                        :headers #js {"Content-Type" "application/json"
@@ -186,7 +192,7 @@
       (.then parse-response)))
 
 (defn simulate-inbound-transfer
-  [org-id amount currency]
+  [org-id account-id amount currency]
   (-> (js/fetch (str "/v1/simulate/organizations/"
                      org-id
                      "/inbound-transfer")
@@ -196,7 +202,8 @@
                                                         (admin-token))
                                    "Idempotency-Key" (str (random-uuid))}
                      :body (js/JSON.stringify
-                            #js {"amount" amount
+                            #js {"account-id" account-id
+                                 "amount" amount
                                  "currency" currency})})
       (.then parse-response)))
 

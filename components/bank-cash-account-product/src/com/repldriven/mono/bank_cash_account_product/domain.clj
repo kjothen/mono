@@ -8,6 +8,7 @@
   [organization-id product-id version-number data]
   (let [{:keys [name account-type balance-sheet-side
                 allowed-currencies balance-products
+                allowed-payment-address-schemes
                 valid-from valid-to]}
         data
         now (System/currentTimeMillis)]
@@ -32,7 +33,11 @@
             (assoc :valid-to valid-to)
 
             (seq balance-products)
-            (assoc :balance-products balance-products))))
+            (assoc :balance-products balance-products)
+
+            (seq allowed-payment-address-schemes)
+            (assoc :allowed-payment-address-schemes
+                   allowed-payment-address-schemes))))
 
 (defn publish
   "Sets version status to published."

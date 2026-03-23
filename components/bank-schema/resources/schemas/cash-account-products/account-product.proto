@@ -4,6 +4,7 @@ package com.repldriven.mono.schemas.cash_account_products;
 
 import "record_metadata_options.proto";
 import "schemas/balances/balance.proto";
+import "schemas/cash-accounts/account.proto";
 
 option java_outer_classname = "CashAccountProductProto";
 
@@ -24,6 +25,7 @@ message CashAccountProductVersion {
   optional string name = 12;
   repeated string allowed_currencies = 13;
   repeated com.repldriven.mono.schemas.balances.BalanceProduct balance_products = 14;
+  repeated com.repldriven.mono.schemas.cash_accounts.PaymentAddressScheme allowed_payment_address_schemes = 15;
 
   enum AccountType {
     ACCOUNT_TYPE_UNKNOWN         = 0;

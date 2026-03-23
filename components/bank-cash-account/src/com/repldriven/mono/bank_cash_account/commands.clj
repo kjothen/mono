@@ -13,7 +13,9 @@
   "Flattens protojure oneof :identifier wrapper to flat
   Avro-compatible shape."
   [{:keys [scheme identifier]}]
-  {:scheme scheme :scan (:scan identifier) :value (:value identifier)})
+  {:scheme scheme
+   :scan (:scan identifier)
+   :value (:value identifier)})
 
 (defn- account-pb->avro
   "Converts protobuf CashAccount to Avro-compatible map."
@@ -74,7 +76,7 @@
                                   (:organization-id account))))]
     (schema/CashAccount->pb account)))
 
-(defn- load-published-version
+(defn- load-product
   "Returns the latest published version for the given
   product, or a rejection anomaly if none found."
   [store organization-id product-id]
@@ -89,12 +91,19 @@
         (error/reject :cash-account/product-not-published
                       "No published product version found"))))
 
+(defn- payment-address-fountain
+  [store counter]
+  (format "%08d"
+          (fdb/allocate-counter store
+                                "bank"
+                                "counters"
+                                counter)))
+
 (defn- save-balances
-  "Saves balance records for an account's balance-products."
-  [balance-store account-id currency balance-products]
-  (let [balances (domain/balances account-id currency balance-products)]
-    (doseq [balance balances]
-      (fdb/save-record balance-store (schema/Balance->java balance)))))
+  "Saves balance records for an account."
+  [balance-store balances]
+  (doseq [balance balances]
+    (fdb/save-record balance-store (schema/Balance->java balance))))
 
 (defn open-account
   "Opens an account within a multi-store transaction.
@@ -110,28 +119,31 @@
      record-store
      (fn [open-store]
        (let-nom>
-         [version-store (open-store "cash-account-product-versions")
-          version
-          (load-published-version version-store organization-id product-id)
+         [product-store (open-store "cash-account-product-versions")
+          product (load-product product-store organization-id product-id)
+
           party-store (open-store "parties")
           party (load-party party-store organization-id party-id)
+
           account-store (open-store "cash-accounts")
           accounts (load-party-accounts account-store party-id)
-          account (domain/new-account
-                   account-store
+          account (domain/opening-account
                    data
-                   version
+                   product
                    party
-                   accounts)
+                   accounts
+                   (partial payment-address-fountain account-store))
+
+          balance-store (open-store "balances")
+          balances (domain/opening-balances (:account-id account)
+                                            currency
+                                            (:balance-products product))
+          _ (save-balances balance-store balances)
+
           result (save account-store
                        account
                        {:account-id (:account-id account)
                         :status-after (:account-status account)})]
-         (when (seq (:balance-products version))
-           (save-balances (open-store "balances")
-                          (:account-id account)
-                          currency
-                          (:balance-products version)))
          result)))))
 
 (defn- read
@@ -167,16 +179,16 @@
   [config data]
   (->response config (open-account config data)))
 
-(defn get
+(defn get-account
   "Returns the current account or rejection anomaly."
   [config data]
   (let [{:keys [organization-id account-id]} data]
     (->response config (read config organization-id account-id))))
 
-(defn close
+(defn close-account
   "Closes an account."
   [config data]
   (let [{:keys [organization-id account-id]} data]
     (->response
      config
-     (update config organization-id account-id domain/close-account))))
+     (update config organization-id account-id domain/closing-account))))

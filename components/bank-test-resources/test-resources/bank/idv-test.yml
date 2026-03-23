@@ -1,0 +1,23 @@
+processor: !system/component
+  system/component-kind: idv/processor
+  record-db: !system/ref fdb.record-db
+  record-store: !system/ref fdb.store
+  schemas: !system/ref avro.serde
+party-watcher-handler: !system/component
+  system/component-kind: idv/party-watcher-handler
+  record-store: !system/ref fdb.store
+idv-watcher-handler: !system/component
+  system/component-kind: idv/watcher-handler
+  record-store: !system/ref fdb.store
+watchers: !system/component
+  system/component-kind: fdb/watchers
+  party:
+    record-db: !system/ref fdb.record-db
+    consumer-id: idv-party-watcher
+    store-name: parties
+    handler: !system/local-ref party-watcher-handler
+  idv:
+    record-db: !system/ref fdb.record-db
+    consumer-id: idv-watcher
+    store-name: idvs
+    handler: !system/local-ref idv-watcher-handler

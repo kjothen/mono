@@ -62,44 +62,50 @@
                                :updated-at (System/currentTimeMillis)}]
                     (fdb/save-record store (schema/Party->java party))))))
 
+(def ^:private default-balance-products
+  [{:balance-type :balance-type-default :balance-status :balance-status-posted}
+   {:balance-type :balance-type-default
+    :balance-status :balance-status-pending-incoming}
+   {:balance-type :balance-type-default
+    :balance-status :balance-status-pending-outgoing}])
+
+(def ^:private default-payment-address-schemes [:payment-address-scheme-scan])
+
 (defn- seed-published-product-version
   "Seeds a published CashAccountProductVersion in the
   cash-account-product-versions store."
   ([record-db store-fn product-id]
-   (seed-published-product-version record-db store-fn product-id []))
-  ([record-db store-fn product-id allowed-currencies]
-   (seed-published-product-version
+   (seed-published-product-version record-db
+                                   store-fn
+                                   product-id
+                                   {}))
+  ([record-db store-fn product-id overrides]
+   (fdb/transact
     record-db
     store-fn
-    product-id
-    allowed-currencies
-    [{:balance-type :balance-type-default
-      :balance-status :balance-status-posted}
-     {:balance-type :balance-type-default
-      :balance-status :balance-status-pending-incoming}
-     {:balance-type :balance-type-default
-      :balance-status :balance-status-pending-outgoing}]))
-  ([record-db store-fn product-id allowed-currencies balance-products]
-   (fdb/transact record-db
-                 store-fn
-                 "cash-account-product-versions"
-                 (fn [store]
-                   (let [version {:organization-id test-org-id
-                                  :product-id product-id
-                                  :version-id "prv_test_001"
-                                  :version-number 1
-                                  :status "published"
-                                  :account-type :account-type-current
-                                  :balance-sheet-side
-                                  :balance-sheet-side-liability
-                                  :name "Test Product"
-                                  :allowed-currencies allowed-currencies
-                                  :balance-products balance-products
-                                  :created-at (System/currentTimeMillis)
-                                  :updated-at (System/currentTimeMillis)}]
-                     (fdb/save-record store
-                                      (schema/CashAccountProductVersion->java
-                                       version)))))))
+    "cash-account-product-versions"
+    (fn [store]
+      (let [version
+            (merge {:organization-id test-org-id
+                    :product-id product-id
+                    :version-id "prv_test_001"
+                    :version-number 1
+                    :status "published"
+                    :account-type :account-type-current
+                    :balance-sheet-side
+                    :balance-sheet-side-liability
+                    :name "Test Product"
+                    :allowed-currencies []
+                    :balance-products default-balance-products
+                    :allowed-payment-address-schemes
+                    default-payment-address-schemes
+                    :created-at (System/currentTimeMillis)
+                    :updated-at (System/currentTimeMillis)}
+                   overrides)]
+        (fdb/save-record
+         store
+         (schema/CashAccountProductVersion->java
+          version)))))))
 
 (defn- seed-party
   "Seeds a party record with given status."
@@ -133,41 +139,27 @@
       (seed-published-product-version record-db store-fn test-product-id)
       (nom-test>
         [result (send-command proc schemas "open-cash-account" open-payload)
-         _
-         (is (= "ACCEPTED" (:status result)))
-         decoded
-         (decode-payload schemas "cash-account" result)
-         _
-         (is (some? (:account-id decoded)))
-         _
-         (is (= :cash-account-status-opened (:account-status decoded)))
-         _
-         (is (= test-product-id (:product-id decoded)))
-         _
-         (is (string? (:version-id decoded)))
-         _
-         (is (= open-payload (select-keys decoded (keys open-payload))))
-         _
-         (is (= "040004"
-                (get-in decoded [:payment-addresses 0 :scan :sort-code])))
-         _
-         (is (some? (get-in decoded
-                            [:payment-addresses 0 :scan :account-number])))
-         account-balances
-         (balances/get-balances fdb-config (:account-id decoded))
-         _
-         (is (= 3 (count account-balances)))
-         _
-         (is (= #{:balance-type-default}
-                (set (map :balance-type account-balances))))
-         _
-         (is (= #{:balance-status-posted :balance-status-pending-incoming
-                  :balance-status-pending-outgoing}
-                (set (map :balance-status account-balances))))
-         _
-         (is (every? #(= "USD" (:currency %)) account-balances))
-         _
-         (is (every? #(= 0 (:credit %)) account-balances))]))))
+         _ (is (= "ACCEPTED" (:status result)))
+         decoded (decode-payload schemas "cash-account" result)
+         _ (is (some? (:account-id decoded)))
+         _ (is (= :cash-account-status-opening (:account-status decoded)))
+         _ (is (= test-product-id (:product-id decoded)))
+         _ (is (string? (:version-id decoded)))
+         _ (is (= open-payload (select-keys decoded (keys open-payload))))
+         _ (is (= "040004"
+                  (get-in decoded [:payment-addresses 0 :scan :sort-code])))
+         _ (is (some? (get-in decoded
+                              [:payment-addresses 0 :scan :account-number])))
+         account-balances (balances/get-balances fdb-config
+                                                 (:account-id decoded))
+         _ (is (= 3 (count account-balances)))
+         _ (is (= #{:balance-type-default}
+                  (set (map :balance-type account-balances))))
+         _ (is (= #{:balance-status-posted :balance-status-pending-incoming
+                    :balance-status-pending-outgoing}
+                  (set (map :balance-status account-balances))))
+         _ (is (every? #(= "USD" (:currency %)) account-balances))
+         _ (is (every? #(= 0 (:credit %)) account-balances))]))))
 
 (defn- test-open-account-party-not-active
   [proc schemas record-db store-fn]
@@ -212,20 +204,15 @@
       (nom-test>
         [opened (send-command proc schemas "open-cash-account" open-payload)
          account (decode-payload schemas "cash-account" opened)
-         close-data
-         (select-keys account [:organization-id :account-id])
-         result
-         (send-command proc schemas "close-cash-account" close-data)
-         _
-         (is (= "ACCEPTED" (:status result)))
-         decoded
-         (decode-payload schemas "cash-account" result)
-         _
-         (is (= open-payload (select-keys decoded (keys open-payload))))]))))
+         close-data (select-keys account [:organization-id :account-id])
+         result (send-command proc schemas "close-cash-account" close-data)
+         _ (is (= "ACCEPTED" (:status result)))
+         decoded (decode-payload schemas "cash-account" result)
+         _ (is (= open-payload (select-keys decoded (keys open-payload))))]))))
 
 (defn- test-watcher-transitions
   [proc schemas record-db store-fn]
-  (testing "watcher transitions closing->closed"
+  (testing "watcher transitions opening->opened and closing->closed"
     (let [party-id "cust-watcher"
           open-payload {:organization-id test-org-id
                         :party-id party-id
@@ -234,23 +221,24 @@
                         :product-id test-product-id}]
       (seed-active-party record-db store-fn party-id)
       (nom-test>
-        [opened (send-command proc schemas "open-cash-account" open-payload)
-         account (decode-payload schemas "cash-account" opened)
-         account-id
-         (:account-id account)
-         _ (is (= :cash-account-status-opened (:account-status account)))
-         closed
-         (send-command proc
-                       schemas
-                       "close-cash-account"
-                       {:organization-id test-org-id :account-id account-id})
-         closing-account (decode-payload schemas "cash-account" closed)
-         _
-         (is (= :cash-account-status-closing (:account-status closing-account)))
+        [opening (send-command proc schemas "open-cash-account" open-payload)
+         account (decode-payload schemas "cash-account" opening)
+         account-id (:account-id account)
+         _ (is (= :cash-account-status-opening (:account-status account)))
+         polled-opened
+         (poll-status proc schemas account-id :cash-account-status-opened)
+         _ (is (= :cash-account-status-opened (:account-status polled-opened)))
+         closing (send-command proc
+                               schemas
+                               "close-cash-account"
+                               {:organization-id test-org-id
+                                :account-id account-id})
+         closing-account (decode-payload schemas "cash-account" closing)
+         _ (is (= :cash-account-status-closing
+                  (:account-status closing-account)))
          polled-closed
          (poll-status proc schemas account-id :cash-account-status-closed)
-         _
-         (is (= :cash-account-status-closed (:account-status polled-closed)))]))))
+         _ (is (= :cash-account-status-closed (:account-status polled-closed)))]))))
 
 (defn- test-get-account
   [proc schemas record-db store-fn]
@@ -268,13 +256,10 @@
                   get-data (select-keys account [:organization-id :account-id])
                   result (send-command proc schemas "get-cash-account" get-data)
                   _ (is (= "ACCEPTED" (:status result)))
-                  decoded
-                  (decode-payload schemas "cash-account" result)
-                  _
-                  (is (= (:account-id account) (:account-id decoded)))
-                  _
-                  (is (= :cash-account-status-opened
-                         (:account-status decoded)))]))))
+                  decoded (decode-payload schemas "cash-account" result)
+                  _ (is (= (:account-id account) (:account-id decoded)))
+                  _ (is (= :cash-account-status-opening
+                           (:account-status decoded)))]))))
 
 (defn- test-close-missing-account
   [proc schemas]
@@ -296,26 +281,19 @@
                    :currency "USD"
                    :product-id test-product-id}]
       (seed-active-party record-db store-fn party-id)
-      (nom-test> [r1
-                  (send-command proc
-                                schemas
-                                "open-cash-account"
-                                (assoc payload :name "Account A"))
-                  _
-                  (is (= "ACCEPTED" (:status r1)))
-                  r2
-                  (send-command proc
-                                schemas
-                                "open-cash-account"
-                                (assoc payload :name "Account B"))
-                  _
-                  (is (= "ACCEPTED" (:status r2)))
-                  a1
-                  (decode-payload schemas "cash-account" r1)
-                  a2
-                  (decode-payload schemas "cash-account" r2)
-                  _
-                  (is (not= (:account-id a1) (:account-id a2)))]))))
+      (nom-test> [r1 (send-command proc
+                                   schemas
+                                   "open-cash-account"
+                                   (assoc payload :name "Account A"))
+                  _ (is (= "ACCEPTED" (:status r1)))
+                  r2 (send-command proc
+                                   schemas
+                                   "open-cash-account"
+                                   (assoc payload :name "Account B"))
+                  _ (is (= "ACCEPTED" (:status r2)))
+                  a1 (decode-payload schemas "cash-account" r1)
+                  a2 (decode-payload schemas "cash-account" r2)
+                  _ (is (not= (:account-id a1) (:account-id a2)))]))))
 
 (defn- test-open-account-no-published-version
   [proc schemas]
@@ -339,7 +317,10 @@
     (let [party-id "cust-currency"
           product-id "prd_gbp_only"]
       (seed-active-party record-db store-fn party-id)
-      (seed-published-product-version record-db store-fn product-id ["GBP"])
+      (seed-published-product-version record-db
+                                      store-fn
+                                      product-id
+                                      {:allowed-currencies ["GBP"]})
       (let [result (send-command proc
                                  schemas
                                  "open-cash-account"
@@ -350,6 +331,32 @@
                                   :product-id product-id})]
         (is (error/rejection? result))
         (is (= :cash-account/invalid-currency (error/kind result)))))))
+
+(defn- test-open-account-no-payment-schemes
+  [proc schemas record-db store-fn]
+  (testing
+    "open-cash-account rejects when product has no
+  payment address schemes"
+    (let [party-id "cust-no-schemes"
+          product-id "prd_no_schemes"]
+      (seed-active-party record-db store-fn party-id)
+      (seed-published-product-version
+       record-db
+       store-fn
+       product-id
+       {:allowed-payment-address-schemes []})
+      (let [result
+            (send-command proc
+                          schemas
+                          "open-cash-account"
+                          {:organization-id test-org-id
+                           :party-id party-id
+                           :name "No Schemes"
+                           :currency "USD"
+                           :product-id product-id})]
+        (is (error/rejection? result))
+        (is (= :cash-account/no-payment-schemes
+               (error/kind result)))))))
 
 (defn- test-unknown-command
   [proc schemas]
@@ -365,7 +372,7 @@
 (deftest process-cash-accounts-test
   (with-test-system
    [sys "classpath:bank-cash-account/application-test.yml"]
-   (let [proc (system/instance sys [:cash-accounts :processor])
+   (let [proc (system/instance sys [:cash-account :processor])
          schemas (system/instance sys [:avro :serde])
          record-db (system/instance sys [:fdb :record-db])
          store-fn (system/instance sys [:fdb :store])]
@@ -379,4 +386,5 @@
      (test-open-multiple-accounts proc schemas record-db store-fn)
      (test-open-account-no-published-version proc schemas)
      (test-open-account-invalid-currency proc schemas record-db store-fn)
+     (test-open-account-no-payment-schemes proc schemas record-db store-fn)
      (test-unknown-command proc schemas))))

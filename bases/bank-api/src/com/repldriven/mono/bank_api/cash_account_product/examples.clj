@@ -34,6 +34,7 @@
    :balance-sheet-side :liability
    :allowed-currencies ["GBP" "EUR"]
    :balance-products [{:balance-type :default :balance-status :posted}]
+   :allowed-payment-address-schemes [:scan]
    :valid-from "2025-01-01"
    :valid-to "2025-12-31"
    :created-at "2025-01-01T00:00:00Z"
@@ -47,6 +48,7 @@
    :balance-sheet-side :liability
    :allowed-currencies ["GBP" "EUR"]
    :balance-products [{:balance-type :default :balance-status :posted}]
+   :allowed-payment-address-schemes [:scan]
    :valid-from "2025-01-01"
    :valid-to "2025-12-31"})
 
@@ -56,5 +58,6 @@
    :balance-sheet-side :liability
    :allowed-currencies ["GBP" "EUR"]
    :balance-products [{:balance-type :default :balance-status :posted}]
+   :allowed-payment-address-schemes [:scan]
    :valid-from "2025-01-01"
    :valid-to "2025-12-31"})

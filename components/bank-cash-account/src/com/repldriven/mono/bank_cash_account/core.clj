@@ -26,8 +26,8 @@
       (let-nom> [data (avro/deserialize-same schema payload)]
         (case command
           "open-cash-account" (commands/new-account config data)
-          "close-cash-account" (commands/close config data)
-          "get-cash-account" (commands/get config data)
+          "close-cash-account" (commands/close-account config data)
+          "get-cash-account" (commands/get-account config data)
           (error/reject :cash-account/unknown-command
                         (str "Unknown command: " command)))))))
 

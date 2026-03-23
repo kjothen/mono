@@ -2,63 +2,66 @@
   (:refer-clojure :exclude [name])
   (:require
     [com.repldriven.mono.encryption.interface :as encryption]
-    [com.repldriven.mono.error.interface :as error :refer [let-nom>]]
-    [com.repldriven.mono.fdb.interface :as fdb]))
+    [com.repldriven.mono.error.interface :as error :refer [let-nom>]]))
 
-(defn update-account-status
-  "Returns account with updated status and timestamp."
-  [status account]
-  (assoc account
-         :account-status status
-         :updated-at (System/currentTimeMillis)))
-
-(defn close-account
-  "Returns account with status closing."
-  [account]
-  (update-account-status :cash-account-status-closing account))
-
-(defn- uk-scan-address
-  [store]
-  (let [sort-code "040004"
-        account-number
-        (format "%08d"
-                (fdb/allocate-counter store "bank" "counters" sort-code))]
-    {:scheme "uk.scan"
-     :identifier {:scan {:sort-code sort-code
-                         :account-number account-number}}}))
-
-(defn- validate-currency
-  "Validates currency against version's allowed-currencies.
-  Returns nil on success, rejection anomaly on failure."
-  [currency version]
-  (let [allowed (:allowed-currencies version)]
-    (when (and (seq allowed) (not (some #{currency} allowed)))
+(defn- valid-currency?
+  "Returns true if currency is allowed by version, rejection
+  anomaly otherwise."
+  [currency product]
+  (let [allowed (:allowed-currencies product)]
+    (if (and (seq allowed) (not (some #{currency} allowed)))
       (error/reject :cash-account/invalid-currency
-                    "Currency not allowed for this product"))))
+                    "Currency not allowed for this product")
+      true)))
 
-(defn- validate-party-status
-  "Returns a rejection anomaly if the party is not active,
-  nil otherwise."
+(defn- valid-party?
+  "Returns true if party is active, rejection anomaly
+  otherwise."
   [party]
   (let [status (:status party)]
-    (when (not= :party-status-active status)
+    (if (not= :party-status-active status)
       (let [s (subs (clojure.core/name status) (count "party-status-"))]
         (error/reject (keyword "cash-account"
                                (str "party-" s))
-                      (str "Party is " s))))))
+                      (str "Party is " s)))
+      true)))
 
-(defn new-account
+(defn- new-addresses
+  [product address-fountain-fn]
+  (let [{:keys [allowed-payment-address-schemes]} product]
+    (if (empty? allowed-payment-address-schemes)
+      (error/reject :cash-account/no-payment-schemes
+                    "Product has no allowed payment address schemes")
+      (reduce (fn [addresses scheme]
+                (case scheme
+                  :payment-address-scheme-scan
+                  (let [sort-code "040004"
+                        account-number (address-fountain-fn sort-code)]
+                    (conj addresses
+                          {:scheme :payment-address-scheme-scan
+                           :identifier {:scan
+                                        {:sort-code sort-code
+                                         :account-number account-number}}}))
+                  (reduced (error/reject :cash-account/unsupported-scheme
+                                         (str
+                                          "Unsupported payment address scheme: "
+                                          (clojure.core/name scheme))))))
+              []
+              allowed-payment-address-schemes))))
+
+(defn opening-account
   "Creates a new account map with status opened and payment
   addresses. Validates currency against version and party
   is active."
-  [store data version party _existing-accounts]
+  [data product party _accounts address-fountain-fn]
   (let [{:keys [organization-id party-id product-id currency
                 name]}
         data
-        {:keys [version-id]} version]
+        {:keys [version-id]} product]
     (let-nom>
-      [_ (validate-currency currency version)
-       _ (validate-party-status party)]
+      [_ (valid-currency? currency product)
+       _ (valid-party? party)
+       payment-addresses (new-addresses product address-fountain-fn)]
       (let [now (System/currentTimeMillis)]
         {:organization-id organization-id
          :party-id party-id
@@ -67,12 +70,12 @@
          :currency currency
          :name name
          :account-id (encryption/generate-id "acc")
-         :account-status :cash-account-status-opened
-         :payment-addresses [(uk-scan-address store)]
+         :account-status :cash-account-status-opening
+         :payment-addresses payment-addresses
          :created-at now
          :updated-at now}))))
 
-(defn balances
+(defn opening-balances
   "Returns balances for each balance-product."
   [account-id currency balance-products]
   (let [now (System/currentTimeMillis)]
@@ -87,12 +90,20 @@
              :updated-at now})
           balance-products)))
 
-(def ^:private lifecycle-transitions
-  {:cash-account-status-closing :cash-account-status-closed})
+(defn opened-account
+  [account]
+  (assoc account
+         :account-status :cash-account-status-opened
+         :updated-at (System/currentTimeMillis)))
 
-(defn transition-lifecyle
-  "Returns account with next status, or nil if no
-  transition applies."
-  [_store account]
-  (when-let [next-status (lifecycle-transitions (:account-status account))]
-    (update-account-status next-status account)))
+(defn closing-account
+  [account]
+  (assoc account
+         :account-status :cash-account-status-closing
+         :updated-at (System/currentTimeMillis)))
+
+(defn closed-account
+  [account]
+  (assoc account
+         :account-status :cash-account-status-closed
+         :updated-at (System/currentTimeMillis)))

@@ -39,7 +39,7 @@
    :product-id "prd_01JMABC"
    :version-id "prv_01JMABC"
    :account-status :opened
-   :payment-addresses [{:scheme "uk.scan"
+   :payment-addresses [{:scheme :scan
                         :identifier {:scan {:sort-code "040004"
                                             :account-number "12345678"}}}]})
 

@@ -121,98 +121,69 @@ Full API documentation is published at
 Interactive OpenAPI documentation is also served locally at
 [http://localhost:8080](http://localhost:8080) when the server is running.
 
-### Command Request/Reply Flow
-
-Commands travel from the HTTP API through Pulsar to domain processors and back.
-Each flow follows the same pattern:
+### Architecture
 
 ```
-bank-api ─► Pulsar command topic ─► command-processor ─► domain processor
-                                                            ↓
-bank-api ◄─ Pulsar response topic ◄─ command response ◄─────┘
+                              ┌─────────────────────┐
+                              │      bank-app       │
+                              │      (Svelte)       │
+                              └─────────┬───────────┘
+                                     HTTP API
+                              ┌─────────▼───────────┐
+                              │      bank-api       │
+                              │   (Reitit + Malli)  │
+                              └──┬───────────────┬──┘
+                     ┌───────────┘               └───────────┐
+      sync direct (create/update/query)     async message-bus (create/update)
+                     │                                       │
+    ┌────────────────▼─────────────────┐    ┌────────────────▼──────────────┐
+    │         create/update            │    │     ┌─────────────────────┐   │
+    │                                  │    │     │  command-processor  │   │
+    │  organization                    │    │     │       (Avro)        │   │
+    │  cash-account-product            │    │     └────────┬────────────┘   │
+    │  api-key                         │    │              │                │
+    │            query                 │    │    ┌─────────┼──────────┐     │
+    │  *                               │    │    ▼         ▼          ▼     │
+    └────────────────┬─────────────────┘    │  party     cash-  transaction │
+                     │                      │           account             │
+                     │                      └────┬───────┬──────────┬───────┘
+                     │                           │       │          │
+                     │    ┌──────────────────┐   │       │          │
+                     │    │     Watchers     │   │       │          │
+                     │    │  (FDB changelog) │   │       │          │
+                     │    │                  │   │       │          │
+                     │    │  idv:            │◄──│       │          │
+                     │    │    → accepted    │   │       │          │
+                     │    │  party:          │◄──│       │          │
+                     │    │    → active      │   │       │          │
+                     │    │  cash-account:   │◄──┤───────│          │
+                     │    │    → opened      │   │       │          │
+                     │    │    → closed      │   │       │          │
+                     │    └────────┬─────────┘   │       │          │
+                     │             │             │       │          │
+              ┌──────▼─────────────▼─────────────▼───────▼──────────▼──┐
+              │                   FoundationDB                         │
+              │                  (Record Layer)                        │
+              │                                                        │
+              │  organizations  api-keys  parties  idvs                │
+              │  cash-account-products  cash-accounts                  │
+              │  transactions  balances                                │
+              └────────────────────────────────────────────────────────┘
 ```
 
-**Create a party** — `POST /v1/parties`
+**Sync path** — low-volume activity, concerning organisations, products and
+API keys are created/updated directly by the API handlers.
+All records are queried on-demand using FDB record primary key ordering.
 
-```
-bank-api                    command-processor         PartyProcessor
-   │                              │                        │
-   ├── serialize body ──────────► │                        │
-   │   (parties-command topic)    ├── dispatch ──────────► │
-   │                              │   "create-party"       ├── create party (pending)
-   │                              │                        ├── create person-identification
-   │                              │                        ├── create national-identifier
-   │                              │                        │   (FDB transaction)
-   │  (parties-command-response)  │ ◄── ACCEPTED ──────────┤
-   ◄──────────────────────────────┤                        │
-   │                              │
-   │  ┌─── IDV watcher (async) ──────────────────────────────┐
-   │  │ FDB changelog fires when IDV status → accepted       │
-   │  │ Party transitions from pending → active              │
-   │  └──────────────────────────────────────────────────────┘
-```
+**Async path** — high volume activity, concerning parties,
+cash accounts, and transactions are Avro-serialised commands
+sent through message bus to command processors.
+Processors write to FDB and reply via message bus.
+Responses use envelope statuses:
+`ACCEPTED` (2xx), `REJECTED` (4xx), or `FAILED` (5xx).
 
-**Open an account** — `POST /v1/cash-accounts` (requires active party)
-
-```
-bank-api                    command-processor         AccountProcessor
-   │                              │                        │
-   ├── serialize body ──────────► │                        │
-   │   (accounts-command topic)   ├── dispatch ──────────► │
-   │                              │   "open-account"       ├── verify party is active
-   │                              │                        ├── verify product published
-   │                              │                        ├── create account (opened)
-   │                              │                        ├── assign SCAN address
-   │                              │                        ├── create balances from
-   │                              │                        │   product balance products
-   │                              │                        │   (FDB transaction)
-   │  (accounts-command-response) │ ◄── ACCEPTED ──────────┤
-   ◄──────────────────────────────┤                        │
-```
-
-**Close an account** — `POST /v1/cash-accounts/{account-id}/close`
-
-```
-bank-api                    command-processor         AccountProcessor
-   │                              │                        │
-   ├── serialize body ──────────► │                        │
-   │   (accounts-command topic)   ├── dispatch ──────────► │
-   │                              │   "close-account"      ├── load account
-   │                              │                        ├── set status → closing
-   │                              │                        │   (FDB transaction)
-   │  (accounts-command-response) │ ◄── ACCEPTED ──────────┤
-   ◄──────────────────────────────┤                        │
-   │                              │
-   │  ┌─── Account watcher (async) ──────────────────────────┐
-   │  │ FDB changelog fires when status → closing            │
-   │  │ Account transitions from closing → closed            │
-   │  └──────────────────────────────────────────────────────┘
-```
-
-**Simulate inbound transfer** — `POST /v1/simulate/organizations/{org-id}/inbound-transfer`
-
-```
-bank-api                    command-processor         TransactionProcessor
-   │                              │                        │
-   ├── look up customer org's ────┤                        │
-   │   settlement account         │                        │
-   ├── serialize body ──────────► │                        │
-   │   (transactions-command)     ├── dispatch ──────────► │
-   │                              │   "record-transaction" ├── create transaction (posted)
-   │                              │                        ├── create debit leg
-   │                              │                        │   (internal suspense)
-   │                              │                        ├── create credit leg
-   │                              │                        │   (customer default)
-   │                              │                        ├── update balances
-   │                              │                        │   (FDB multi-store txn)
-   │  (transactions-cmd-response) │ ◄── ACCEPTED ──────────┤
-   ◄──────────────────────────────┤                        │
-```
-
-All commands are Avro-serialised. Responses use envelope statuses: `ACCEPTED`
-(2xx), `REJECTED` (4xx), or `FAILED` (5xx).
-
-## Architecture
+**Watchers** — FDB changelog triggers drive reactive state transitions:
+IDV acceptance activates the party; account opening/closing auto-transitions.
 
 ### Polylith
 
@@ -328,35 +299,35 @@ pipelines without defensive `try/catch` noise.
 
 ## Mono Bases
 
-| Base                   | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `build`                | Uberjar build tooling and Protobuf code generation   |
-| `external-test-runner` | Out-of-process test runner for Polylith              |
-| `service`              | Generic async command handler entry point            |
+| Base                   | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `build`                | Uberjar build tooling and Protobuf code generation |
+| `external-test-runner` | Out-of-process test runner for Polylith            |
+| `service`              | Generic async command handler entry point          |
 
 ## Domain Components
 
-| Component &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Purpose |
-| --- | --- |
-| `bank-api-key` | API key generation, hashing, and verification |
-| `bank-balance` | Account balance management — create, query by type/currency/status |
-| `bank-bootstrap` | Internal organization bootstrap and seed data |
-| `bank-cash-account` | Account lifecycle — open, close, suspend, reopen, archive |
-| `bank-cash-account-product` | Product and version management — draft, publish, balance product config |
-| `bank-idv` | Identity verification processing |
-| `bank-organization` | Organisation management — create org, API key generation and verification |
-| `bank-party` | Party creation and management |
-| `bank-schema` | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct, Transaction) |
-| `bank-test-resources` | Bank-specific test configuration (FDB stores, Avro schemas) |
-| `bank-transaction` | Transaction recording with double-entry legs |
+| Component &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Purpose                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `bank-api-key`                                                                                                                                             | API key generation, hashing, and verification                                                      |
+| `bank-balance`                                                                                                                                             | Account balance management — create, query by type/currency/status                                 |
+| `bank-bootstrap`                                                                                                                                           | Internal organization bootstrap and seed data                                                      |
+| `bank-cash-account`                                                                                                                                        | Account lifecycle — open, close, suspend, reopen, archive                                          |
+| `bank-cash-account-product`                                                                                                                                | Product and version management — draft, publish, balance product config                            |
+| `bank-idv`                                                                                                                                                 | Identity verification processing                                                                   |
+| `bank-organization`                                                                                                                                        | Organisation management — create org, API key generation and verification                          |
+| `bank-party`                                                                                                                                               | Party creation and management                                                                      |
+| `bank-schema`                                                                                                                                              | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct, Transaction) |
+| `bank-test-resources`                                                                                                                                      | Bank-specific test configuration (FDB stores, Avro schemas)                                        |
+| `bank-transaction`                                                                                                                                         | Transaction recording with double-entry legs                                                       |
 
 ## Domain Bases
 
-| Base             | Purpose                                              |
-| ---------------- | ---------------------------------------------------- |
-| `bank-api`       | HTTP API handlers, routes, and OpenAPI spec          |
-| `bank-app`       | Svelte front-end for the banking application         |
-| `bank-monolith`  | Full system entry point combining API and processors |
+| Base            | Purpose                                              |
+| --------------- | ---------------------------------------------------- |
+| `bank-api`      | HTTP API handlers, routes, and OpenAPI spec          |
+| `bank-app`      | Svelte front-end for the banking application         |
+| `bank-monolith` | Full system entry point combining API and processors |
 
 ## Domain Projects
 

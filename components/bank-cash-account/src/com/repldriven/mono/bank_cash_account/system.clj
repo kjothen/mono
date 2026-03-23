@@ -21,5 +21,5 @@
    :system/config {:record-store system/required-component}
    :system/instance-schema fn?})
 
-(system/defcomponents :cash-accounts
+(system/defcomponents :cash-account
                       {:processor processor :watcher-handler watcher-handler})

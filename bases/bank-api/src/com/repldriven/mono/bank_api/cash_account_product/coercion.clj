@@ -15,5 +15,14 @@
                            "liability" :balance-sheet-side-liability}
                           :balance-sheet-side-unknown))
 
+(def ^:private payment-address-scheme-enum
+  (coercion/enum-coercion {"scan" :payment-address-scheme-scan
+                           "iban" :payment-address-scheme-iban
+                           "swift" :payment-address-scheme-swift
+                           "ach" :payment-address-scheme-ach}
+                          :payment-address-scheme-unknown))
+
 (def account-type-enum-schema (:enum-schema account-type-enum))
 (def balance-sheet-side-enum-schema (:enum-schema balance-sheet-side-enum))
+(def payment-address-scheme-enum-schema
+  (:enum-schema payment-address-scheme-enum))

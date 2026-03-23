@@ -7,26 +7,36 @@
     [com.repldriven.mono.fdb.interface :as fdb]))
 
 (defn cash-account-changelog-handler
-  "Returns a watcher handler that transitions closing
-  accounts to closed when their changelog reports
-  status-after :cash-account-status-closing."
-  [accounts-store-fn]
+  "Returns a watcher handler that transitions an opening account 
+  to opened, or a closing account to closed."
+  [accounts-store]
   (fn [ctx changelog-bytes]
-    (let [changelog (schema/pb->CashAccountChangelog changelog-bytes)]
-      (when (= :cash-account-status-closing (:status-after changelog))
-        (let [store (accounts-store-fn ctx "cash-accounts")
-              account-id (:account-id changelog)
-              organization-id (:organization-id changelog)]
-          (when-some [rec (fdb/load-record store organization-id account-id)]
-            (let [account (schema/pb->CashAccount rec)]
-              (when-some [transitioned (domain/transition-lifecyle store
-                                                                   account)]
-                (fdb/save-record store (schema/CashAccount->java transitioned))
-                (fdb/write-changelog
-                 store
-                 "cash-accounts"
-                 (:account-id transitioned)
-                 (schema/CashAccountChangelog->pb
-                  {:account-id account-id
-                   :status-before (:account-status account)
-                   :status-after (:account-status transitioned)}))))))))))
+    (let [changelog (schema/pb->CashAccountChangelog changelog-bytes)
+          {:keys [organization-id account-id status-after]} changelog]
+      (when (#{:cash-account-status-opening :cash-account-status-closing}
+             status-after)
+        (let [store (accounts-store ctx "cash-accounts")
+              record (fdb/load-record store organization-id account-id)]
+          (when record
+            (let [account (schema/pb->CashAccount record)
+                  transitioned
+                  (case status-after
+                    :cash-account-status-opening (domain/opened-account account)
+                    :cash-account-status-closing (domain/closed-account account)
+                    :else account)
+                  {:keys [account-status]} transitioned]
+              (fdb/save-record store (schema/CashAccount->java transitioned))
+              (fdb/write-changelog store
+                                   "cash-accounts"
+                                   account-id
+                                   (schema/CashAccountChangelog->pb
+                                    {:account-id account-id
+                                     :status-before status-after
+                                     :status-after account-status})))))))))
+
+
+
+
+
+
+

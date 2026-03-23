@@ -3,11 +3,12 @@
           ":require" [:flow-body {:style :respect-nl}]
           "comment" [:flow-body {:style :respect-nl}]
           "with-system" :arg1-body
-          "let-nom" :binding
-          "let-nom>" :binding
+          "let" [:binding {:binding {:hang-expand 1000.0}}]
+          "let-nom" [:binding {:binding {:hang-expand 1000.0}}]
+          "let-nom>" [:binding {:binding {:hang-expand 1000.0}}]
           "nom-do>" :arg1
-          "nom-let>" :binding
-          "nom-test>" :binding
+          "nom-let>" [:binding {:binding {:hang-expand 1000.0}}]
+          "nom-test>" [:binding {:binding {:hang-expand 1000.0}}]
           "cond" [:pair {:style :respect-nl}]
           "cond->" [:pair {:style :respect-nl}]
           "defn" [:arg1-body {:style :respect-nl}]

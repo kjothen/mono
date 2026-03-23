@@ -37,7 +37,7 @@
                             (select-keys (:party org) [:type :status])))
                    _ (is (= #{"GBP" "USD"}
                             (set (map :currency (:accounts org)))))
-                   _ (is (every? #(= :cash-account-status-opened
+                   _ (is (every? #(= :cash-account-status-opening
                                      (:account-status %))
                                  (:accounts org)))
                    _ (is (every? #(seq (:balances %)) (:accounts org)))

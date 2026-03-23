@@ -22,7 +22,12 @@
                 "type": "record",
                 "name": "PaymentAddress",
                 "fields": [
-                  {"name": "scheme", "type": "string"},
+                  {"name": "scheme", "type": {"type": "enum",
+                                                       "name": "PaymentAddressScheme",
+                                                       "symbols": ["PAYMENT_ADDRESS_SCHEME_SCAN",
+                                                                    "PAYMENT_ADDRESS_SCHEME_IBAN",
+                                                                    "PAYMENT_ADDRESS_SCHEME_SWIFT",
+                                                                    "PAYMENT_ADDRESS_SCHEME_ACH"]}},
                   {"name": "scan",
                    "type": ["null",
                             {"type": "record",

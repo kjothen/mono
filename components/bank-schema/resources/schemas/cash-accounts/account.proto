@@ -6,13 +6,21 @@ import "record_metadata_options.proto";
 
 option java_outer_classname = "CashAccountProto";
 
+enum PaymentAddressScheme {
+  PAYMENT_ADDRESS_SCHEME_UNKNOWN = 0;
+  PAYMENT_ADDRESS_SCHEME_SCAN    = 1;
+  PAYMENT_ADDRESS_SCHEME_IBAN    = 2;
+  PAYMENT_ADDRESS_SCHEME_SWIFT   = 3;
+  PAYMENT_ADDRESS_SCHEME_ACH     = 4;
+}
+
 message ScanAddress {
   required string sort_code = 1;
   required string account_number = 2;
 }
 
 message PaymentAddress {
-  required string scheme = 1;
+  required PaymentAddressScheme scheme = 1;
   oneof identifier {
     ScanAddress scan = 2;
     string value = 3;

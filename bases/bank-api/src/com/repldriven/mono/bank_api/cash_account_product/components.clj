@@ -12,6 +12,9 @@
 (def BalanceSheetSide
   (coercion/balance-sheet-side-enum-schema {:json-schema/example "liability"}))
 
+(def PaymentAddressScheme
+  (coercion/payment-address-scheme-enum-schema {:json-schema/example "scan"}))
+
 (def DraftCashAccountProductRequest
   [:map {:json-schema/example examples/DraftCashAccountProductRequest}
    [:name string?]
@@ -20,6 +23,8 @@
    [:allowed-currencies {:optional true} [:maybe [:vector [:ref "Currency"]]]]
    [:balance-products {:optional true}
     [:maybe [:vector [:ref "BalanceProductRequest"]]]]
+   [:allowed-payment-address-schemes {:optional true}
+    [:maybe [:vector [:ref "PaymentAddressScheme"]]]]
    [:valid-from {:optional true} [:maybe [:ref "Timestamp"]]]
    [:valid-to {:optional true} [:maybe [:ref "Timestamp"]]]])
 
@@ -36,6 +41,8 @@
    [:allowed-currencies {:optional true} [:maybe [:vector [:ref "Currency"]]]]
    [:balance-products {:optional true}
     [:maybe [:vector [:ref "BalanceProduct"]]]]
+   [:allowed-payment-address-schemes {:optional true}
+    [:maybe [:vector [:ref "PaymentAddressScheme"]]]]
    [:valid-from {:optional true} [:maybe string?]]
    [:valid-to {:optional true} [:maybe string?]]
    [:created-at {:optional true} [:maybe [:ref "Timestamp"]]]
@@ -53,11 +60,13 @@
    [:allowed-currencies {:optional true} [:maybe [:vector [:ref "Currency"]]]]
    [:balance-products {:optional true}
     [:maybe [:vector [:ref "BalanceProductRequest"]]]]
+   [:allowed-payment-address-schemes {:optional true}
+    [:maybe [:vector [:ref "PaymentAddressScheme"]]]]
    [:valid-from {:optional true} [:maybe [:ref "Timestamp"]]]
    [:valid-to {:optional true} [:maybe [:ref "Timestamp"]]]])
 
 (def registry
   (components-registry
-   [#'AccountType #'BalanceSheetSide #'DraftCashAccountProductRequest
-    #'CashAccountProductVersion #'CashAccountProductVersionList
-    #'DraftCashAccountProductVersionRequest]))
+   [#'AccountType #'BalanceSheetSide #'PaymentAddressScheme
+    #'DraftCashAccountProductRequest #'CashAccountProductVersion
+    #'CashAccountProductVersionList #'DraftCashAccountProductVersionRequest]))

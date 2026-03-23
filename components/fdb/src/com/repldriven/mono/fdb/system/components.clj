@@ -208,3 +208,21 @@
                    :store-name system/required-component
                    :handler system/required-component}
    :system/instance-schema some?})
+
+;; ---
+;; watchers
+;; ---
+
+(def watchers-component
+  {:system/start
+   (fn [{:system/keys [config instance]}]
+     (or instance (into {} (map (fn [[k v]] [k (watcher/start v)]) config))))
+   :system/stop (fn [{:system/keys [instance]}]
+                  (when (some? instance)
+                    (dorun (map (fn [[k v]]
+                                  (log/info "Stopping watcher:"
+                                            (clojure.core/name k))
+                                  ((:stop v)))
+                                instance))))
+   :system/config system/required-component
+   :system/instance-schema map?})
