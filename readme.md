@@ -78,7 +78,7 @@ Interactive OpenAPI documentation is also served locally at
 
 ### Demo
 
-[![Queenswood Bank](thumbnail.png)](https://github.com/user-attachments/assets/b8914081-dd22-41b3-88f8-33885caa8ff1)
+[![Queenswood Bank](thumbnail.png)](https://github.com/user-attachments/assets/e427bc5f-c0d7-47d2-a058-c03196c2e3fe)
 
 ### How It Works
 

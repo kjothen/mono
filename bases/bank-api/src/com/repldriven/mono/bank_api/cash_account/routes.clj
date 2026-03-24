@@ -38,6 +38,11 @@
              :responses {200 {:body [:ref "CashAccount"]}
                          404 (ErrorResponse [#'CashAccountNotFound])}
              :handler queries/get-cash-account}}]
+     ["/transactions"
+      {:get {:summary "Retrieve account transactions"
+             :openapi {:operationId "RetrieveAccountTransactions"}
+             :responses {200 {:body [:ref "AccountTransactionList"]}}
+             :handler queries/list-transactions}}]
      ["/close"
       {:post {:summary "Close a cash account"
               :openapi {:operationId "CloseCashAccount"}

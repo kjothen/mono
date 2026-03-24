@@ -1,5 +1,5 @@
 <script>
-  import { list_cash_accounts, close_cash_account, list_balances, simulate_inbound_transfer, submit_internal_payment } from "./api.mjs";
+  import { list_cash_accounts, close_cash_account, list_balances, list_transactions, simulate_inbound_transfer, submit_internal_payment } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount, tick } from "svelte";
 
@@ -9,8 +9,11 @@
   let error = $state(null);
   let currentQuery = $state(null);
   let expandedAccountId = $state(null);
+  let activeTab = $state({});
   let balances = $state({});
   let loadingBalances = $state({});
+  let transactions = $state({});
+  let loadingTransactions = $state({});
   let showFundDialog = $state(false);
   let fundAccountId = $state(null);
   let fundAmount = $state(100);
@@ -171,6 +174,7 @@
         accounts = acctRes.body["cash-accounts"] ?? [];
         links = acctRes.body.links ?? {};
         balances = {};
+        transactions = {};
       } else {
         error = acctRes.body?.error ?? `HTTP ${acctRes["http-status"]}`;
         accounts = [];
@@ -197,27 +201,52 @@
     }
   }
 
-  async function toggleBalances(accountId) {
+  async function loadBalances(accountId) {
+    loadingBalances[accountId] = true;
+    try {
+      const res = await list_balances(accountId);
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        balances[accountId] = res.body.balances ?? [];
+      } else {
+        balances[accountId] = [];
+      }
+    } catch (_) {
+      balances[accountId] = [];
+    } finally {
+      delete loadingBalances[accountId];
+    }
+  }
+
+  async function loadTransactions(accountId) {
+    loadingTransactions[accountId] = true;
+    try {
+      const res = await list_transactions(accountId);
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        transactions[accountId] = res.body.transactions ?? [];
+      } else {
+        transactions[accountId] = [];
+      }
+    } catch (_) {
+      transactions[accountId] = [];
+    } finally {
+      delete loadingTransactions[accountId];
+    }
+  }
+
+  function toggleExpanded(accountId) {
     if (expandedAccountId === accountId) {
       expandedAccountId = null;
       return;
     }
     expandedAccountId = accountId;
-    {
-      loadingBalances[accountId] = true;
-      try {
-        const res = await list_balances(accountId);
-        if (res["http-status"] >= 200 && res["http-status"] < 300) {
-          balances[accountId] = res.body.balances ?? [];
-        } else {
-          balances[accountId] = [];
-        }
-      } catch (_) {
-        balances[accountId] = [];
-      } finally {
-        delete loadingBalances[accountId];
-      }
-    }
+    activeTab[accountId] = activeTab[accountId] ?? "balances";
+    if (!balances[accountId]) loadBalances(accountId);
+  }
+
+  function switchTab(accountId, tab) {
+    activeTab[accountId] = tab;
+    if (tab === "balances" && !balances[accountId]) loadBalances(accountId);
+    if (tab === "transactions" && !transactions[accountId]) loadTransactions(accountId);
   }
 
   function scanOf(acct) {
@@ -264,7 +293,7 @@
         <tr><td colspan="9" class="empty">No accounts found</td></tr>
       {/if}
       {#each accounts as acct}
-        <tr class="account-row" onclick={() => toggleBalances(acct["account-id"])}>
+        <tr class="account-row" onclick={() => toggleExpanded(acct["account-id"])}>
           <td class="mono">
             <span class="chevron">{expandedAccountId === acct["account-id"] ? "\u25BC" : "\u25B6"}</span>
             {acct["account-id"]}
@@ -318,44 +347,88 @@
           </td>
         </tr>
         {#if expandedAccountId === acct["account-id"]}
-          <tr class="balances-row">
+          <tr class="detail-row">
             <td colspan="9">
-              {#if loadingBalances[acct["account-id"]]}
-                <div class="balances-loading">Loading balances...</div>
-              {:else if (balances[acct["account-id"]] ?? []).length === 0}
-                <div class="balances-empty">No balances found</div>
-              {:else}
-                <table class="balances-table">
-                  <thead>
-                    <tr>
-                      <th>Balance Type</th>
-                      <th>Balance Status</th>
-                      <th>Currency</th>
-                      <th>Credit</th>
-                      <th>Debit</th>
-                      <th>Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each balances[acct["account-id"]] as bal}
+              <div class="tab-bar">
+                <button class="tab-btn" class:active={activeTab[acct["account-id"]] === "balances"}
+                        onclick={(e) => { e.stopPropagation(); switchTab(acct["account-id"], "balances"); }}>
+                  Balances
+                </button>
+                <button class="tab-btn" class:active={activeTab[acct["account-id"]] === "transactions"}
+                        onclick={(e) => { e.stopPropagation(); switchTab(acct["account-id"], "transactions"); }}>
+                  Transactions
+                </button>
+              </div>
+
+              {#if activeTab[acct["account-id"]] === "balances"}
+                {#if loadingBalances[acct["account-id"]]}
+                  <div class="detail-loading">Loading balances...</div>
+                {:else if (balances[acct["account-id"]] ?? []).length === 0}
+                  <div class="detail-empty">No balances found</div>
+                {:else}
+                  <table class="detail-table">
+                    <thead>
                       <tr>
-                        <td>{bal["balance-type"]}</td>
-                        <td>
-                          <span class="status-badge"
-                                class:opened={bal["balance-status"] === "posted"}
-                                class:opening={bal["balance-status"] === "pending-incoming" || bal["balance-status"] === "pending-outgoing"}
-                                class:closed={bal["balance-status"] === "closed"}>
-                            {bal["balance-status"]}
-                          </span>
-                        </td>
-                        <td>{bal.currency}</td>
-                        <td class="mono">{bal.credit}</td>
-                        <td class="mono">{bal.debit}</td>
-                        <td title={bal["created-at"]}>{time_ago(bal["created-at"])}</td>
+                        <th>Balance Type</th>
+                        <th>Balance Status</th>
+                        <th>Currency</th>
+                        <th>Credit</th>
+                        <th>Debit</th>
+                        <th>Created</th>
                       </tr>
-                    {/each}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {#each balances[acct["account-id"]] as bal}
+                        <tr>
+                          <td>{bal["balance-type"]}</td>
+                          <td>
+                            <span class="status-badge"
+                                  class:opened={bal["balance-status"] === "posted"}
+                                  class:opening={bal["balance-status"] === "pending-incoming" || bal["balance-status"] === "pending-outgoing"}
+                                  class:closed={bal["balance-status"] === "closed"}>
+                              {bal["balance-status"]}
+                            </span>
+                          </td>
+                          <td>{bal.currency}</td>
+                          <td class="mono">{bal.credit}</td>
+                          <td class="mono">{bal.debit}</td>
+                          <td title={bal["created-at"]}>{time_ago(bal["created-at"])}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                {/if}
+              {:else if activeTab[acct["account-id"]] === "transactions"}
+                {#if loadingTransactions[acct["account-id"]]}
+                  <div class="detail-loading">Loading transactions...</div>
+                {:else if (transactions[acct["account-id"]] ?? []).length === 0}
+                  <div class="detail-empty">No transactions found</div>
+                {:else}
+                  <table class="detail-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Direction</th>
+                        <th>Amount</th>
+                        <th>Reference</th>
+                        <th>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each transactions[acct["account-id"]] as txn}
+                        <tr>
+                          <td class="mono">{txn["transaction-id"]}</td>
+                          <td>{txn["transaction-type"]}</td>
+                          <td>{txn.side}</td>
+                          <td class="mono">{txn.amount}</td>
+                          <td>{txn.reference ?? ""}</td>
+                          <td title={txn["created-at"]}>{time_ago(txn["created-at"])}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                {/if}
               {/if}
             </td>
           </tr>
@@ -633,26 +706,54 @@
     color: var(--text-muted);
   }
 
-  .balances-row > td {
+  .detail-row > td {
     padding: 0 0.6rem 0.6rem 2rem;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
   }
 
-  .balances-table {
+  .tab-bar {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .tab-btn {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--border-input);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: var(--bg-secondary);
+    color: var(--text);
+    font-weight: 600;
+    border-color: var(--text-muted);
+  }
+
+  .tab-btn:hover:not(.active) {
+    background: var(--bg-hover);
+  }
+
+  .detail-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.82rem;
   }
 
-  .balances-table th,
-  .balances-table td {
+  .detail-table th,
+  .detail-table td {
     text-align: left;
     padding: 0.35rem 0.5rem;
     border-bottom: 1px solid var(--border);
   }
 
-  .balances-table th {
+  .detail-table th {
     background: transparent;
     font-weight: 600;
     font-size: 0.75rem;
@@ -661,8 +762,8 @@
     color: var(--text-muted);
   }
 
-  .balances-loading,
-  .balances-empty {
+  .detail-loading,
+  .detail-empty {
     padding: 0.75rem 0;
     color: var(--text-faint);
     font-size: 0.85rem;

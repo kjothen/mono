@@ -2,6 +2,7 @@
   (:require
     [com.repldriven.mono.bank-api.cursor :as cursor]
     [com.repldriven.mono.bank-api.errors :refer [error-response]]
+    [com.repldriven.mono.bank-transaction.interface :as transactions]
     [com.repldriven.mono.error.interface :as error]
     [com.repldriven.mono.fdb.interface :as fdb]
     [com.repldriven.mono.bank-schema.interface :as schema]))
@@ -90,3 +91,16 @@
           :else
           {:status 200
            :body (schema/pb->CashAccount result)})))
+
+(defn list-transactions
+  [request]
+  (let [{:keys [record-db record-store]} request
+        account-id (get-in request
+                           [:parameters :path :account-id])
+        result (transactions/get-account-transactions
+                {:record-db record-db
+                 :record-store record-store}
+                account-id)]
+    (if (error/anomaly? result)
+      {:status 500 :body (error-response 500 result)}
+      {:status 200 :body {:transactions result}})))

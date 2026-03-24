@@ -14,5 +14,28 @@
 
 (def LegSide (coercion/leg-side-enum-schema {:json-schema/example "debit"}))
 
+(def AccountTransaction
+  [:map
+   [:leg-id string?]
+   [:transaction-id string?]
+   [:account-id string?]
+   [:balance-type [:ref "BalanceType"]]
+   [:balance-status [:ref "BalanceStatus"]]
+   [:side [:ref "LegSide"]]
+   [:amount int?]
+   [:currency string?]
+   [:transaction-type {:optional true}
+    [:maybe [:ref "TransactionType"]]]
+   [:status {:optional true}
+    [:maybe [:ref "TransactionStatus"]]]
+   [:reference {:optional true} [:maybe string?]]
+   [:created-at {:optional true}
+    [:maybe [:ref "Timestamp"]]]])
+
+(def AccountTransactionList
+  [:map
+   [:transactions [:vector [:ref "AccountTransaction"]]]])
+
 (def registry
-  (components-registry [#'TransactionStatus #'TransactionType #'LegSide]))
+  (components-registry [#'TransactionStatus #'TransactionType #'LegSide
+                        #'AccountTransaction #'AccountTransactionList]))

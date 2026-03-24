@@ -191,6 +191,12 @@
                 #js {:headers #js {"Authorization" (str "Bearer " @api-key)}})
       (.then parse-response)))
 
+(defn list-transactions
+  [account-id]
+  (-> (js/fetch (str "/v1/cash-accounts/" account-id "/transactions")
+                #js {:headers #js {"Authorization" (str "Bearer " @api-key)}})
+      (.then parse-response)))
+
 (defn simulate-inbound-transfer
   [org-id account-id amount currency]
   (-> (js/fetch (str "/v1/simulate/organizations/"
