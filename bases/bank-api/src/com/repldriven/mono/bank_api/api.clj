@@ -29,6 +29,13 @@
     [com.repldriven.mono.bank-api.party.components :as party.components]
     [com.repldriven.mono.bank-api.party.examples :as party.examples]
     [com.repldriven.mono.bank-api.party.routes :as party]
+    [com.repldriven.mono.bank-api.payment.components :as
+     payment.components]
+    [com.repldriven.mono.bank-api.payment.examples :as
+     payment.examples]
+    [com.repldriven.mono.bank-api.payment.routes :as payment]
+    [com.repldriven.mono.bank-api.transaction.components :as
+     transaction.components]
     [com.repldriven.mono.bank-api.simulate.components :as
      simulate.components]
     [com.repldriven.mono.bank-api.simulate.examples :as
@@ -78,6 +85,8 @@
                                api-key.components/registry
                                organization.components/registry
                                party.components/registry
+                               payment.components/registry
+                               transaction.components/registry
                                simulate.components/registry)}}))
 
 (defn- routes
@@ -102,6 +111,7 @@
                                        api-key.examples/registry
                                        organization.examples/registry
                                        party.examples/registry
+                                       payment.examples/registry
                                        simulate.examples/registry)}}
            :handler (server/standard-openapi-handler)}}]
    (into ["/v1"
@@ -119,6 +129,7 @@
                  api-key/routes
                  organization/routes
                  party/routes
+                 payment/routes
                  simulate/routes))])
 
 (defn app

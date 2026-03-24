@@ -93,6 +93,7 @@
     components/bank-party {:local/root "components/bank-party"}
     components/bank-bootstrap {:local/root "components/bank-bootstrap"}
     components/bank-schema {:local/root "components/bank-schema"}
+    components/bank-payment {:local/root "components/bank-payment"}
     components/bank-transaction {:local/root "components/bank-transaction"}
     bases/bank-api {:local/root "bases/bank-api"}
     bases/bank-monolith {:local/root "bases/bank-monolith"}}
@@ -114,6 +115,8 @@
                   "components/bank-bootstrap/test-resources"
                   "components/bank-schema/test-resources"
                   "components/bank-test-resources/test-resources"
+                  "components/bank-payment/test"
+                  "components/bank-payment/test-resources"
                   "components/bank-transaction/test"
                   "components/bank-transaction/test-resources"
                   "bases/bank-api/test"

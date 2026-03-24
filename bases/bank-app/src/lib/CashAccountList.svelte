@@ -1,5 +1,5 @@
 <script>
-  import { list_cash_accounts, list_cash_account_products, close_cash_account, list_balances, simulate_inbound_transfer } from "./api.mjs";
+  import { list_cash_accounts, close_cash_account, list_balances, simulate_inbound_transfer, submit_internal_payment } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount, tick } from "svelte";
 
@@ -8,7 +8,6 @@
   let loading = $state(false);
   let error = $state(null);
   let currentQuery = $state(null);
-  let productTypes = $state({});
   let expandedAccountId = $state(null);
   let balances = $state({});
   let loadingBalances = $state({});
@@ -19,7 +18,40 @@
   let fundSubmitting = $state(false);
   let fundError = $state(null);
 
+  let showRewardDialog = $state(false);
+  let rewardAccountId = $state(null);
+  let rewardAmount = $state(50);
+  let rewardCurrency = $state("GBP");
+  let rewardSubmitting = $state(false);
+  let rewardError = $state(null);
+
+  let showPayInDialog = $state(false);
+  let payInAccountId = $state(null);
+  let payInDebtorId = $state(null);
+  let payInAmount = $state(null);
+  let payInCurrency = $state("GBP");
+  let payInSubmitting = $state(false);
+  let payInError = $state(null);
+  let payInSiblings = $state([]);
+
   let { orgId } = $props();
+
+  function customerAccounts() {
+    return accounts.filter(a =>
+      a["account-type"] !== "internal" &&
+      a["account-type"] !== "settlement" &&
+      a["account-status"] === "opened");
+  }
+
+  function siblingAccounts(acct) {
+    return customerAccounts().filter(a =>
+      a["party-id"] === acct["party-id"] &&
+      a["account-id"] !== acct["account-id"]);
+  }
+
+  function hasPayInSiblings(acct) {
+    return siblingAccounts(acct).length > 0;
+  }
 
   function openFundDialog(acct) {
     fundAmount = 100;
@@ -51,27 +83,82 @@
     }
   }
 
+  function settlementAccountId() {
+    const acct = accounts.find(a => a["account-type"] === "settlement");
+    return acct?.["account-id"];
+  }
+
+  function openRewardDialog(acct) {
+    rewardAmount = 50;
+    rewardCurrency = acct.currency ?? "GBP";
+    rewardAccountId = acct["account-id"];
+    rewardError = null;
+    showRewardDialog = true;
+  }
+
+  function closeRewardDialog() {
+    showRewardDialog = false;
+  }
+
+  async function submitReward() {
+    rewardSubmitting = true;
+    rewardError = null;
+    try {
+      const debtorId = settlementAccountId();
+      if (!debtorId) {
+        rewardError = "No settlement account found";
+        return;
+      }
+      const res = await submit_internal_payment(debtorId, rewardAccountId, rewardCurrency, rewardAmount, "Reward");
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        showRewardDialog = false;
+        load(currentQuery);
+      } else {
+        rewardError = res.body?.detail ?? `HTTP ${res["http-status"]}`;
+      }
+    } catch (err) {
+      rewardError = err.message;
+    } finally {
+      rewardSubmitting = false;
+    }
+  }
+
+  function openPayInDialog(acct) {
+    const siblings = siblingAccounts(acct);
+    payInSiblings = siblings;
+    payInDebtorId = siblings[0]?.["account-id"] ?? null;
+    payInAccountId = acct["account-id"];
+    payInAmount = null;
+    payInCurrency = acct.currency ?? "GBP";
+    payInError = null;
+    showPayInDialog = true;
+  }
+
+  function closePayInDialog() {
+    showPayInDialog = false;
+  }
+
+  async function submitPayIn() {
+    payInSubmitting = true;
+    payInError = null;
+    try {
+      const res = await submit_internal_payment(payInDebtorId, payInAccountId, payInCurrency, payInAmount, "Pay In");
+      if (res["http-status"] >= 200 && res["http-status"] < 300) {
+        showPayInDialog = false;
+        load(currentQuery);
+      } else {
+        payInError = res.body?.detail ?? `HTTP ${res["http-status"]}`;
+      }
+    } catch (err) {
+      payInError = err.message;
+    } finally {
+      payInSubmitting = false;
+    }
+  }
+
   function queryFromLink(url) {
     const idx = url.indexOf("?");
     return idx >= 0 ? url.substring(idx + 1) : null;
-  }
-
-  async function loadProducts() {
-    try {
-      const res = await list_cash_account_products();
-      if (res["http-status"] >= 200 && res["http-status"] < 300) {
-        const map = {};
-        const versionNums = {};
-        for (const v of res.body.versions ?? []) {
-          const pid = v["product-id"];
-          if (!versionNums[pid] || v["version-number"] > versionNums[pid]) {
-            versionNums[pid] = v["version-number"];
-            map[pid] = v["account-type"];
-          }
-        }
-        productTypes = map;
-      }
-    } catch (_) { /* ignore */ }
   }
 
   export async function load(queryString) {
@@ -79,10 +166,7 @@
     error = null;
     currentQuery = queryString ?? null;
     try {
-      const [acctRes] = await Promise.all([
-        list_cash_accounts(queryString),
-        loadProducts(),
-      ]);
+      const acctRes = await list_cash_accounts(queryString);
       if (acctRes["http-status"] >= 200 && acctRes["http-status"] < 300) {
         accounts = acctRes.body["cash-accounts"] ?? [];
         links = acctRes.body.links ?? {};
@@ -186,7 +270,7 @@
             {acct["account-id"]}
           </td>
           <td>{acct.name ?? ""}</td>
-          <td>{productTypes[acct["product-id"]] ?? ""}</td>
+          <td>{acct["account-type"] ?? ""}</td>
           <td>{acct.currency}</td>
           <td class="mono">{scanOf(acct) ?? ""}</td>
           <td>
@@ -201,14 +285,28 @@
           <td title={acct["created-at"]}>{time_ago(acct["created-at"])}</td>
           <td title={acct["updated-at"]}>{time_ago(acct["updated-at"])}</td>
           <td>
-            {#if acct["account-status"] === "opened" && productTypes[acct["product-id"]] === "settlement"}
+            {#if acct["account-status"] === "opened" && acct["account-type"] === "settlement"}
               <button
                 class="fund-btn"
                 onclick={(e) => { e.stopPropagation(); openFundDialog(acct); }}
               >
                 Fund
               </button>
-            {:else if acct["account-status"] === "opened" && productTypes[acct["product-id"]] !== "internal" && productTypes[acct["product-id"]] !== "settlement"}
+            {:else if acct["account-status"] === "opened" && acct["account-type"] !== "internal" && acct["account-type"] !== "settlement"}
+              {#if hasPayInSiblings(acct)}
+                <button
+                  class="payin-btn"
+                  onclick={(e) => { e.stopPropagation(); openPayInDialog(acct); }}
+                >
+                  Pay In
+                </button>
+              {/if}
+              <button
+                class="reward-btn"
+                onclick={(e) => { e.stopPropagation(); openRewardDialog(acct); }}
+              >
+                Reward
+              </button>
               <button
                 class="close-btn"
                 disabled={closing[acct["account-id"]]}
@@ -288,6 +386,70 @@
           <button class="cancel-btn" onclick={closeFundDialog} disabled={fundSubmitting}>Cancel</button>
           <button class="submit-btn" onclick={submitFund} disabled={fundSubmitting || fundAmount < 1}>
             {fundSubmitting ? "Submitting..." : "Submit"}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showRewardDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="dialog-overlay" onclick={closeRewardDialog}>
+      <div class="dialog" onclick={(e) => e.stopPropagation()}>
+        <h3>Reward</h3>
+        <p class="dialog-sub">Transfer from settlement to <span class="mono">{rewardAccountId}</span></p>
+        {#if rewardError}
+          <div class="error-msg">{rewardError}</div>
+        {/if}
+        <label>
+          Amount (minor units)
+          <input type="number" bind:value={rewardAmount} min="1" />
+        </label>
+        <label>
+          Currency
+          <span class="currency-display">{rewardCurrency}</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="cancel-btn" onclick={closeRewardDialog} disabled={rewardSubmitting}>Cancel</button>
+          <button class="submit-btn" onclick={submitReward} disabled={rewardSubmitting || rewardAmount < 1}>
+            {rewardSubmitting ? "Submitting..." : "Submit"}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if showPayInDialog}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="dialog-overlay" onclick={closePayInDialog}>
+      <div class="dialog" onclick={(e) => e.stopPropagation()}>
+        <h3>Pay In</h3>
+        <p class="dialog-sub">Transfer to <span class="mono">{payInAccountId}</span></p>
+        {#if payInError}
+          <div class="error-msg">{payInError}</div>
+        {/if}
+        <label>
+          From account
+          <select bind:value={payInDebtorId}>
+            {#each payInSiblings as sib}
+              <option value={sib["account-id"]}>{sib.name ?? sib["account-id"]}</option>
+            {/each}
+          </select>
+        </label>
+        <label>
+          Amount (minor units)
+          <input type="number" bind:value={payInAmount} min="1" />
+        </label>
+        <label>
+          Currency
+          <span class="currency-display">{payInCurrency}</span>
+        </label>
+        <div class="dialog-actions">
+          <button class="cancel-btn" onclick={closePayInDialog} disabled={payInSubmitting}>Cancel</button>
+          <button class="submit-btn" onclick={submitPayIn} disabled={payInSubmitting || !payInAmount || payInAmount < 1}>
+            {payInSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>
       </div>
@@ -504,6 +666,43 @@
     padding: 0.75rem 0;
     color: var(--text-faint);
     font-size: 0.85rem;
+  }
+
+  .payin-btn {
+    padding: 0.25rem 0.6rem;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-right: 0.25rem;
+  }
+
+  .payin-btn:hover {
+    background: #1d4ed8;
+  }
+
+  .reward-btn {
+    padding: 0.25rem 0.6rem;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-right: 0.25rem;
+  }
+
+  .reward-btn:hover {
+    background: #15803d;
+  }
+
+  .currency-display {
+    display: block;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
   }
 
   .fund-btn {

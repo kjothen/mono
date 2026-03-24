@@ -33,6 +33,7 @@
    [:currency [:ref "Currency"]]
    [:product-id string?]
    [:version-id string?]
+   [:account-type {:optional true} [:maybe [:ref "AccountType"]]]
    [:account-status [:ref "CashAccountStatus"]]
    [:payment-addresses {:optional true}
     [:maybe [:vector [:ref "PaymentAddress"]]]]

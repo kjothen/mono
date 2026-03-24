@@ -19,3 +19,7 @@ serde: !system/component
     transaction: schemas/transactions/transaction.avsc.json
     record-transaction: schemas/transactions/record-transaction.avsc.json
     unknown-transaction-command: schemas/transactions/record-transaction.avsc.json
+
+    internal-payment: schemas/payments/internal-payment.avsc.json
+    submit-internal-payment: schemas/payments/submit-internal-payment.avsc.json
+    unknown-payment-command: schemas/payments/submit-internal-payment.avsc.json

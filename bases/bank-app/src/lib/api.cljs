@@ -207,6 +207,25 @@
                                  "currency" currency})})
       (.then parse-response)))
 
+(defn submit-internal-payment
+  [debtor-account-id creditor-account-id currency amount reference]
+  (-> (js/fetch "/v1/payments/internal"
+                #js {:method "POST"
+                     :headers #js {"Content-Type" "application/json"
+                                   "Authorization" (str "Bearer "
+                                                        @api-key)
+                                   "Idempotency-Key" (str (random-uuid))}
+                     :body (js/JSON.stringify
+                            (clj->js
+                             (cond-> {"debtor-account-id" debtor-account-id
+                                      "creditor-account-id" creditor-account-id
+                                      "currency" currency
+                                      "amount" amount
+                                      "idempotency-key" (str (random-uuid))}
+                                     reference
+                                     (assoc "reference" reference))))})
+      (.then parse-response)))
+
 (defn list-api-keys
   []
   (-> (js/fetch "/v1/api-keys"

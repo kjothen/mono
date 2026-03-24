@@ -30,6 +30,7 @@
         component/log {:local/root "../../components/log"}
         component/bank-api-key {:local/root "../../components/bank-api-key"}
         component/bank-organization {:local/root "../../components/bank-organization"}
+        component/bank-payment {:local/root "../../components/bank-payment"}
         component/bank-party {:local/root "../../components/bank-party"}
         component/bank-bootstrap {:local/root "../../components/bank-bootstrap"}
         component/message-bus {:local/root "../../components/message-bus"}

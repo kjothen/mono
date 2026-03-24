@@ -4,9 +4,31 @@ package com.repldriven.mono.schemas.cash_account_products;
 
 import "record_metadata_options.proto";
 import "schemas/balances/balance.proto";
-import "schemas/cash-accounts/account.proto";
 
 option java_outer_classname = "CashAccountProductProto";
+
+enum AccountType {
+  ACCOUNT_TYPE_UNKNOWN         = 0;
+  ACCOUNT_TYPE_INTERNAL        = 1;
+  ACCOUNT_TYPE_SETTLEMENT      = 2;
+  ACCOUNT_TYPE_CURRENT         = 3;
+  ACCOUNT_TYPE_SAVINGS         = 4;
+  ACCOUNT_TYPE_TERM_DEPOSIT    = 5;
+}
+
+enum BalanceSheetSide {
+  BALANCE_SHEET_SIDE_UNKNOWN = 0;
+  BALANCE_SHEET_SIDE_ASSET = 1;
+  BALANCE_SHEET_SIDE_LIABILITY = 2;
+}
+
+enum PaymentAddressScheme {
+  PAYMENT_ADDRESS_SCHEME_UNKNOWN = 0;
+  PAYMENT_ADDRESS_SCHEME_SCAN    = 1;
+  PAYMENT_ADDRESS_SCHEME_IBAN    = 2;
+  PAYMENT_ADDRESS_SCHEME_SWIFT   = 3;
+  PAYMENT_ADDRESS_SCHEME_ACH     = 4;
+}
 
 message CashAccountProductVersion {
   option (com.apple.foundationdb.record.record).usage = RECORD;
@@ -25,20 +47,5 @@ message CashAccountProductVersion {
   optional string name = 12;
   repeated string allowed_currencies = 13;
   repeated com.repldriven.mono.schemas.balances.BalanceProduct balance_products = 14;
-  repeated com.repldriven.mono.schemas.cash_accounts.PaymentAddressScheme allowed_payment_address_schemes = 15;
-
-  enum AccountType {
-    ACCOUNT_TYPE_UNKNOWN         = 0;
-    ACCOUNT_TYPE_INTERNAL        = 1;
-    ACCOUNT_TYPE_SETTLEMENT      = 2;
-    ACCOUNT_TYPE_CURRENT         = 3;
-    ACCOUNT_TYPE_SAVINGS         = 4;
-    ACCOUNT_TYPE_TERM_DEPOSIT    = 5;
-  }
-
-  enum BalanceSheetSide {
-    BALANCE_SHEET_SIDE_UNKNOWN = 0;
-    BALANCE_SHEET_SIDE_ASSET = 1;
-    BALANCE_SHEET_SIDE_LIABILITY = 2;
-  }
+  repeated PaymentAddressScheme allowed_payment_address_schemes = 15;
 }

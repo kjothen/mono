@@ -3,16 +3,9 @@ syntax = "proto2";
 package com.repldriven.mono.schemas.cash_accounts;
 
 import "record_metadata_options.proto";
+import "schemas/cash-account-products/account-product.proto";
 
 option java_outer_classname = "CashAccountProto";
-
-enum PaymentAddressScheme {
-  PAYMENT_ADDRESS_SCHEME_UNKNOWN = 0;
-  PAYMENT_ADDRESS_SCHEME_SCAN    = 1;
-  PAYMENT_ADDRESS_SCHEME_IBAN    = 2;
-  PAYMENT_ADDRESS_SCHEME_SWIFT   = 3;
-  PAYMENT_ADDRESS_SCHEME_ACH     = 4;
-}
 
 message ScanAddress {
   required string sort_code = 1;
@@ -20,7 +13,7 @@ message ScanAddress {
 }
 
 message PaymentAddress {
-  required PaymentAddressScheme scheme = 1;
+  required com.repldriven.mono.schemas.cash_account_products.PaymentAddressScheme scheme = 1;
   oneof identifier {
     ScanAddress scan = 2;
     string value = 3;
@@ -41,6 +34,7 @@ message CashAccount {
   repeated PaymentAddress payment_addresses = 10;
   required string product_id = 11;
   required string version_id = 12;
+  optional com.repldriven.mono.schemas.cash_account_products.AccountType account_type = 13;
 
   enum CashAccountStatus {
     CASH_ACCOUNT_STATUS_UNKNOWN = 0;

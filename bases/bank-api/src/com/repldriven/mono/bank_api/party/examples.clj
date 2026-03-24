@@ -21,7 +21,7 @@
   {:organization-id "org_01JMABC"
    :party-id "pty_01JMABC123"
    :type :person
-   :display-name "Jane Doe"
+   :display-name "Arthur Phillip Dent"
    :status :pending
    :created-at "2025-01-01T00:00:00Z"
    :updated-at "2025-01-01T00:00:00Z"})
@@ -32,10 +32,10 @@
 
 (def CreatePartyRequest
   {:type :person
-   :display-name "Jane Doe"
-   :given-name "Jane"
-   :family-name "Doe"
-   :date-of-birth 19900115
+   :display-name "Arthur Phillip Dent"
+   :given-name "Arthur"
+   :family-name "Dent"
+   :date-of-birth 19500727
    :nationality "GB"
    :national-identifier
    {:type :national-insurance :value "TN000001A" :issuing-country "GBR"}})

@@ -94,9 +94,11 @@
     closeDropdowns();
     try {
       const currencies = product["allowed-currencies"] ?? [];
+      const givenName = (party["display-name"] ?? "").split(" ")[0];
+      const accountName = `${givenName}'s ${product.name}`;
       const res = await open_cash_account({
         "party-id": partyId,
-        "name": party["display-name"],
+        "name": accountName,
         "currency": currencies.length > 0 ? currencies[0] : "GBP",
         "product-id": product["product-id"],
       });

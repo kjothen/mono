@@ -1,6 +1,7 @@
 (ns com.repldriven.mono.bank-monolith.main
   (:require
     com.repldriven.mono.bank-cash-account.interface
+    com.repldriven.mono.bank-payment.interface
     com.repldriven.mono.bank-transaction.interface
     com.repldriven.mono.command.interface
     com.repldriven.mono.command-processor.interface

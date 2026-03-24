@@ -47,34 +47,51 @@
           nil
           legs))
 
-(defn- record
+(defn- record*
+  "Records a transaction within an open-store context.
+  Returns {:transaction <pb> :legs [<maps>]} or anomaly."
+  [open-store data]
+  (let [{:keys [legs]} data
+        txn (domain/new-transaction data)
+        txn-id (:transaction-id txn)
+        currency (:currency txn)
+        legs (mapv (fn [leg] (domain/new-leg leg txn-id currency))
+                   legs)
+        txn-store (open-store "transactions")
+        leg-store (open-store "transaction-legs")
+        balance-store (open-store "balances")]
+    (let-nom>
+      [transaction (save-transaction txn-store txn)
+       _ (reduce (fn [_ leg]
+                   (let [result (save-leg leg-store leg)]
+                     (if (error/anomaly? result)
+                       (reduced result)
+                       result)))
+                 nil
+                 legs)
+       _ (update-balances balance-store legs)]
+      {:transaction transaction :legs legs})))
+
+(defn record
   "Records a transaction with its legs in a single atomic
-  transaction, updating balances for each leg. Returns
-  protobuf transaction or anomaly."
-  [config data]
-  (let [{:keys [record-db record-store]} config]
-    (fdb/transact-multi
-     record-db
-     record-store
-     (fn [open-store]
-       (let [{:keys [legs]} data
-             txn (domain/new-transaction data)
-             txn-id (:transaction-id txn)
-             currency (:currency txn)
-             legs (mapv (fn [leg] (domain/new-leg leg txn-id currency))
-                        legs)
-             txn-store (open-store "transactions")
-             leg-store (open-store "transaction-legs")
-             balance-store (open-store "balances")]
-         (let-nom>
-           [transaction (save-transaction txn-store txn)
-            _ (reduce (fn [_ leg]
-                        (let [result (save-leg leg-store leg)]
-                          (if (error/anomaly? result) (reduced result) result)))
-                      nil
-                      legs)
-            _ (update-balances balance-store legs)]
-           {:transaction transaction :legs legs}))))))
+  transaction, updating balances for each leg. The 3-arg
+  form calls f with open-store and the transaction result
+  within the same transaction, returning f's result."
+  ([config data]
+   (let [{:keys [record-db record-store]} config]
+     (fdb/transact-multi record-db
+                         record-store
+                         (fn [open-store]
+                           (record* open-store data)))))
+  ([config data f]
+   (let [{:keys [record-db record-store]} config]
+     (fdb/transact-multi
+      record-db
+      record-store
+      (fn [open-store]
+        (let-nom> [txn-result (record* open-store data)
+                   result (f open-store txn-result)]
+          result))))))
 
 (defn- ->response
   "Converts a protobuf record to an ACCEPTED response.

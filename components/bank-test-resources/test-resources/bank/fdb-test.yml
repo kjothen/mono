@@ -43,6 +43,12 @@ _record-types: &record-types !strs
   person-identifications:
     record-type: PersonIdentification
     indexes: []
+  internal-payments:
+    record-type: InternalPayment
+    indexes:
+      - name: InternalPayment_by_idempotency_key
+        field: idempotency_key
+        unique: true
   transaction-legs:
     record-type: TransactionLeg
     primary-key: [transaction_id, leg_id]

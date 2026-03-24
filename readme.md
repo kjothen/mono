@@ -45,13 +45,19 @@ The repo ships an end-to-end banking application — **Queenswood** — that
 onboards customers and manages accounts. It demonstrates how the component
 library composes into a production-shaped system.
 
+### API Docs
+
+Full API documentation is published at
+[https://kjothen.github.io/mono/](https://kjothen.github.io/mono/).
+Interactive OpenAPI documentation is also served locally at
+[http://localhost:8080](http://localhost:8080) when the server is running.
+
 ### Customer Onboarding Flow
 
 1. **Create an organisation** — an admin creates a tenant and receives an API
    key (prefixed `sk_live_`, returned once, stored hashed).
 2. **Configure products** — draft a cash account product with balance products
-   (e.g. `available`, `current`), then publish a version to make it available
-   for account opening.
+   then publish a version to make it available for account opening.
 3. **Create a party** — register a customer with personal details and a
    national identifier (uniqueness enforced).
 4. **Identity verification** — an IDV record is automatically created and
@@ -66,24 +72,21 @@ library composes into a production-shaped system.
    organisation's settlement account. This records a double-entry internal
    transfer — debiting the internal org's suspense balance and crediting the
    customer's default balance — via the transactions command processor.
+8. **Internal Payments** - reward customers from the organization's
+   settlement account, and internally transfer money between accounts
+   of a customer.
 
-### Demos
+### Demo
 
-1. Open a cash account for a party in a new customer organization
-
-   [![Open a Cash Account](thumbnail.png)](https://github.com/user-attachments/assets/60a15eea-263e-4ea0-ae60-093bffbbbde3)
-
-1. Fund a customer organization's settlement account
-
-   [![Fund Settlement Account](thumbnail.png)](https://github.com/user-attachments/assets/10092bdd-dd70-4499-af0f-f1aac4ec9d03)
+[![Queenswood Bank](thumbnail.png)](https://github.com/user-attachments/assets/b8914081-dd22-41b3-88f8-33885caa8ff1)
 
 ### How It Works
 
 Queenswood is assembled from the component library:
 
-- **FoundationDB Record Layer** stores organisations, parties, accounts,
-  products, balances, and IDV records with multi-store transactions for
-  atomicity.
+- **FoundationDB Record Layer** stores organisations, parties, IDV record,
+  account products, accounts, payments, transaction and balances
+  with multi-store FDB transactions for atomicity.
 - **Changelog watchers** on FDB drive the reactive flow — IDV acceptance
   activates the party; account closing auto-transitions to closed.
 - **Apache Pulsar** carries commands between the HTTP API and processors,
@@ -114,13 +117,6 @@ Testcontainers. Then start the Svelte front-end:
 just start-bank-app
 ```
 
-### API Docs
-
-Full API documentation is published at
-[https://kjothen.github.io/mono/](https://kjothen.github.io/mono/).
-Interactive OpenAPI documentation is also served locally at
-[http://localhost:8080](http://localhost:8080) when the server is running.
-
 ### Architecture
 
 ```
@@ -138,13 +134,13 @@ Interactive OpenAPI documentation is also served locally at
                      │                                       │
     ┌────────────────▼─────────────────┐    ┌────────────────▼──────────────┐
     │         create/update            │    │     ┌─────────────────────┐   │
-    │                                  │    │     │  command-processor  │   │
-    │  organization                    │    │     │       (Avro)        │   │
+    │  organization                    │    │     │  command-processor  │   │
+    │  api-key                         │    │     │       (Avro)        │   │
     │  cash-account-product            │    │     └────────┬────────────┘   │
-    │  api-key                         │    │              │                │
-    │            query                 │    │    ┌─────────┼──────────┐     │
+    │                                  │    │              │                │
+    │         query                    │    │    ┌─────────┼──────────┐     │
     │  *                               │    │    ▼         ▼          ▼     │
-    └────────────────┬─────────────────┘    │  party     cash-  transaction │
+    └────────────────┬─────────────────┘    │  party     cash-    payment   │
                      │                      │           account             │
                      │                      └────┬───────┬──────────┬───────┘
                      │                           │       │          │
@@ -167,7 +163,7 @@ Interactive OpenAPI documentation is also served locally at
               │                                                        │
               │  organizations  api-keys  parties  idvs                │
               │  cash-account-products  cash-accounts                  │
-              │  transactions  balances                                │
+              │  payments  transactions  balances                      │
               └────────────────────────────────────────────────────────┘
 ```
 
@@ -176,7 +172,7 @@ API keys are created/updated directly by the API handlers.
 All records are queried on-demand using FDB record primary key ordering.
 
 **Async path** — high volume activity, concerning parties,
-cash accounts, and transactions are Avro-serialised commands
+cash accounts and payments are Avro-serialised commands
 sent through message bus to command processors.
 Processors write to FDB and reply via message bus.
 Responses use envelope statuses:
@@ -317,6 +313,7 @@ pipelines without defensive `try/catch` noise.
 | `bank-idv`                                                                                                                                                 | Identity verification processing                                                                   |
 | `bank-organization`                                                                                                                                        | Organisation management — create org, API key generation and verification                          |
 | `bank-party`                                                                                                                                               | Party creation and management                                                                      |
+| `bank-payment`                                                                                                                                             | Payment processing — internal transfers between accounts                                           |
 | `bank-schema`                                                                                                                                              | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct, Transaction) |
 | `bank-test-resources`                                                                                                                                      | Bank-specific test configuration (FDB stores, Avro schemas)                                        |
 | `bank-transaction`                                                                                                                                         | Transaction recording with double-entry legs                                                       |

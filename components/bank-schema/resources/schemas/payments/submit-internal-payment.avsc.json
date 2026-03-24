@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "SubmitInternalPayment",
+  "namespace": "com.repldriven.mono.payments",
+  "fields": [
+    {"name": "idempotency_key",     "type": "string"},
+    {"name": "debtor_account_id",   "type": "string"},
+    {"name": "creditor_account_id", "type": "string"},
+    {"name": "currency",            "type": "string"},
+    {"name": "amount",              "type": "long"},
+    {"name": "reference",           "type": ["null", "string"], "default": null}
+  ]
+}

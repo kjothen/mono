@@ -5,11 +5,11 @@
   let { onCreated, showToast } = $props();
 
   let open = $state(false);
-  let displayName = $state("Jane Doe");
-  let givenName = $state("Jane");
-  let middleNames = $state("");
-  let familyName = $state("Doe");
-  let dateOfBirth = $state("1990-01-15");
+  let displayName = $state("Arthur Phillip Dent");
+  let givenName = $state("Arthur");
+  let middleNames = $state("Phillip");
+  let familyName = $state("Dent");
+  let dateOfBirth = $state("1950-07-27");
   let nationality = $state("GB");
   let niType = $state("national-insurance");
   let niValue = $state("TN000001A");
@@ -18,8 +18,12 @@
 
   function errorDetail(body) {
     if (!body) return null;
-    return body.message ?? body.error ?? body.detail
-           ?? (typeof body === "string" ? body : JSON.stringify(body));
+    return (
+      body.message ??
+      body.error ??
+      body.detail ??
+      (typeof body === "string" ? body : JSON.stringify(body))
+    );
   }
 
   function dobToInt(dateStr) {
@@ -36,10 +40,10 @@
         "middle-names": middleNames || undefined,
         "family-name": familyName,
         "date-of-birth": dobToInt(dateOfBirth),
-        "nationality": nationality,
+        nationality: nationality,
         "national-identifier": {
-          "type": niType,
-          "value": niValue,
+          type: niType,
+          value: niValue,
           "issuing-country": niCountry,
         },
       });
@@ -49,9 +53,15 @@
         showToast?.({ type: "success", message: "Party created" });
         onCreated?.();
       } else if (status >= 400 && status < 500) {
-        showToast?.({ type: "warning", message: errorDetail(res.body) ?? `HTTP ${status}` });
+        showToast?.({
+          type: "warning",
+          message: errorDetail(res.body) ?? `HTTP ${status}`,
+        });
       } else {
-        showToast?.({ type: "error", message: errorDetail(res.body) ?? `HTTP ${status}` });
+        showToast?.({
+          type: "error",
+          message: errorDetail(res.body) ?? `HTTP ${status}`,
+        });
       }
     } catch (err) {
       showToast?.({ type: "error", message: err.message });
@@ -61,9 +71,9 @@
   }
 </script>
 
-<button class="new-btn" onclick={() => open = true}>+ New Party</button>
+<button class="new-btn" onclick={() => (open = true)}>+ New Party</button>
 
-<Modal {open} onClose={() => open = false} title="New Party">
+<Modal {open} onClose={() => (open = false)} title="New Party">
   <form onsubmit={handleSubmit}>
     <label>
       Display Name
@@ -92,8 +102,13 @@
 
     <label>
       Nationality
-      <input type="text" bind:value={nationality} required maxlength="2"
-             placeholder="e.g. GB" />
+      <input
+        type="text"
+        bind:value={nationality}
+        required
+        maxlength="2"
+        placeholder="e.g. GB"
+      />
     </label>
 
     <fieldset>
@@ -108,14 +123,23 @@
 
       <label>
         Value
-        <input type="text" bind:value={niValue} required
-               placeholder="e.g. TN000001A" />
+        <input
+          type="text"
+          bind:value={niValue}
+          required
+          placeholder="e.g. TN000001A"
+        />
       </label>
 
       <label>
         Issuing Country
-        <input type="text" bind:value={niCountry} required maxlength="3"
-               placeholder="e.g. GBR" />
+        <input
+          type="text"
+          bind:value={niCountry}
+          required
+          maxlength="3"
+          placeholder="e.g. GBR"
+        />
       </label>
     </fieldset>
 
@@ -153,7 +177,8 @@
     font-weight: 500;
   }
 
-  input, select {
+  input,
+  select {
     padding: 0.5rem;
     border: 1px solid var(--border-input);
     border-radius: 4px;

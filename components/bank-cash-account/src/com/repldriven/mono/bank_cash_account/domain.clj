@@ -57,7 +57,7 @@
   (let [{:keys [organization-id party-id product-id currency
                 name]}
         data
-        {:keys [version-id]} product]
+        {:keys [version-id account-type]} product]
     (let-nom>
       [_ (valid-currency? currency product)
        _ (valid-party? party)
@@ -70,6 +70,7 @@
          :currency currency
          :name name
          :account-id (encryption/generate-id "acc")
+         :account-type account-type
          :account-status :cash-account-status-opening
          :payment-addresses payment-addresses
          :created-at now

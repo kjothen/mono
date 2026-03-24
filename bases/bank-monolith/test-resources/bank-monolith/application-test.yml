@@ -90,6 +90,12 @@ system:
         - topic: "persistent://tenant-1/namespace-1/topic-transactions-command-response"
           partitions: 1
           schema: !keyword command-response
+        - topic: "persistent://tenant-1/namespace-1/topic-payments-command"
+          partitions: 1
+          schema: !keyword command
+        - topic: "persistent://tenant-1/namespace-1/topic-payments-command-response"
+          partitions: 1
+          schema: !keyword command-response
 
     producers: !system/component
       system/component-kind: pulsar/producers
@@ -140,6 +146,22 @@ system:
           accessMode: !pulsar/access-mode Shared
           schema: !keyword command-response
           topicName: "persistent://tenant-1/namespace-1/topic-transactions-command-response"
+        schemas: !system/local-ref schemas
+      payments-command:
+        _: !system/local-ref topics
+        client: !system/local-ref client
+        conf:
+          accessMode: !pulsar/access-mode Shared
+          schema: !keyword command
+          topicName: "persistent://tenant-1/namespace-1/topic-payments-command"
+        schemas: !system/local-ref schemas
+      payments-command-response:
+        _: !system/local-ref topics
+        client: !system/local-ref client
+        conf:
+          accessMode: !pulsar/access-mode Shared
+          schema: !keyword command-response
+          topicName: "persistent://tenant-1/namespace-1/topic-payments-command-response"
         schemas: !system/local-ref schemas
 
     consumers: !system/component
@@ -210,6 +232,28 @@ system:
           topicNames:
             ["persistent://tenant-1/namespace-1/topic-transactions-command-response"]
         schemas: !system/local-ref schemas
+      payments-command:
+        _: !system/local-ref topics
+        client: !system/local-ref client
+        conf:
+          cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
+          schema: !pulsar/schema AUTO_CONSUME
+          subscriptionName: bank-monolith-payments-command
+          subscriptionType: !pulsar/subscription-type Shared
+          topicNames:
+            ["persistent://tenant-1/namespace-1/topic-payments-command"]
+        schemas: !system/local-ref schemas
+      payments-command-response:
+        _: !system/local-ref topics
+        client: !system/local-ref client
+        conf:
+          cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
+          schema: !pulsar/schema AUTO_CONSUME
+          subscriptionName: bank-monolith-payments-command-response
+          subscriptionType: !pulsar/subscription-type Shared
+          topicNames:
+            ["persistent://tenant-1/namespace-1/topic-payments-command-response"]
+        schemas: !system/local-ref schemas
 
     message-bus-producers: !system/component
       system/component-kind: pulsar/message-bus-producers
@@ -225,6 +269,10 @@ system:
         producer: !system/local-ref producers.transactions-command
       transactions-command-response:
         producer: !system/local-ref producers.transactions-command-response
+      payments-command:
+        producer: !system/local-ref producers.payments-command
+      payments-command-response:
+        producer: !system/local-ref producers.payments-command-response
 
     message-bus-consumers: !system/component
       system/component-kind: pulsar/message-bus-consumers
@@ -240,6 +288,10 @@ system:
         consumer: !system/local-ref consumers.transactions-command
       transactions-command-response:
         consumer: !system/local-ref consumers.transactions-command-response
+      payments-command:
+        consumer: !system/local-ref consumers.payments-command
+      payments-command-response:
+        consumer: !system/local-ref consumers.payments-command-response
 
   message-bus:
     bus: !system/component
@@ -251,6 +303,7 @@ system:
   avro: !include avro/avro-test.yml
   cash-accounts: !include bank/cash-account-test.yml
   parties: !include bank/party-test.yml
+  payments: !include bank/payment-test.yml
   transactions: !include bank/transaction-test.yml
   idv: !include bank/idv-test.yml
   bootstrap: !include bank/bootstrap-internal-test.yml
@@ -269,6 +322,7 @@ system:
       dispatchers:
         cash-accounts: !system/ref cash-accounts.dispatcher
         parties: !system/ref parties.dispatcher
+        payments: !system/ref payments.dispatcher
         transactions: !system/ref transactions.dispatcher
       avro: !system/ref avro.serde
       record-db: !system/ref fdb.record-db

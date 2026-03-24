@@ -11,7 +11,7 @@
   let error = $state(null);
 
   let modalOpen = $state(false);
-  let orgName = $state("");
+  let orgName = $state("Galactic Bank");
   let currencies = $state("GBP");
   let creating = $state(false);
 

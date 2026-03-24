@@ -23,6 +23,7 @@
    :currency "GBP"
    :product-id "prd_test_api"
    :version-id "prv_test_api"
+   :account-type :account-type-current
    :payment-addresses []
    :account-status :cash-account-status-opened
    :created-at 1700000000000

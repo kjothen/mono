@@ -79,10 +79,10 @@
   (testing "create-party creates party with pending status"
     (let [create-payload {:organization-id test-org-id
                           :type :party-type-person
-                          :display-name "Jane Doe"
-                          :given-name "Jane"
-                          :family-name "Doe"
-                          :date-of-birth 19900115
+                          :display-name "Arthur Phillip Dent"
+                          :given-name "Arthur"
+                          :family-name "Dent"
+                          :date-of-birth 19500727
                           :nationality "GB"
                           :national-identifier
                           {:type :identifier-type-national-insurance
@@ -99,7 +99,7 @@
          _ (is (= :party-status-pending (:status decoded)))
          _ (is (= :party-type-person (:type decoded)))
          _
-         (is (= "Jane Doe" (:display-name decoded)))]))))
+         (is (= "Arthur Phillip Dent" (:display-name decoded)))]))))
 
 (defn- test-duplicate-national-identifier
   [proc schemas]

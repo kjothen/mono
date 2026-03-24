@@ -14,7 +14,7 @@
 
 (def Organization
   {:organization-id "org_01JMABC123"
-   :name "Acme Corp"
+   :name "Galactic Bank"
    :type :customer
    :status "active"
    :created-at "2025-01-01T00:00:00Z"
@@ -27,7 +27,7 @@
 
 (def OrganizationList {:organizations [Organization]})
 
-(def CreateOrganizationRequest {:name "Acme Corp" :currencies ["GBP"]})
+(def CreateOrganizationRequest {:name "Galactic Bank" :currencies ["GBP"]})
 
 (def CreateOrganizationResponse
   (assoc Organization :api-key-secret api-key-examples/ApiKeySecret))

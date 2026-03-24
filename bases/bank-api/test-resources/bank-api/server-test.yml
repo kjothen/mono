@@ -9,6 +9,7 @@ interceptors: !system/component
   dispatchers:
     cash-accounts: !system/ref cash-accounts.dispatcher
     parties: !system/ref parties.dispatcher
+    payments: !system/ref payments.dispatcher
   avro: !system/ref avro.serde
 
 jetty-adapter: !system/component

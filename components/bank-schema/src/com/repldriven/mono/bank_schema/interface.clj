@@ -8,6 +8,7 @@
     [com.repldriven.mono.schemas.keys :as keys]
     [com.repldriven.mono.schemas.organizations :as organizations]
     [com.repldriven.mono.schemas.party :as party]
+    [com.repldriven.mono.schemas.payments :as payments]
     [com.repldriven.mono.schemas.person_identification :as
      person-identification]
     [com.repldriven.mono.schemas.transactions :as transactions]
@@ -31,6 +32,8 @@
      PartyNationalIdentifierProto$PartyNationalIdentifier)
     (com.repldriven.mono.schemas.person_identification
      PersonIdentificationProto$PersonIdentification)
+    (com.repldriven.mono.schemas.payments
+     InternalPaymentProto$InternalPayment)
     (com.repldriven.mono.schemas.transactions
      TransactionProto$Transaction
      TransactionProto$TransactionLeg)))
@@ -116,6 +119,15 @@
 (defn IdvChangelog->java
   [m]
   (IdvChangelogProto$IdvChangelog/parseFrom (IdvChangelog->pb m)))
+
+(def pb->InternalPayment payments/pb->InternalPayment)
+(defn InternalPayment->pb
+  [m]
+  (proto/->pb (payments/new-InternalPayment m)))
+(defn InternalPayment->java
+  [m]
+  (InternalPaymentProto$InternalPayment/parseFrom
+   (InternalPayment->pb m)))
 
 (def pb->Transaction transactions/pb->Transaction)
 (defn Transaction->pb [m] (proto/->pb (transactions/new-Transaction m)))

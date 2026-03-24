@@ -19,7 +19,7 @@
   {:organization-id "org_test_api"
    :party-id "pty_01TEST123"
    :type :party-type-person
-   :display-name "Jane Doe"
+   :display-name "Arthur Phillip Dent"
    :status :party-status-pending
    :created-at 1700000000000
    :updated-at 1700000000000})
@@ -49,10 +49,10 @@
                  :headers {"Content-Type" "application/json"
                            "Idempotency-Key" (str (util/uuidv7))}
                  :body (json/write-str {"type" "person"
-                                        "display-name" "Jane Doe"
-                                        "given-name" "Jane"
-                                        "family-name" "Doe"
-                                        "date-of-birth" 19900115
+                                        "display-name" "Arther Phillip Dent"
+                                        "given-name" "Arthur"
+                                        "family-name" "Dent"
+                                        "date-of-birth" 19500727
                                         "nationality" "GB"
                                         "national-identifier"
                                         {"type" "national-insurance"
@@ -73,5 +73,5 @@
                      body (http/res->edn res)
                      _ (is (= "pty_01TEST123" (:party-id body)))
                      _ (is (= "person" (:type body)))
-                     _ (is (= "Jane Doe" (:display-name body)))])))
+                     _ (is (= "Arthur Phillip Dent" (:display-name body)))])))
      (stop))))

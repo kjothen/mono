@@ -33,12 +33,12 @@
          base-url (server/http-local-url jetty)]
      (testing "admin can create an organization"
        (nom-test> [res (post-organization base-url
-                                          "Acme Corp"
+                                          "Galactic Bank"
                                           ["GBP"]
                                           admin-api-key)
                    _ (is (= 201 (:status res)))
                    body (http/res->body res)
-                   _ (is (= "Acme Corp" (get body "name")))
+                   _ (is (= "Galactic Bank" (get body "name")))
                    _ (is (string? (get body "organization-id")))
                    _ (is (string? (get body "api-key-secret")))
                    _ (is (.startsWith ^String (get body "api-key-secret")

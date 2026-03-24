@@ -34,10 +34,11 @@
   {:organization-id "org_01JMABC"
    :account-id "acc_01JMABC123DEF456"
    :party-id "pty_01JMABC"
-   :name "Jane Doe"
+   :name "Arthur Phillip Dent - Current Account"
    :currency "GBP"
    :product-id "prd_01JMABC"
    :version-id "prv_01JMABC"
+   :account-type :current
    :account-status :opened
    :payment-addresses [{:scheme :scan
                         :identifier {:scan {:sort-code "040004"
