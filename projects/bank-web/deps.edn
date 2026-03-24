@@ -32,6 +32,7 @@
         component/message-bus {:local/root "../../components/message-bus"}
         component/processor {:local/root "../../components/processor"}
         component/pulsar {:local/root "../../components/pulsar"}
+        component/bank-bootstrap {:local/root "../../components/bank-bootstrap"}
         component/bank-payment {:local/root "../../components/bank-payment"}
         component/bank-schema {:local/root "../../components/bank-schema"}
         component/bank-transaction {:local/root "../../components/bank-transaction"}
