@@ -52,7 +52,7 @@ Full API documentation is published at
 Interactive OpenAPI documentation is also served locally at
 [http://localhost:8080](http://localhost:8080) when the server is running.
 
-### Customer Onboarding Flow
+### Core Banking Primitives
 
 1. **Create an organisation** — an admin creates a tenant and receives an API
    key (prefixed `sk_live_`, returned once, stored hashed).
