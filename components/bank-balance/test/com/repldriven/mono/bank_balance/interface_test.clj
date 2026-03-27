@@ -46,5 +46,5 @@
                                        :balance-type-interest-accrued
                                        :balance-status :balance-status-posted
                                        :currency "USD"})
-                   balances (SUT/get-balances config "acc_123")
-                   _ (is (= 2 (count balances)))])))))
+                   result (SUT/get-balances config "acc_123")
+                   _ (is (= 2 (count (:balances result))))])))))

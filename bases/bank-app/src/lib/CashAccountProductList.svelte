@@ -10,12 +10,27 @@
   let loading = $state(false);
   let error = $state(null);
 
+  const accountTypeDefaults = {
+    "current":      { name: "Current Account",      bps: 265 },
+    "savings":      { name: "Savings Account",      bps: 375 },
+    "term-deposit": { name: "Term Deposit Account", bps: 500 },
+  };
+
   let modalOpen = $state(false);
-  let name = $state("Current Account");
   let accountType = $state("current");
+  let name = $state("Current Account");
   let balanceSheetSide = $state("liability");
   let allowedCurrencies = $state("GBP");
-  let interestRateBps = $state(0);
+  let interestRateBps = $state(265);
+
+  function onAccountTypeChange(e) {
+    accountType = e.target.value;
+    const defaults = accountTypeDefaults[accountType];
+    if (defaults) {
+      name = defaults.name;
+      interestRateBps = defaults.bps;
+    }
+  }
   let creating = $state(false);
 
   const defaultBalanceProducts = [
@@ -197,16 +212,16 @@
   <Modal open={modalOpen} onClose={() => modalOpen = false} title="New Product">
     <form onsubmit={handleCreate}>
       <label>
-        Product Name
-        <input type="text" bind:value={name} placeholder="Product name" required disabled={creating} />
-      </label>
-      <label>
         Account Type
-        <select bind:value={accountType} disabled={creating}>
+        <select value={accountType} onchange={onAccountTypeChange} disabled={creating}>
           <option value="current">Current</option>
           <option value="savings">Savings</option>
           <option value="term-deposit">Term Deposit</option>
         </select>
+      </label>
+      <label>
+        Product Name
+        <input type="text" bind:value={name} placeholder="Product name" required disabled={creating} />
       </label>
       <label>
         Balance Sheet Side
@@ -312,6 +327,7 @@
         <th>Type</th>
         <th>Version</th>
         <th>Status</th>
+        <th>Rate (bps)</th>
         <th>Currencies</th>
         <th>Created</th>
         <th>Action</th>
@@ -319,7 +335,7 @@
     </thead>
     <tbody>
       {#if versions.length === 0 && !loading}
-        <tr><td colspan="8" class="empty">No account products found</td></tr>
+        <tr><td colspan="9" class="empty">No account products found</td></tr>
       {/if}
       {#each versions as v}
         <tr>
@@ -333,6 +349,7 @@
               {v.status}
             </span>
           </td>
+          <td class="mono">{v["interest-rate-bps"] ?? 0}</td>
           <td>{(v["allowed-currencies"] ?? []).join(", ") || "Any"}</td>
           <td title={v["created-at"]}>{time_ago(v["created-at"])}</td>
           <td>

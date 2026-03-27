@@ -15,7 +15,7 @@
                                       account-id)]
     (if (error/anomaly? result)
       {:status 500 :body (error-response 500 result)}
-      {:status 200 :body {:balances result}})))
+      {:status 200 :body result})))
 
 (defn get-balance
   [request]

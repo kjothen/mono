@@ -11,6 +11,15 @@
   [config data]
   (core/new-account config data))
 
+(defn get-account
+  "Loads a single cash account. Returns the account map,
+  nil, or anomaly. opts supports :embed-balances,
+  :embed-transactions."
+  ([config org-id account-id]
+   (store/get-account config org-id account-id {}))
+  ([config org-id account-id opts]
+   (store/get-account config org-id account-id opts)))
+
 (defn get-accounts
   "Lists cash accounts for an organization. Returns
   {:accounts [maps] :before id|nil :after id|nil} or

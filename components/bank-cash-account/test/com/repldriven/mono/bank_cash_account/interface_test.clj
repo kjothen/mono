@@ -150,8 +150,8 @@
                   (get-in decoded [:payment-addresses 0 :scan :sort-code])))
          _ (is (some? (get-in decoded
                               [:payment-addresses 0 :scan :account-number])))
-         account-balances (balances/get-balances fdb-config
-                                                 (:account-id decoded))
+         balance-result (balances/get-balances fdb-config (:account-id decoded))
+         account-balances (:balances balance-result)
          _ (is (= 3 (count account-balances)))
          _ (is (= #{:balance-type-default}
                   (set (map :balance-type account-balances))))

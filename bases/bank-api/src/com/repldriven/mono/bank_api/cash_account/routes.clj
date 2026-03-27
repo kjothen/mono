@@ -11,7 +11,9 @@
 (def ^:private list-cash-accounts-query-schema
   [:map [(keyword "page[after]") {:optional true} string?]
    [(keyword "page[before]") {:optional true} string?]
-   [(keyword "page[size]") {:optional true} string?]])
+   [(keyword "page[size]") {:optional true} string?]
+   [(keyword "embed[balances]") {:optional true} boolean?]
+   [(keyword "embed[transactions]") {:optional true} boolean?]])
 
 (def routes
   [["/cash-accounts"
@@ -35,13 +37,17 @@
      [""
       {:get {:summary "Retrieve a cash account"
              :openapi {:operationId "RetrieveCashAccount"}
+             :parameters
+             {:query
+              [:map [(keyword "embed[balances]") {:optional true} boolean?]
+               [(keyword "embed[transactions]") {:optional true} boolean?]]}
              :responses {200 {:body [:ref "CashAccount"]}
                          404 (ErrorResponse [#'CashAccountNotFound])}
              :handler queries/get-cash-account}}]
      ["/transactions"
       {:get {:summary "Retrieve account transactions"
              :openapi {:operationId "RetrieveAccountTransactions"}
-             :responses {200 {:body [:ref "AccountTransactionList"]}}
+             :responses {200 {:body [:ref "TransactionList"]}}
              :handler queries/list-transactions}}]
      ["/close"
       {:post {:summary "Close a cash account"

@@ -1,6 +1,7 @@
 (ns com.repldriven.mono.bank-cash-account.domain
   (:refer-clojure :exclude [name])
   (:require
+    [com.repldriven.mono.bank-schema.interface :as schema]
     [com.repldriven.mono.encryption.interface :as encryption]
     [com.repldriven.mono.error.interface :as error :refer [let-nom>]]))
 
@@ -78,10 +79,11 @@
 
 (defn opening-balances
   "Returns balances for each balance-product."
-  [account-id currency balance-products]
+  [account-id account-type currency balance-products]
   (let [now (System/currentTimeMillis)]
     (mapv (fn [{:keys [balance-type balance-status]}]
             {:account-id account-id
+             :account-type (schema/account-type->int account-type)
              :balance-type balance-type
              :balance-status balance-status
              :currency currency

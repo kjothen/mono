@@ -1,7 +1,55 @@
 <script>
-  import { list_cash_accounts, close_cash_account, list_balances, list_transactions, simulate_inbound_transfer, submit_internal_payment } from "./api.mjs";
+  import { list_cash_accounts, get_cash_account, close_cash_account, simulate_inbound_transfer, submit_internal_payment } from "./api.mjs";
   import { time_ago } from "./time.mjs";
   import { onMount, tick } from "svelte";
+
+  function toDisplay(minorUnits) {
+    const n = (minorUnits / 100).toFixed(2);
+    const [whole, frac] = n.split(".");
+    return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + frac;
+  }
+
+  function onAmountKey(e) {
+    // allow navigation, delete, backspace, tab
+    if (["Backspace", "Delete", "ArrowLeft", "ArrowRight",
+         "Tab", "Home", "End"].includes(e.key)) return;
+    // allow one decimal point
+    if (e.key === ".") {
+      if (e.target.value.includes(".")) e.preventDefault();
+      return;
+    }
+    // block everything except digits
+    if (!/^\d$/.test(e.key)) e.preventDefault();
+  }
+
+  function formatAmount(e) {
+    const input = e.target;
+    let raw = input.value.replace(/[^0-9.]/g, "");
+    const parts = raw.split(".");
+    if (parts.length > 2)
+      raw = parts[0] + "." + parts.slice(1).join("");
+    if (parts.length === 2 && parts[1].length > 2)
+      raw = parts[0] + "." + parts[1].slice(0, 2);
+    const [whole, frac] = raw.split(".");
+    const formatted =
+      whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+      + (frac !== undefined ? "." + frac : "");
+    const pos = input.selectionStart;
+    const diff = formatted.length - input.value.length;
+    input.value = formatted;
+    input.setSelectionRange(pos + diff, pos + diff);
+  }
+
+  function inputToMinor(value) {
+    const raw = value.replace(/,/g, "");
+    return Math.round(parseFloat(raw || "0") * 100);
+  }
+
+  function inputValid(value) {
+    const raw = value?.replace(/,/g, "");
+    const n = parseFloat(raw || "0");
+    return n >= 0.01;
+  }
 
   let accounts = $state([]);
   let links = $state({});
@@ -10,20 +58,16 @@
   let currentQuery = $state(null);
   let expandedAccountId = $state(null);
   let activeTab = $state({});
-  let balances = $state({});
-  let loadingBalances = $state({});
-  let transactions = $state({});
-  let loadingTransactions = $state({});
   let showFundDialog = $state(false);
   let fundAccountId = $state(null);
-  let fundAmount = $state(100);
+  let fundAmount = $state("1.00");
   let fundCurrency = $state("GBP");
   let fundSubmitting = $state(false);
   let fundError = $state(null);
 
   let showRewardDialog = $state(false);
   let rewardAccountId = $state(null);
-  let rewardAmount = $state(50);
+  let rewardAmount = $state("0.50");
   let rewardCurrency = $state("GBP");
   let rewardSubmitting = $state(false);
   let rewardError = $state(null);
@@ -31,7 +75,7 @@
   let showPayInDialog = $state(false);
   let payInAccountId = $state(null);
   let payInDebtorId = $state(null);
-  let payInAmount = $state(null);
+  let payInAmount = $state("");
   let payInCurrency = $state("GBP");
   let payInSubmitting = $state(false);
   let payInError = $state(null);
@@ -57,7 +101,7 @@
   }
 
   function openFundDialog(acct) {
-    fundAmount = 100;
+    fundAmount = "50,000.00";
     fundCurrency = acct.currency ?? "GBP";
     fundAccountId = acct["account-id"];
     fundError = null;
@@ -72,10 +116,10 @@
     fundSubmitting = true;
     fundError = null;
     try {
-      const res = await simulate_inbound_transfer(orgId, fundAccountId, fundAmount, fundCurrency);
+      const res = await simulate_inbound_transfer(orgId, fundAccountId, inputToMinor(fundAmount), fundCurrency);
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         showFundDialog = false;
-        load(currentQuery);
+        await refreshAll();
       } else {
         fundError = res.body?.detail ?? `HTTP ${res["http-status"]}`;
       }
@@ -92,7 +136,7 @@
   }
 
   function openRewardDialog(acct) {
-    rewardAmount = 50;
+    rewardAmount = "1,000.00";
     rewardCurrency = acct.currency ?? "GBP";
     rewardAccountId = acct["account-id"];
     rewardError = null;
@@ -112,10 +156,10 @@
         rewardError = "No settlement account found";
         return;
       }
-      const res = await submit_internal_payment(debtorId, rewardAccountId, rewardCurrency, rewardAmount, "Reward");
+      const res = await submit_internal_payment(debtorId, rewardAccountId, rewardCurrency, inputToMinor(rewardAmount), "Reward");
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         showRewardDialog = false;
-        load(currentQuery);
+        await refreshAll();
       } else {
         rewardError = res.body?.detail ?? `HTTP ${res["http-status"]}`;
       }
@@ -131,7 +175,7 @@
     payInSiblings = siblings;
     payInDebtorId = siblings[0]?.["account-id"] ?? null;
     payInAccountId = acct["account-id"];
-    payInAmount = null;
+    payInAmount = "";
     payInCurrency = acct.currency ?? "GBP";
     payInError = null;
     showPayInDialog = true;
@@ -141,14 +185,32 @@
     showPayInDialog = false;
   }
 
+  function payInDebtorAvailable() {
+    const sib = payInSiblings.find(s => s["account-id"] === payInDebtorId);
+    return sib?.["available-balance"]?.value ?? 0;
+  }
+
+  function payInExceedsAvailable() {
+    const amount = inputToMinor(payInAmount || "0");
+    return amount > payInDebtorAvailable();
+  }
+
+  function payInRemainingOrAvailable() {
+    const available = payInDebtorAvailable();
+    const amount = inputToMinor(payInAmount || "0");
+    if (amount === 0) return { value: available, label: "", exceeded: false };
+    if (amount > available) return { value: available, label: "available", exceeded: true };
+    return { value: available - amount, label: "remaining", exceeded: false };
+  }
+
   async function submitPayIn() {
     payInSubmitting = true;
     payInError = null;
     try {
-      const res = await submit_internal_payment(payInDebtorId, payInAccountId, payInCurrency, payInAmount, "Pay In");
+      const res = await submit_internal_payment(payInDebtorId, payInAccountId, payInCurrency, inputToMinor(payInAmount), "Pay In");
       if (res["http-status"] >= 200 && res["http-status"] < 300) {
         showPayInDialog = false;
-        load(currentQuery);
+        await refreshAll();
       } else {
         payInError = res.body?.detail ?? `HTTP ${res["http-status"]}`;
       }
@@ -173,8 +235,6 @@
       if (acctRes["http-status"] >= 200 && acctRes["http-status"] < 300) {
         accounts = acctRes.body["cash-accounts"] ?? [];
         links = acctRes.body.links ?? {};
-        balances = {};
-        transactions = {};
       } else {
         error = acctRes.body?.error ?? `HTTP ${acctRes["http-status"]}`;
         accounts = [];
@@ -195,42 +255,22 @@
     closing[accountId] = true;
     try {
       await close_cash_account(accountId);
-      await load(currentQuery);
+      await refreshAll();
     } finally {
       delete closing[accountId];
     }
   }
 
-  async function loadBalances(accountId) {
-    loadingBalances[accountId] = true;
-    try {
-      const res = await list_balances(accountId);
-      if (res["http-status"] >= 200 && res["http-status"] < 300) {
-        balances[accountId] = res.body.balances ?? [];
-      } else {
-        balances[accountId] = [];
-      }
-    } catch (_) {
-      balances[accountId] = [];
-    } finally {
-      delete loadingBalances[accountId];
+  async function refreshAccount(accountId) {
+    const res = await get_cash_account(accountId);
+    if (res["http-status"] >= 200 && res["http-status"] < 300) {
+      const idx = accounts.findIndex(a => a["account-id"] === accountId);
+      if (idx >= 0) accounts[idx] = res.body;
     }
   }
 
-  async function loadTransactions(accountId) {
-    loadingTransactions[accountId] = true;
-    try {
-      const res = await list_transactions(accountId);
-      if (res["http-status"] >= 200 && res["http-status"] < 300) {
-        transactions[accountId] = res.body.transactions ?? [];
-      } else {
-        transactions[accountId] = [];
-      }
-    } catch (_) {
-      transactions[accountId] = [];
-    } finally {
-      delete loadingTransactions[accountId];
-    }
+  async function refreshAll() {
+    await load(currentQuery);
   }
 
   function toggleExpanded(accountId) {
@@ -240,13 +280,10 @@
     }
     expandedAccountId = accountId;
     activeTab[accountId] = activeTab[accountId] ?? "balances";
-    if (!balances[accountId]) loadBalances(accountId);
   }
 
   function switchTab(accountId, tab) {
     activeTab[accountId] = tab;
-    if (tab === "balances" && !balances[accountId]) loadBalances(accountId);
-    if (tab === "transactions" && !transactions[accountId]) loadTransactions(accountId);
   }
 
   function scanOf(acct) {
@@ -283,6 +320,8 @@
         <th>Currency</th>
         <th>SCAN</th>
         <th>Status</th>
+        <th class="amount">Posted</th>
+        <th class="amount">Available</th>
         <th>Created</th>
         <th>Updated</th>
         <th>Action</th>
@@ -290,7 +329,7 @@
     </thead>
     <tbody>
       {#if accounts.length === 0 && !loading}
-        <tr><td colspan="9" class="empty">No accounts found</td></tr>
+        <tr><td colspan="11" class="empty">No accounts found</td></tr>
       {/if}
       {#each accounts as acct}
         <tr class="account-row" onclick={() => toggleExpanded(acct["account-id"])}>
@@ -310,6 +349,20 @@
                   class:closed={acct["account-status"] === "closed"}>
               {acct["account-status"]}
             </span>
+          </td>
+          <td class="mono amount">
+            {#if acct["posted-balance"]}
+              {toDisplay(acct["posted-balance"].value)}
+            {:else}
+              —
+            {/if}
+          </td>
+          <td class="mono amount">
+            {#if acct["available-balance"]}
+              {toDisplay(acct["available-balance"].value)}
+            {:else}
+              —
+            {/if}
           </td>
           <td title={acct["created-at"]}>{time_ago(acct["created-at"])}</td>
           <td title={acct["updated-at"]}>{time_ago(acct["updated-at"])}</td>
@@ -348,7 +401,7 @@
         </tr>
         {#if expandedAccountId === acct["account-id"]}
           <tr class="detail-row">
-            <td colspan="9">
+            <td colspan="11">
               <div class="tab-bar">
                 <button class="tab-btn" class:active={activeTab[acct["account-id"]] === "balances"}
                         onclick={(e) => { e.stopPropagation(); switchTab(acct["account-id"], "balances"); }}>
@@ -361,24 +414,22 @@
               </div>
 
               {#if activeTab[acct["account-id"]] === "balances"}
-                {#if loadingBalances[acct["account-id"]]}
-                  <div class="detail-loading">Loading balances...</div>
-                {:else if (balances[acct["account-id"]] ?? []).length === 0}
+                {#if (acct.balances ?? []).length === 0}
                   <div class="detail-empty">No balances found</div>
                 {:else}
                   <table class="detail-table">
                     <thead>
                       <tr>
-                        <th>Balance Type</th>
-                        <th>Balance Status</th>
-                        <th>Currency</th>
-                        <th>Credit</th>
-                        <th>Debit</th>
+                        <th class="col-narrow">Balance Type</th>
+                        <th class="col-narrow">Balance Status</th>
+                        <th class="col-currency">Currency</th>
+                        <th class="amount">Credit</th>
+                        <th class="amount">Debit</th>
                         <th>Created</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {#each balances[acct["account-id"]] as bal}
+                      {#each acct.balances ?? [] as bal}
                         <tr>
                           <td>{bal["balance-type"]}</td>
                           <td>
@@ -390,8 +441,8 @@
                             </span>
                           </td>
                           <td>{bal.currency}</td>
-                          <td class="mono">{bal.credit}</td>
-                          <td class="mono">{bal.debit}</td>
+                          <td class="mono amount">{toDisplay(bal.credit)}</td>
+                          <td class="mono amount">{toDisplay(bal.debit)}</td>
                           <td title={bal["created-at"]}>{time_ago(bal["created-at"])}</td>
                         </tr>
                       {/each}
@@ -399,9 +450,7 @@
                   </table>
                 {/if}
               {:else if activeTab[acct["account-id"]] === "transactions"}
-                {#if loadingTransactions[acct["account-id"]]}
-                  <div class="detail-loading">Loading transactions...</div>
-                {:else if (transactions[acct["account-id"]] ?? []).length === 0}
+                {#if (acct.transactions ?? []).length === 0}
                   <div class="detail-empty">No transactions found</div>
                 {:else}
                   <table class="detail-table">
@@ -410,18 +459,18 @@
                         <th>ID</th>
                         <th>Type</th>
                         <th>Direction</th>
-                        <th>Amount</th>
+                        <th class="amount">Amount</th>
                         <th>Reference</th>
                         <th>Created</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {#each transactions[acct["account-id"]] as txn}
+                      {#each acct.transactions ?? [] as txn}
                         <tr>
                           <td class="mono">{txn["transaction-id"]}</td>
                           <td>{txn["transaction-type"]}</td>
                           <td>{txn.side}</td>
-                          <td class="mono">{txn.amount}</td>
+                          <td class="mono amount">{toDisplay(txn.amount)}</td>
                           <td>{txn.reference ?? ""}</td>
                           <td title={txn["created-at"]}>{time_ago(txn["created-at"])}</td>
                         </tr>
@@ -448,8 +497,8 @@
           <div class="error-msg">{fundError}</div>
         {/if}
         <label>
-          Amount (minor units)
-          <input type="number" bind:value={fundAmount} min="1" />
+          Amount
+          <input type="text" inputmode="decimal" bind:value={fundAmount} onkeydown={onAmountKey} oninput={formatAmount} />
         </label>
         <label>
           Currency
@@ -457,7 +506,7 @@
         </label>
         <div class="dialog-actions">
           <button class="cancel-btn" onclick={closeFundDialog} disabled={fundSubmitting}>Cancel</button>
-          <button class="submit-btn" onclick={submitFund} disabled={fundSubmitting || fundAmount < 1}>
+          <button class="submit-btn" onclick={submitFund} disabled={fundSubmitting || !inputValid(fundAmount)}>
             {fundSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>
@@ -476,8 +525,8 @@
           <div class="error-msg">{rewardError}</div>
         {/if}
         <label>
-          Amount (minor units)
-          <input type="number" bind:value={rewardAmount} min="1" />
+          Amount
+          <input type="text" inputmode="decimal" bind:value={rewardAmount} onkeydown={onAmountKey} oninput={formatAmount} />
         </label>
         <label>
           Currency
@@ -485,7 +534,7 @@
         </label>
         <div class="dialog-actions">
           <button class="cancel-btn" onclick={closeRewardDialog} disabled={rewardSubmitting}>Cancel</button>
-          <button class="submit-btn" onclick={submitReward} disabled={rewardSubmitting || rewardAmount < 1}>
+          <button class="submit-btn" onclick={submitReward} disabled={rewardSubmitting || !inputValid(rewardAmount)}>
             {rewardSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>
@@ -511,9 +560,18 @@
             {/each}
           </select>
         </label>
+        {#if true}
+          {@const info = payInRemainingOrAvailable()}
+          <span class="balance-info" class:exceeded={info.exceeded}>
+            {payInCurrency} {toDisplay(info.value)}
+            {#if info.label}
+              <span class="balance-label">{info.label}</span>
+            {/if}
+          </span>
+        {/if}
         <label>
-          Amount (minor units)
-          <input type="number" bind:value={payInAmount} min="1" />
+          Amount
+          <input type="text" inputmode="decimal" bind:value={payInAmount} onkeydown={onAmountKey} oninput={formatAmount} />
         </label>
         <label>
           Currency
@@ -521,7 +579,7 @@
         </label>
         <div class="dialog-actions">
           <button class="cancel-btn" onclick={closePayInDialog} disabled={payInSubmitting}>Cancel</button>
-          <button class="submit-btn" onclick={submitPayIn} disabled={payInSubmitting || !payInAmount || payInAmount < 1}>
+          <button class="submit-btn" onclick={submitPayIn} disabled={payInSubmitting || !inputValid(payInAmount) || payInExceedsAvailable()}>
             {payInSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>
@@ -611,6 +669,21 @@
   .mono {
     font-family: monospace;
     font-size: 0.8rem;
+  }
+
+  th.amount,
+  td.amount {
+    text-align: right;
+  }
+
+  .detail-table th.col-narrow {
+    width: 17%;
+    white-space: nowrap;
+  }
+
+  .detail-table th.col-currency {
+    width: 1%;
+    white-space: nowrap;
   }
 
   .empty {
@@ -804,6 +877,24 @@
     padding: 0.4rem 0.5rem;
     font-size: 0.9rem;
     color: var(--text-muted);
+  }
+
+  .balance-info {
+    display: block;
+    padding: 0.25rem 0;
+    font-size: 0.85rem;
+    font-family: monospace;
+    color: var(--text-muted);
+  }
+
+  .balance-info.exceeded {
+    color: #dc2626;
+  }
+
+  .balance-label {
+    font-family: sans-serif;
+    font-size: 0.75rem;
+    margin-left: 0.3rem;
   }
 
   .fund-btn {

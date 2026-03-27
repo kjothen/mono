@@ -6,9 +6,7 @@
      cash-accounts]
     [com.repldriven.mono.bank-transaction.interface :as
      transactions]
-    [com.repldriven.mono.error.interface :as error]
-    [com.repldriven.mono.fdb.interface :as fdb]
-    [com.repldriven.mono.bank-schema.interface :as schema]))
+    [com.repldriven.mono.error.interface :as error]))
 
 (def ^:private default-page-size 20)
 (def ^:private max-page-size 100)
@@ -46,21 +44,31 @@
   (let [{:keys [record-db record-store]} request
         org-id (get-in request [:auth :organization-id])
         query (get-in request [:parameters :query])
-        after-id (cursor/decode
-                  (get query (keyword "page[after]")))
-        before-id (cursor/decode
-                   (get query (keyword "page[before]")))
-        size (parse-page-size
-              (get query (keyword "page[size]")))
+        after-id (cursor/decode (get query (keyword "page[after]")))
+        before-id (cursor/decode (get query (keyword "page[before]")))
+        size (parse-page-size (get query (keyword "page[size]")))
+        embed-balances (get query (keyword "embed[balances]"))
+        embed-transactions (get query (keyword "embed[transactions]"))
+        opts (cond->
+              {:limit size}
+
+              after-id
+              (assoc :after after-id)
+
+              before-id
+              (assoc :before before-id)
+
+              (some? embed-balances)
+              (assoc :embed-balances embed-balances)
+
+              (some? embed-transactions)
+              (assoc :embed-transactions embed-transactions))
         result (cash-accounts/get-accounts
                 {:record-db record-db
                  :record-store record-store}
                 org-id
-                (cond-> {:limit size}
-                        after-id
-                        (assoc :after after-id)
-                        before-id
-                        (assoc :before before-id)))]
+                opts)]
+
     (if (error/anomaly? result)
       {:status 500 :body (error-response 500 result)}
       (let [{:keys [accounts before after]} result
@@ -69,38 +77,45 @@
                                  (when after-id before)
                                  after))]
         {:status 200
-         :body (cond-> {:cash-accounts accounts}
-                       (seq links)
-                       (assoc :links links))}))))
+         :body (cond->
+                {:cash-accounts accounts}
+
+                (seq links)
+                (assoc :links links))}))))
 
 (defn get-cash-account
   [request]
   (let [{:keys [record-db record-store]} request
         org-id (get-in request [:auth :organization-id])
         {:keys [account-id]} (get-in request [:parameters :path])
-        result (fdb/transact record-db
-                             record-store
-                             "cash-accounts"
-                             (fn [store]
-                               (fdb/load-record store org-id account-id)))]
+        query (get-in request [:parameters :query])
+        embed-balances (get query (keyword "embed[balances]"))
+        embed-transactions (get query (keyword "embed[transactions]"))
+        result (cash-accounts/get-account
+                {:record-db record-db :record-store record-store}
+                org-id
+                account-id
+                (cond-> {}
+                        (some? embed-balances)
+                        (assoc :embed-balances embed-balances)
+                        (some? embed-transactions)
+                        (assoc :embed-transactions embed-transactions)))]
     (cond (error/anomaly? result)
-          {:status 500
-           :body (error-response 500 result)}
+          {:status 500 :body (error-response 500 result)}
           (nil? result)
           {:status 404
            :body (error-response 404 "FAILED"
                                  "cash-accounts/not-found"
                                  "Cash account not found")}
           :else
-          {:status 200
-           :body (schema/pb->CashAccount result)})))
+          {:status 200 :body result})))
 
 (defn list-transactions
   [request]
   (let [{:keys [record-db record-store]} request
         account-id (get-in request
                            [:parameters :path :account-id])
-        result (transactions/get-account-transactions
+        result (transactions/get-transactions
                 {:record-db record-db
                  :record-store record-store}
                 account-id)]

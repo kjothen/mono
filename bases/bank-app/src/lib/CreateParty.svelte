@@ -5,7 +5,7 @@
   let { onCreated, showToast } = $props();
 
   let open = $state(false);
-  let displayName = $state("Arthur Phillip Dent");
+  let displayName = $state("Arthur Dent");
   let givenName = $state("Arthur");
   let middleNames = $state("Phillip");
   let familyName = $state("Dent");

@@ -21,9 +21,16 @@
    [:created-at {:optional true} [:maybe [:ref "Timestamp"]]]
    [:updated-at {:optional true} [:maybe [:ref "Timestamp"]]]])
 
+(def BalanceSummary
+  [:map
+   [:value int?]
+   [:currency string?]])
+
 (def BalanceList
   [:map {:json-schema/example examples/BalanceList}
-   [:balances [:vector [:ref "Balance"]]]])
+   [:balances [:vector [:ref "Balance"]]]
+   [:posted-balance [:ref "BalanceSummary"]]
+   [:available-balance [:ref "BalanceSummary"]]])
 
 (def CreateBalanceRequest
   [:map {:json-schema/example examples/CreateBalanceRequest}
@@ -48,7 +55,7 @@
    [:balance-status [:ref "BalanceStatus"]]])
 
 (def registry
-  (components-registry [#'BalanceType #'BalanceStatus #'Balance #'BalanceList
-                        #'CreateBalanceRequest #'CreateBalanceResponse
-                        #'BalanceProduct #'BalanceProductList
-                        #'BalanceProductRequest]))
+  (components-registry [#'BalanceType #'BalanceStatus #'Balance #'BalanceSummary
+                        #'BalanceList #'CreateBalanceRequest
+                        #'CreateBalanceResponse #'BalanceProduct
+                        #'BalanceProductList #'BalanceProductRequest]))

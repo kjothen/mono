@@ -5,7 +5,7 @@
     [com.repldriven.mono.error.interface :refer [try-nom]]
     [com.repldriven.mono.fdb.interface :as fdb]))
 
-(defn get-account-transactions
+(defn get-transactions
   "Returns transaction legs for an account, enriched with
   the parent transaction's type, status, and reference.
   Queries the TransactionLeg_by_account index."

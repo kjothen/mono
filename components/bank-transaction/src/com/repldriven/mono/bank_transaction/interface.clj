@@ -12,8 +12,8 @@
   [open-store data]
   (commands/record open-store data))
 
-(defn get-account-transactions
+(defn get-transactions
   "Returns transaction legs for an account, enriched
   with parent transaction type, status, and reference."
   [config account-id]
-  (store/get-account-transactions config account-id))
+  (store/get-transactions config account-id))

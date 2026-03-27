@@ -20,7 +20,10 @@
    :created-at "2025-01-01T00:00:00Z"
    :updated-at "2025-01-01T00:00:00Z"})
 
-(def BalanceList {:balances [Balance]})
+(def BalanceList
+  {:balances [Balance]
+   :posted-balance {:value 0 :currency "GBP"}
+   :available-balance {:value 0 :currency "GBP"}})
 
 (def CreateBalanceRequest
   {:balance-type :default :balance-status :posted :currency "GBP"})

@@ -14,7 +14,7 @@
 
 (def LegSide (coercion/leg-side-enum-schema {:json-schema/example "debit"}))
 
-(def AccountTransaction
+(def Transaction
   [:map
    [:leg-id string?]
    [:transaction-id string?]
@@ -32,10 +32,10 @@
    [:created-at {:optional true}
     [:maybe [:ref "Timestamp"]]]])
 
-(def AccountTransactionList
+(def TransactionList
   [:map
-   [:transactions [:vector [:ref "AccountTransaction"]]]])
+   [:transactions [:vector [:ref "Transaction"]]]])
 
 (def registry
   (components-registry [#'TransactionStatus #'TransactionType #'LegSide
-                        #'AccountTransaction #'AccountTransactionList]))
+                        #'Transaction #'TransactionList]))

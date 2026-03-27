@@ -47,6 +47,7 @@
 (def balance-status->int balances/Balance-BalanceStatus-label2val)
 
 (def account-type->int cash-account-products/AccountType-label2val)
+(def int->account-type cash-account-products/AccountType-val2label)
 
 (defn account-type->pb-enum
   "Converts an account-type keyword to the protobuf

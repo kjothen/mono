@@ -110,14 +110,22 @@
                                    "Idempotency-Key" (str (random-uuid))}})
       (.then parse-response)))
 
+(def ^:private embed-params "embed[balances]=true&embed[transactions]=true")
+
 (defn list-cash-accounts
   [query-string]
   (let [url (if query-string
-              (str "/v1/cash-accounts?" query-string)
-              "/v1/cash-accounts")]
+              (str "/v1/cash-accounts?" query-string "&" embed-params)
+              (str "/v1/cash-accounts?" embed-params))]
     (-> (js/fetch url
                   #js {:headers #js {"Authorization" (str "Bearer " @api-key)}})
         (.then parse-response))))
+
+(defn get-cash-account
+  [account-id]
+  (-> (js/fetch (str "/v1/cash-accounts/" account-id "?" embed-params)
+                #js {:headers #js {"Authorization" (str "Bearer " @api-key)}})
+      (.then parse-response)))
 
 (defn create-cash-account-product
   [data]

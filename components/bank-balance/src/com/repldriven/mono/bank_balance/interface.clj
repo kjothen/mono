@@ -1,7 +1,10 @@
 (ns com.repldriven.mono.bank-balance.interface
   (:require
     [com.repldriven.mono.bank-balance.core :as core]
-    [com.repldriven.mono.bank-balance.store :as store]))
+    [com.repldriven.mono.bank-balance.domain :as domain]
+    [com.repldriven.mono.bank-balance.store :as store]
+    [com.repldriven.mono.bank-schema.interface :as schema]
+    [com.repldriven.mono.error.interface :as error]))
 
 (defn new-balance
   "Creates a new balance. Rejects if the balance already
@@ -27,10 +30,20 @@
                      balance-status))
 
 (defn get-balances
-  "Lists balances for an account. Returns a sequence of
-  balances or anomaly."
+  "Lists balances for an account. Returns
+  {:balances [...] :posted-balance {...}
+   :available-balance {...}} or anomaly."
   [config account-id]
-  (store/get-account-balances config account-id))
+  (let [result (store/get-account-balances config account-id)]
+    (if (error/anomaly? result)
+      result
+      (let [currency (:currency (first result) "")
+            account-type (schema/int->account-type (:account-type (first
+                                                                   result)))]
+        {:balances result
+         :posted-balance (domain/posted-balance result currency)
+         :available-balance
+         (domain/available-balance account-type result currency)}))))
 
 (defn apply-legs
   "Applies all legs to balances. For use inside an open

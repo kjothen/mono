@@ -38,6 +38,9 @@
    [:payment-addresses {:optional true}
     [:maybe [:vector [:ref "PaymentAddress"]]]]
    [:balances {:optional true} [:maybe [:vector [:ref "Balance"]]]]
+   [:posted-balance {:optional true} [:maybe [:ref "BalanceSummary"]]]
+   [:available-balance {:optional true} [:maybe [:ref "BalanceSummary"]]]
+   [:transactions {:optional true} [:maybe [:vector [:ref "Transaction"]]]]
    [:created-at {:optional true} [:maybe [:ref "Timestamp"]]]
    [:updated-at {:optional true} [:maybe [:ref "Timestamp"]]]])
 

@@ -88,7 +88,7 @@ Interactive OpenAPI documentation is also served locally at
 
 ### Demo
 
-[![Queenswood Bank](thumbnail.png)](https://github.com/user-attachments/assets/e427bc5f-c0d7-47d2-a058-c03196c2e3fe)
+[![Queenswood Bank](thumbnail.png)](https://github.com/user-attachments/assets/d6941c18-54c6-4954-aa7d-b8150f5d2891)
 
 ### How It Works
 
@@ -321,7 +321,7 @@ pipelines without defensive `try/catch` noise.
 | `bank-idv`                                                                                                                                                 | Identity verification processing                                                                   |
 | `bank-organization`                                                                                                                                        | Organisation management — create org, API key generation and verification                          |
 | `bank-party`                                                                                                                                               | Party creation and management                                                                      |
-| `bank-interest`                                                                                                                                            | Interest accrual and capitalization with fractional carry                                           |
+| `bank-interest`                                                                                                                                            | Interest accrual and capitalization with fractional carry                                          |
 | `bank-payment`                                                                                                                                             | Payment processing — internal transfers between accounts                                           |
 | `bank-schema`                                                                                                                                              | Protobuf definitions (Person, Account, Organization, ApiKey, Balance, AccountProduct, Transaction) |
 | `bank-test-resources`                                                                                                                                      | Bank-specific test configuration (FDB stores, Avro schemas)                                        |

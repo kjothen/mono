@@ -58,12 +58,10 @@
   accounts or anomaly."
   [config accounts]
   (reduce (fn [acc account]
-            (let [result (balances/get-balances
-                          config
-                          (:account-id account))]
+            (let [result (balances/get-balances config (:account-id account))]
               (if (error/anomaly? result)
                 (reduced result)
-                (conj acc (assoc account :balances result)))))
+                (conj acc (merge account result)))))
           []
           accounts))
 

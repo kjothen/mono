@@ -13,7 +13,12 @@
     component/test-system {:local/root "../../components/test-system"}
     component/testcontainers {:local/root "../../components/testcontainers"}}}}
  :deps {component/bank-balance {:local/root "../../components/bank-balance"}
+        component/bank-api-key {:local/root "../../components/bank-api-key"}
+        component/bank-bootstrap {:local/root "../../components/bank-bootstrap"}
         component/bank-cash-account {:local/root "../../components/bank-cash-account"}
+        component/bank-cash-account-product {:local/root "../../components/bank-cash-account-product"}
+        component/bank-party {:local/root "../../components/bank-party"}
+        component/bank-organization {:local/root "../../components/bank-organization"}
         component/avro {:local/root "../../components/avro"}
         component/cli {:local/root "../../components/cli"}
         component/command {:local/root "../../components/command"}
@@ -29,6 +34,7 @@
         component/log {:local/root "../../components/log"}
         component/pulsar {:local/root "../../components/pulsar"}
         component/bank-schema {:local/root "../../components/bank-schema"}
+        component/bank-transaction {:local/root "../../components/bank-transaction"}
         component/system {:local/root "../../components/system"}
         component/telemetry {:local/root "../../components/telemetry"}
         component/utility {:local/root "../../components/utility"}

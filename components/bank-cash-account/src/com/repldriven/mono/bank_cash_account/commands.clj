@@ -136,6 +136,7 @@
 
           balance-store (open-store "balances")
           balances (domain/opening-balances (:account-id account)
+                                            (:account-type account)
                                             currency
                                             (:balance-products product))
           _ (save-balances balance-store balances)
