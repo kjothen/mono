@@ -122,7 +122,7 @@ jobs:
 
       - name: Report coverage
         if: always()
-        uses: zgosalvez/github-actions-report-lcov@v7.0.2
+        uses: zgosalvez/github-actions-report-lcov@v7.0.8
         with:
           coverage-files: target/coverage/${{ matrix.project }}/lcov.info
           minimum-coverage: 50
