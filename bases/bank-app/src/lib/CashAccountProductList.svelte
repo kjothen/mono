@@ -41,10 +41,26 @@
     { type: "interest-paid",    status: "posted",           label: "Interest Paid / Posted" },
   ];
 
+  const balanceGroups = [
+    { type: "default",          typeLabel: "Default",          statuses: ["posted", "pending-incoming", "pending-outgoing"] },
+    { type: "interest-accrued", typeLabel: "Interest Accrued", statuses: ["posted"] },
+    { type: "interest-paid",    typeLabel: "Interest Paid",    statuses: ["posted"] },
+  ];
+
+  const statusLabels = {
+    "posted": "Posted",
+    "pending-incoming": "Pending Incoming",
+    "pending-outgoing": "Pending Outgoing",
+  };
+
+  function bpIndex(type, status) {
+    return defaultBalanceProducts.findIndex(bp => bp.type === type && bp.status === status);
+  }
+
   let selectedBalanceProducts = $state(defaultBalanceProducts.map(() => true));
 
   const paymentAddressSchemes = [
-    { scheme: "scan", label: "SCAN (UK Sort Code / Account Number)" },
+    { scheme: "scan", label: "SCAN (UK Sort Code & Account Number)" },
   ];
 
   let selectedSchemes = $state(paymentAddressSchemes.map(() => true));
@@ -232,11 +248,18 @@
       </label>
       <fieldset class="checkbox-group" disabled={creating}>
         <legend>Balances</legend>
-        {#each defaultBalanceProducts as bp, i}
-          <label class="checkbox-label">
-            <input type="checkbox" bind:checked={selectedBalanceProducts[i]} />
-            {bp.label}
-          </label>
+        {#each balanceGroups as group}
+          <div class="balance-group">
+            <span class="balance-type-label">{group.typeLabel}</span>
+            <div class="balance-statuses">
+              {#each group.statuses as status}
+                <label class="checkbox-label">
+                  <input type="checkbox" bind:checked={selectedBalanceProducts[bpIndex(group.type, status)]} />
+                  {statusLabels[status]}
+                </label>
+              {/each}
+            </div>
+          </div>
         {/each}
       </fieldset>
       <fieldset class="checkbox-group" disabled={creating}>
@@ -285,11 +308,18 @@
       </label>
       <fieldset class="checkbox-group" disabled={revising}>
         <legend>Balances</legend>
-        {#each defaultBalanceProducts as bp, i}
-          <label class="checkbox-label">
-            <input type="checkbox" bind:checked={reviseSelectedBalanceProducts[i]} />
-            {bp.label}
-          </label>
+        {#each balanceGroups as group}
+          <div class="balance-group">
+            <span class="balance-type-label">{group.typeLabel}</span>
+            <div class="balance-statuses">
+              {#each group.statuses as status}
+                <label class="checkbox-label">
+                  <input type="checkbox" bind:checked={reviseSelectedBalanceProducts[bpIndex(group.type, status)]} />
+                  {statusLabels[status]}
+                </label>
+              {/each}
+            </div>
+          </div>
         {/each}
       </fieldset>
       <fieldset class="checkbox-group" disabled={revising}>
@@ -465,6 +495,32 @@
 
   .checkbox-group:disabled {
     opacity: 0.6;
+  }
+
+  .balance-group {
+    padding: 0.35rem 0;
+  }
+
+  .balance-group + .balance-group {
+    border-top: 1px solid var(--border);
+    margin-top: 0.35rem;
+    padding-top: 0.5rem;
+  }
+
+  .balance-type-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.3rem;
+  }
+
+  .balance-statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
   }
 
   .checkbox-label {

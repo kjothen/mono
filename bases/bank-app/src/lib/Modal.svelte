@@ -70,15 +70,22 @@
   .modal-close {
     background: none;
     border: none;
-    font-size: 1.4rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
     cursor: pointer;
     color: var(--text-muted);
+    border-radius: 4px;
     padding: 0;
     line-height: 1;
   }
 
   .modal-close:hover {
     color: var(--text);
+    background: var(--bg-hover);
   }
 
   .modal-body {

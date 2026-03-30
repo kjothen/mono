@@ -190,15 +190,17 @@
   fieldset {
     border: 1px solid var(--border-input);
     border-radius: 4px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  fieldset label + label {
+    margin-top: 1rem;
   }
 
   legend {
-    font-weight: 600;
-    padding: 0 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0 0.25rem;
   }
 
   button[type="submit"] {

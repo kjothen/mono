@@ -528,10 +528,10 @@
           Amount
           <input type="text" inputmode="decimal" bind:value={rewardAmount} onkeydown={onAmountKey} oninput={formatAmount} />
         </label>
-        <label>
-          Currency
+        <div class="field-group">
+          <span class="field-label">Currency</span>
           <span class="currency-display">{rewardCurrency}</span>
-        </label>
+        </div>
         <div class="dialog-actions">
           <button class="cancel-btn" onclick={closeRewardDialog} disabled={rewardSubmitting}>Cancel</button>
           <button class="submit-btn" onclick={submitReward} disabled={rewardSubmitting || !inputValid(rewardAmount)}>
@@ -573,10 +573,10 @@
           Amount
           <input type="text" inputmode="decimal" bind:value={payInAmount} onkeydown={onAmountKey} oninput={formatAmount} />
         </label>
-        <label>
-          Currency
+        <div class="field-group">
+          <span class="field-label">Currency</span>
           <span class="currency-display">{payInCurrency}</span>
-        </label>
+        </div>
         <div class="dialog-actions">
           <button class="cancel-btn" onclick={closePayInDialog} disabled={payInSubmitting}>Cancel</button>
           <button class="submit-btn" onclick={submitPayIn} disabled={payInSubmitting || !inputValid(payInAmount) || payInExceedsAvailable()}>
@@ -835,7 +835,6 @@
     color: var(--text-muted);
   }
 
-  .detail-loading,
   .detail-empty {
     padding: 0.75rem 0;
     color: var(--text-faint);
@@ -948,7 +947,8 @@
     font-weight: 600;
   }
 
-  .dialog input {
+  .dialog input,
+  .dialog select {
     display: block;
     width: 100%;
     margin-top: 0.25rem;
@@ -959,6 +959,16 @@
     background: var(--bg-input);
     color: var(--text);
     box-sizing: border-box;
+  }
+
+  .field-group {
+    margin-bottom: 0.75rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
   }
 
   .dialog-actions {
