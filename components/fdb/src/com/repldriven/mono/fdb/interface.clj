@@ -32,6 +32,10 @@
   [store record-type field value]
   (record/query store record-type field value))
 
+(defn query-repeated-records
+  [store record-type field value]
+  (record/query-repeated store record-type field value))
+
 (defn scan-records [store opts] (record/scan store opts))
 
 (defn write-changelog

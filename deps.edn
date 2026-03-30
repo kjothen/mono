@@ -5,6 +5,8 @@
     components/cache {:local/root "components/cache"}
     components/cli {:local/root "components/cli"}
     components/command {:local/root "components/command"}
+    components/command-processor {:local/root "components/command-processor"}
+    components/command-schema {:local/root "components/command-schema"}
     components/db {:local/root "components/db"}
     components/encryption {:local/root "components/encryption"}
     components/env {:local/root "components/env"}
@@ -13,11 +15,10 @@
     components/http-client {:local/root "components/http-client"}
     components/json {:local/root "components/json"}
     components/log {:local/root "components/log"}
-    components/migrator {:local/root "components/migrator"}
     components/message-bus {:local/root "components/message-bus"}
-    components/command-processor {:local/root "components/command-processor"}
-    components/processor {:local/root "components/processor"}
+    components/migrator {:local/root "components/migrator"}
     components/mqtt {:local/root "components/mqtt"}
+    components/processor {:local/root "components/processor"}
     components/pulsar {:local/root "components/pulsar"}
     components/pulsar-vault-crypto {:local/root
                                     "components/pulsar-vault-crypto"}
@@ -26,13 +27,12 @@
     components/sql {:local/root "components/sql"}
     components/system {:local/root "components/system"}
     components/telemetry {:local/root "components/telemetry"}
-    components/command-schema {:local/root "components/command-schema"}
+    components/vault {:local/root "components/vault"}
+    components/test-resources {:local/root "components/test-resources"}
     components/test-schema {:local/root "components/test-schema"}
     components/test-system {:local/root "components/test-system"}
-    components/test-resources {:local/root "components/test-resources"}
     components/testcontainers {:local/root "components/testcontainers"}
     components/utility {:local/root "components/utility"}
-    components/vault {:local/root "components/vault"}
     bases/build {:local/root "bases/build"}
     bases/external-test-runner {:local/root "bases/external-test-runner"}
     bases/service {:local/root "bases/service"}
@@ -82,64 +82,30 @@
                        "bases/service/test"
                        "bases/service/test-resources"
                        "bases/external-test-runner/test"]}
-  :+bank
-  {:extra-deps
-   {components/bank-api-key {:local/root "components/bank-api-key"}
-    components/bank-balance {:local/root "components/bank-balance"}
-    components/bank-cash-account-product {:local/root "components/bank-cash-account-product"}
-    components/bank-cash-account {:local/root "components/bank-cash-account"}
-    components/bank-idv {:local/root "components/bank-idv"}
-    components/bank-interest {:local/root "components/bank-interest"}
-    components/bank-organization {:local/root "components/bank-organization"}
-    components/bank-party {:local/root "components/bank-party"}
-    components/bank-bootstrap {:local/root "components/bank-bootstrap"}
-    components/bank-schema {:local/root "components/bank-schema"}
-    components/bank-payment {:local/root "components/bank-payment"}
-    components/bank-transaction {:local/root "components/bank-transaction"}
-    bases/bank-api {:local/root "bases/bank-api"}
-    bases/bank-monolith {:local/root "bases/bank-monolith"}}
-   :extra-paths ["components/bank-api-key/test"
-                  "components/bank-api-key/test-resources"
-                  "components/bank-balance/test"
-                  "components/bank-balance/test-resources"
-                  "components/bank-cash-account-product/test"
-                  "components/bank-cash-account-product/test-resources"
-                  "components/bank-cash-account/test"
-                  "components/bank-cash-account/test-resources"
-                  "components/bank-idv/test"
-                  "components/bank-idv/test-resources"
-                  "components/bank-interest/test"
-                  "components/bank-interest/test-resources"
-                  "components/bank-organization/test"
-                  "components/bank-organization/test-resources"
-                  "components/bank-party/test"
-                  "components/bank-party/test-resources"
-                  "components/bank-bootstrap/test"
-                  "components/bank-bootstrap/test-resources"
-                  "components/bank-schema/test-resources"
-                  "components/bank-test-resources/test-resources"
-                  "components/bank-payment/test"
-                  "components/bank-payment/test-resources"
-                  "components/bank-transaction/test"
-                  "components/bank-transaction/test-resources"
-                  "bases/bank-api/test"
-                  "bases/bank-api/test-resources"
-                  "bases/bank-monolith/test"
-                  "bases/bank-monolith/test-resources"]}
-  :format/zprint {:extra-deps {zprint/zprint {:mvn/version "1.3.0"}}
+  :+example {:extra-deps {components/example-bookmark
+                          {:local/root "components/example-bookmark"}
+                          bases/example-api {:local/root "bases/example-api"}}
+             :extra-paths ["components/example-bookmark/test"
+                           "components/example-bookmark/test-resources"
+                           "bases/example-api/test"
+                           "bases/example-api/test-resources"]}
+  :format/zprint {:extra-deps #:zprint{zprint {:mvn/version "1.3.0"}}
                   :main-opts ["-m" "zprint.main"]}
-  :lint/clj-kondo {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2026.01.19"}}
+  :lint/clj-kondo {:extra-deps #:clj-kondo{clj-kondo {:mvn/version
+                                                      "2026.01.19"}}
                    :main-opts ["-m" "clj-kondo.main"]}
-  :nvd {:extra-deps {nvd-clojure/nvd-clojure {:mvn/version "5.3.0"}}
+  :nvd {:extra-deps #:nvd-clojure{nvd-clojure {:mvn/version "5.3.0"}}
         :main-opts ["-m" "nvd.task.check"]}
   :nrepl {:extra-deps {nrepl/nrepl {:mvn/version "1.6.0"}
                        cider/cider-nrepl {:mvn/version "0.58.0"}}
-          :main-opts ["-m" "nrepl.cmdline"
-                      "--middleware" "[cider.nrepl/cider-middleware]"]}
+          :main-opts ["-m"
+                      "nrepl.cmdline"
+                      "--middleware"
+                      "[cider.nrepl/cider-middleware]"]}
   :poly {:extra-deps {polylith/clj-poly {:mvn/version "0.3.32"}
                       bases/external-test-runner {:local/root
                                                   "bases/external-test-runner"}}
          :main-opts ["-m" "polylith.clj.core.poly-cli.core"]}
-  :rebel {:extra-deps {com.bhauman/rebel-readline {:mvn/version "0.1.7"}}
-          :main-opts ["-m" "rebel-readline.main"]}}
- :mvn/repos {"maven" {:url "https://packages.confluent.io/maven"}}}
+  :rebel {:extra-deps #:com.bhauman{rebel-readline {:mvn/version "0.1.7"}}
+          :main-opts ["-m" "rebel-readline.main"]}
+  :mvn/repos {"maven" {:url "https://packages.confluent.io/maven"}}}}

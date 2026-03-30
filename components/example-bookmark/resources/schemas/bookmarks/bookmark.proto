@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package com.repldriven.mono.example_schemas.bookmarks;
+
+import "record_metadata_options.proto";
+
+option java_outer_classname = "BookmarkProto";
+
+message Bookmark {
+  option (com.apple.foundationdb.record.record).usage = RECORD;
+
+  required string bookmark_id = 1 [(com.apple.foundationdb.record.field).primary_key = true];
+  optional string url = 2;
+  optional string title = 3;
+  repeated string tags = 4;
+}

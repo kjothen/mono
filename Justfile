@@ -1,11 +1,11 @@
 set shell := ["zsh", "-cu"]
 
-DOMAIN_ALIASES := ":+bank"
+DOMAIN_ALIASES := ":+example"
 
 list:
     just --list
 
-# Remove the bank exemplar and configure for a new domain
+# Remove the example domain and configure for a new domain
 fork domain:
     bb scripts/fork-domain.bb {{ domain }}
 
@@ -110,9 +110,6 @@ format:
         echo "No Clojure files found"
     fi
 
-export-openapi path="docs/openapi.yaml":
-    clojure -Sdeps '{:aliases {:dev {:main-opts []}}}' -M{{ DOMAIN_ALIASES }}:dev -m com.repldriven.mono.bank-api.export-spec {{ path }}
-
 force-prep:
     clj -X:deps prep :aliases '[{{ DOMAIN_ALIASES }} :dev]' :force true
 
@@ -124,9 +121,6 @@ start-docker:
 # Stop Docker via Colima
 stop-docker:
     colima stop
-
-start-bank-app:
-    cd {{ justfile_directory() }}/bases/bank-app && npm install && npm run dev
 
 start-telemetry:
   docker run -d --name jaeger \

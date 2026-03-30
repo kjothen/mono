@@ -1,25 +1,10 @@
-{:compact-views #{},
- :default-profile-name "bank",
- :interface-ns "interface",
- :projects {"development" {:alias "dev"},
-            ;; schema and test-resources provide centralised Avro schemas
-            ;; and shared classpath resources (Testcontainers configs,
-            ;; application-test.yml files). Polylith tracks source imports
-            ;; only, so :necessary suppresses false-positive warnings.
-            "bank-web" {:alias "web",
-                        :necessary ["bank-schema" "bank-test-resources"
-                                    "test-schema" "command-schema"
-                                    "test-resources"]},
-            "bank-cash-account-service"
-              {:alias "acc",
-               :necessary ["bank-schema" "bank-test-resources" "test-schema"
-                           "command-schema" "test-resources"]},
-            "bank-app" {:alias "app", :test []},
-            "bank-monolith" {:alias "bank",
-                             :necessary ["bank-schema" "bank-test-resources"
-                                         "command-schema" "test-resources"]}},
- :tag-patterns {:release "v[0-9]*", :stable "stable-*"},
+{:compact-views #{}
+ :default-profile-name "example"
+ :interface-ns "interface"
+ :projects {"development" {:alias "dev"}
+            "example-service" {:alias "example" :necessary ["test-resources"]}}
+ :tag-patterns {:release "v[0-9]*" :stable "stable-*"}
  :test {:create-test-runner
-          com.repldriven.mono.external-test-runner.core/create},
- :top-namespace "com.repldriven.mono",
- :vcs {:auto-add true, :name "git"}}
+        com.repldriven.mono.external-test-runner.core/create}
+ :top-namespace "com.repldriven.mono"
+ :vcs {:auto-add true :name "git"}}

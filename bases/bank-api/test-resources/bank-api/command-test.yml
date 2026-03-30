@@ -1,3 +1,0 @@
-dispatcher: !system/component
-  system/component-kind: command/dispatcher
-  bus: !system/ref message-bus.bus

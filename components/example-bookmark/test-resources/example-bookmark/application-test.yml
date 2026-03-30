@@ -1,0 +1,29 @@
+system:
+  fdb:
+    container: !system/component
+      system/component-kind: fdb/container
+
+    cluster-file-path: !system/component
+      system/component-kind: fdb/cluster-file-path
+      container: !system/local-ref container
+
+    record-db: !system/component
+      system/component-kind: fdb/record-db
+      cluster-file-path: !system/local-ref cluster-file-path
+
+    bookmark-store: !system/component
+      system/component-kind: fdb/store
+      descriptor: com.repldriven.mono.example_schemas.schemas.ExampleSchemaProto
+      record-types: !strs
+        bookmarks:
+          record-type: Bookmark
+          indexes:
+            - name: tag_idx
+              field: tags
+              fan-out: true
+
+  example-bookmark:
+    store: !system/component
+      system/component-kind: example-bookmark/store
+      record-db: !system/ref fdb.record-db
+      record-store: !system/ref fdb.bookmark-store

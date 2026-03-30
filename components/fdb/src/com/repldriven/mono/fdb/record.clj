@@ -60,6 +60,24 @@
                        FDBStoreTimer$Waits/WAIT_EXECUTE_QUERY)
          (mapv record->bytes))))
 
+(defn query-repeated
+  "Queries an open FDBRecordStore where a repeated field
+  contains value. Uses oneOfThem() semantics for fan-out
+  indexes. Returns a vector of serialized byte arrays.
+  For use inside transact."
+  [store record-type field value]
+  (let [q (-> (RecordQuery/newBuilder)
+              (.setRecordType record-type)
+              (.setFilter (-> (Query/field field)
+                              .oneOfThem
+                              (.equalsValue value)))
+              .build)]
+    (->> (.executeQuery store q)
+         .asList
+         (.asyncToSync (.getContext store)
+                       FDBStoreTimer$Waits/WAIT_EXECUTE_QUERY)
+         (mapv record->bytes))))
+
 (defn transact
   "Opens an FDB Record Layer store and runs f within a single
   transaction. f receives the open FDBRecordStore and should

@@ -1,4 +1,0 @@
-{:deps {}
- :aliases {:dev {:extra-deps
-                 {poly/bank-app
-                  {:local/root "../../bases/bank-app"}}}}}

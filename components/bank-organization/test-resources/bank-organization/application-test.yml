@@ -1,2 +1,0 @@
-system:
-  fdb: !include bank/fdb-test.yml

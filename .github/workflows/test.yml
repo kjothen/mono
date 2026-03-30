@@ -29,8 +29,7 @@ jobs:
       - name: Discover projects
         id: projects
         run: |
-          skip="bank-app"
-          matrix=$(ls projects/ | grep -vxF "$skip" | jq -Rc '[., inputs]')
+          matrix=$(ls projects/ | jq -Rc '[., inputs]')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Discovered projects: $matrix"
 
@@ -100,7 +99,7 @@ jobs:
           COVERAGE: "true"
           COVERAGE_THRESHOLD: "50"
         run: |
-          clojure -X:deps prep :aliases '[:dev :+bank]'
+          clojure -X:deps prep :aliases '[:dev :+example]'
           clojure -M:poly test project:${{ matrix.project }} :all
 
       - name: Publish test report

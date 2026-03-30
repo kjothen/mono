@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package com.repldriven.mono.example_schemas.schemas;
+
+import "schemas/bookmarks/bookmark.proto";
+
+option java_outer_classname = "ExampleSchemaProto";
+
+message RecordTypeUnion {
+  optional com.repldriven.mono.example_schemas.bookmarks.Bookmark _Bookmark = 1;
+}

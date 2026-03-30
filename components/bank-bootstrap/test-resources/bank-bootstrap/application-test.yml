@@ -1,4 +1,0 @@
-system:
-  fdb: !include bank/fdb-test.yml
-  avro: !include avro/avro-test.yml
-  bootstrap: !include bank/bootstrap-internal-test.yml

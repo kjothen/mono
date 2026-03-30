@@ -9,6 +9,7 @@
     (com.apple.foundationdb FDB)
     (com.apple.foundationdb.record RecordMetaData)
     (com.apple.foundationdb.record.metadata Index IndexOptions Key$Expressions)
+    (com.apple.foundationdb.record.metadata.expressions KeyExpression$FanType)
     (com.apple.foundationdb.record.provider.foundationdb APIVersion
                                                          FDBDatabaseFactory
                                                          FDBMetaDataStore
@@ -104,10 +105,13 @@
     (.invoke method nil (into-array Object []))))
 
 (defn- build-index-expr
-  [{:strs [field fields]}]
+  [{:strs [field fields fan-out]}]
   (if fields
     (Key$Expressions/concatenateFields ^java.util.List fields)
-    (Key$Expressions/field field)))
+    (Key$Expressions/field field
+                           (if fan-out
+                             KeyExpression$FanType/FanOut
+                             KeyExpression$FanType/None))))
 
 (defn- set-primary-key
   [b record-type primary-key]
