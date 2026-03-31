@@ -30,6 +30,10 @@ This removes the example domain and rewires configs so you can:
 3. Add domain projects under `projects/<your-domain>-*/`
 4. Register your new bricks in the `:+<your-domain>` alias in `deps.edn`
 
+## Presentations
+
+1. [Systems as data - How mono uses donut.system to build a system of components from configuration data](./slides/systems_as_data/slides.md)
+
 ## Getting Started
 
 ### Prerequisites
