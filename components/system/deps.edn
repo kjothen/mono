@@ -1,5 +1,5 @@
 {:aliases {:test {:extra-deps {} :extra-paths ["test"]}}
- :deps {party.donut/system {:mvn/version "1.0.258"
+ :deps {party.donut/system {:mvn/version "1.0.259"
                             :exclusions [;; closure-compiler bundles a package-
                                          ;; private WireFormat that shadows
                                          ;; protobuf-java, breaking protojure
