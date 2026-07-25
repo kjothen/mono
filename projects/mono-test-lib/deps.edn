@@ -109,7 +109,7 @@
   com.repldriven.mono.components/vault
   {:local/root "../../components/vault"}
 
-  org.clojure/clojure {:mvn/version "1.12.4"}}
+  org.clojure/clojure {:mvn/version "1.12.5"}}
 
  ;; Invisible to consumers; present so `poly check` and `poly test` work here.
  ;;
