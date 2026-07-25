@@ -117,6 +117,7 @@
             pkgs.openssl
             protocBinary
             protocGenClojure
+            pkgs.pnpm
             pkgs.semgrep
             pkgs.zprint
           ];

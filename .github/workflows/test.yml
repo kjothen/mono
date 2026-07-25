@@ -29,11 +29,16 @@ jobs:
       - name: Discover projects
         id: projects
         run: |
+          # Every service project under projects/ plus a `dev` entry that runs
+          # the whole workspace. The dev entry is the important one: it is the
+          # only entry that exercises every brick, including those no service
+          # project includes. Matrix entries run as parallel jobs.
+          #
           # Library projects (mono-lib, mono-test-lib) are excluded: they have
-          # no base and no tests of their own, and every brick in them is
-          # already covered by example-service. `poly check` is what validates
-          # them, and it runs as its own job below.
-          matrix=$(ls projects/ | grep -v -- '-lib$' | jq -Rc '[., inputs]')
+          # no base and no tests of their own, so there is nothing for the test
+          # runner to do. Their bricks are covered by the dev entry, and the
+          # projects themselves are validated by `poly check` below.
+          matrix=$(ls projects/ | grep -v -- '-lib$' | jq -Rc '[., inputs] + ["dev"]')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Discovered projects: $matrix"
 
@@ -166,11 +171,15 @@ jobs:
           path: target/test-results/**/*.xml
           retention-days: 7
 
+      # Polylith writes coverage to `target/coverage/<project-name>/` using the
+      # project NAME, not its alias. The dev matrix entry is the alias, so its
+      # path is `target/coverage/development/`, not `target/coverage/dev/`.
+      # The ternary keeps a single workflow expression for every entry.
       - name: Report coverage
         if: always()
         uses: zgosalvez/github-actions-report-lcov@v7.1.0
         with:
-          coverage-files: target/coverage/${{ matrix.project }}/lcov.info
+          coverage-files: target/coverage/${{ matrix.project == 'dev' && 'development' || matrix.project }}/lcov.info
           minimum-coverage: 50
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-comment: true
@@ -181,7 +190,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ matrix.project }}
-          path: target/coverage/${{ matrix.project }}/
+          path: target/coverage/${{ matrix.project == 'dev' && 'development' || matrix.project }}/
           retention-days: 7
 
   # Gate job for branch protection — produces a single required check
