@@ -55,7 +55,7 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
@@ -266,7 +266,7 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
