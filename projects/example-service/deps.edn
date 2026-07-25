@@ -13,7 +13,7 @@
                                      "../../components/example-bookmark"}
         bases/example-api {:local/root "../../bases/example-api"}
         com.google.protobuf/protobuf-java {:mvn/version "3.25.8"}
-        org.clojure/clojure {:mvn/version "1.12.4"}}
+        org.clojure/clojure {:mvn/version "1.12.5"}}
  :aliases
  {:test
   {:extra-deps

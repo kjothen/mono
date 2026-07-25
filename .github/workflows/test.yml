@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Discover projects
         id: projects
@@ -45,7 +45,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -54,12 +54,12 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
       - name: Cache dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.m2/repository
@@ -93,7 +93,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -102,7 +102,7 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
@@ -130,7 +130,7 @@ jobs:
           docker ps
 
       - name: Cache dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.m2/repository
@@ -168,7 +168,7 @@ jobs:
 
       - name: Report coverage
         if: always()
-        uses: zgosalvez/github-actions-report-lcov@v7.0.9
+        uses: zgosalvez/github-actions-report-lcov@v7.1.0
         with:
           coverage-files: target/coverage/${{ matrix.project }}/lcov.info
           minimum-coverage: 50
