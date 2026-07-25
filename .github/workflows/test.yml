@@ -54,7 +54,7 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
@@ -102,7 +102,7 @@ jobs:
           java-version: "21"
 
       - name: Setup Clojure
-        uses: DeLaGuardo/setup-clojure@13.5
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
 
@@ -168,7 +168,7 @@ jobs:
 
       - name: Report coverage
         if: always()
-        uses: zgosalvez/github-actions-report-lcov@v7.0.9
+        uses: zgosalvez/github-actions-report-lcov@v7.1.0
         with:
           coverage-files: target/coverage/${{ matrix.project }}/lcov.info
           minimum-coverage: 50
