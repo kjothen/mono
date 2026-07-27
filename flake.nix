@@ -20,17 +20,32 @@
           config.allowUnsupportedSystem = true;
         };
 
-        # Fetch pre-built FDB binary directly from GitHub releases
+        # Fetch pre-built FDB binary directly from GitHub releases.
+        #
+        # On 7.4.x rather than 7.3.x because 7.3.75 is the last 7.3 release
+        # that ships macOS .pkg assets — 7.3.76 through 7.3.79 publish Linux
+        # artifacts only (.deb, .rpm, libfdb_c.*.so), leaving this derivation
+        # nothing to unpack. macOS packaging resumes in 7.4.x, with the same
+        # internal layout (FoundationDB-clients.pkg/Payload -> usr/local),
+        # so the unpack below is unchanged.
+        #
+        # The client version is coupled to the FDB server built by the
+        # testcontainers image: FDB requires a compatible protocol version
+        # between client and cluster, so this, FDB_VERSION in
+        # components/testcontainers/resources/fdb/Dockerfile, fdb-version in
+        # the matching fdb.clj, org.foundationdb/fdb-java in
+        # components/fdb/deps.edn, and the client .deb in CI must move
+        # together.
         fdbArch = if pkgs.stdenv.isAarch64 then "arm64" else "x86_64";
         fdbBinary = pkgs.stdenv.mkDerivation {
-          name = "foundationdb-7.3.75";
+          name = "foundationdb-7.4.6";
           src = pkgs.fetchurl {
-            url = "https://github.com/apple/foundationdb/releases/download/7.3.75/FoundationDB-7.3.75_${fdbArch}.pkg";
+            url = "https://github.com/apple/foundationdb/releases/download/7.4.6/FoundationDB-7.4.6_${fdbArch}.pkg";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                "sha256-axYrC+vv1Jhzzi59fbe7ABUVyAzjqQVFWFhZwmNiSI8="
+                "sha256-ZyjANtLdvhurQR20xpZsfWZ3A25foE4IV2Sj9macqZ4="
               else
-                "sha256-YqGe3fCkbfe4NdVTCcJwQIU1MEYAh4BLBzkP76kl0Ks=";
+                "sha256-9YFxonwO0jBBo9UyRRkfSFHVITeWkPOE3k2zJctP43s=";
           };
           buildInputs = [
             pkgs.xar

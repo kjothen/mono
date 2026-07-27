@@ -45,7 +45,7 @@
   {:local/root "../../components/event-processor"}
   com.repldriven.mono.components/event-schema
   {:local/root "../../components/event-schema"}
-  ;; fdb needs the FoundationDB client library (7.3.75) installed natively at
+  ;; fdb needs the FoundationDB client library (7.4.6) installed natively at
   ;; runtime. The jar is inert on the classpath until FDB/selectAPIVersion is
   ;; called, so merely depending on mono-lib does not require it.
   com.repldriven.mono.components/fdb {:local/root "../../components/fdb"}

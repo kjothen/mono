@@ -45,7 +45,7 @@ the most demanding thing mono supports. You need:
   [`protoc-gen-clojure`](https://github.com/protojure/protoc-plugin) plugin on
   `PATH`, for code generation
 - The [FoundationDB](https://github.com/apple/foundationdb/releases) client
-  library 7.3.75, to run anything that touches `fdb`
+  library 7.4.6, to run anything that touches `fdb`
 - Docker, to run the tests (they use testcontainers)
 - Network access on first generation, to resolve the pinned mono release
 

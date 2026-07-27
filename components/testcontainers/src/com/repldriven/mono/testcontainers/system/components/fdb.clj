@@ -8,7 +8,7 @@
     (org.testcontainers.containers.wait.strategy Wait)
     (org.testcontainers.images.builder ImageFromDockerfile)))
 
-(def fdb-version "7.3.75")
+(def fdb-version "7.4.6")
 (def default-image-name (str "mono/foundationdb:" fdb-version))
 
 (defn- fdb-image
