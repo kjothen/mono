@@ -2,7 +2,7 @@
 ;; library.
 ;;
 ;;   clojure -Tnew create \
-;;     :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.15' \
+;;     :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.16' \
 ;;     :name com.acme/bookmarks
 ;;
 ;; Only :mono/tag is pinned by hand; the sha is resolved from it at generation
@@ -14,7 +14,7 @@
 {:description "A Polylith workspace built on the mono component library."
 
  :mono/url "https://github.com/repldriven/mono.git"
- :mono/tag "v0.0.15"
+ :mono/tag "v0.0.16"
 
  :template-fn com.repldriven.mono.template.new/template-fn
  :post-process-fn com.repldriven.mono.template.new/post-process-fn
@@ -22,4 +22,10 @@
  ;; `root` is copied automatically before any transform, so it holds every file
  ;; whose path is fixed. Only the project directory needs a transform, because
  ;; its name is derived from the project name.
- :transform [["project" "projects/{{main/file}}"]]}
+ ;;
+ ;; {{main}} rather than {{main/file}}: a polylith project is named by its
+ ;; directory, and every other mention of it — workspace.edn, the readme, the
+ ;; Justfile — is hyphenated. Munging only this one leaves `poly info` reporting
+ ;; a project called my_thing with no alias, because workspace.edn declared
+ ;; my-thing. Nothing here is a namespace, so nothing needs munging.
+ :transform [["project" "projects/{{main}}"]]}

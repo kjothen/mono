@@ -1,8 +1,7 @@
 {:compact-views #{}
- :default-profile-name "example"
+ :default-profile-name "realworld"
  :interface-ns "interface"
  :projects {"development" {:alias "dev"}
-            "example-service" {:alias "example" :necessary ["test-resources"]}
             "realworld-service" {:alias "realworld"
                                  :necessary ["test-resources"]}
             ;; Library projects have no base, so every component that nothing

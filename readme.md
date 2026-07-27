@@ -27,7 +27,7 @@ Generate a Polylith workspace already wired to mono as a library:
 clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
 
 clojure -Tnew create \
-  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.15' \
+  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.16' \
   :name com.acme/my-thing
 ```
 
@@ -50,7 +50,7 @@ involved; everything resolves from a tag and its sha.
 ```clojure
 {:deps {com.repldriven/mono
         {:git/url "https://github.com/repldriven/mono.git"
-         :git/tag "v0.0.15"
+         :git/tag "v0.0.16"
          :git/sha "<full-sha>"
          :deps/root "projects/mono-lib"}}
 
@@ -58,7 +58,7 @@ involved; everything resolves from a tag and its sha.
  {:test {:extra-deps
          {com.repldriven/mono
           {:git/url "https://github.com/repldriven/mono.git"
-           :git/tag "v0.0.15"
+           :git/tag "v0.0.16"
            :git/sha "<full-sha>"
            :deps/root "projects/mono-test-lib"}}}}}
 ```
@@ -245,13 +245,11 @@ relying on ours.
 | `test-system`    | `with-test-system` lifecycle macro, `nom-test>` assertions | —                | —       |
 | `testcontainers` | Declarative container infrastructure for integration tests | `testcontainers` | Curated |
 
-Four bricks are examples rather than library code, and none of them ships in
+Three bricks are examples rather than library code, and none of them ships in
 `mono-lib`. `realworld-domain`, `realworld-store` and `realworld-api` are a
 working [RealWorld](https://realworld-docs.netlify.app/) implementation over
 postgres, and are what the template copies into a new workspace — yours to
-edit or delete once it is there. `example-bookmark` and `example-api` stay as
-the worked FoundationDB example, since `fdb` is published and would otherwise
-have no end-to-end demonstration.
+edit or delete once it is there.
 
 The RealWorld example is held to the official conformance suite: `just
 realworld-hurl` stands up postgres, starts the service and runs all 13 files
@@ -265,9 +263,8 @@ of it. Where our own tests and that suite disagree, the suite wins.
 | `external-test-runner` | Out-of-process test runner for Polylith            |
 | `service`              | Generic async command handler entry point          |
 
-Two more are examples rather than library code: `realworld-api`, the HTTP
-entry point for the RealWorld starter, and `example-api`, the same for the
-FoundationDB demo.
+One more is an example rather than library code: `realworld-api`, the HTTP
+entry point for the RealWorld starter.
 
 ## Key Patterns
 

@@ -1,7 +1,6 @@
 # Testcontainer config is inlined rather than !include'd from the shared
 # test-resources brick. That brick is not published, so a generated workspace
-# has none of it — example-bookmark inlines its FoundationDB config for the
-# same reason.
+# has none of it.
 system:
   postgres:
     container: !system/component

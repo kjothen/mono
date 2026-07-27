@@ -75,7 +75,7 @@ build snapshot="true":
 # own tests disagree, it wins.
 
 # Run the official RealWorld conformance suite against a live service
-realworld-hurl port="8091":
+realworld-hurl port="8091" project="{{main}}":
     #!/usr/bin/env bash
     set -uo pipefail
     root="$PWD"
@@ -100,6 +100,12 @@ realworld-hurl port="8091":
       exit 1
     fi
 
+    if [ ! -d "$root/projects/{{ project }}" ]; then
+      echo "there is no projects/{{ project }}. Pass the project that serves"
+      echo "the API, e.g. just realworld-hurl {{ port }} some-service"
+      exit 1
+    fi
+
     docker rm -f realworld-pg >/dev/null 2>&1
     docker run -d --name realworld-pg -p 55432:5432 \
       -e POSTGRES_USER=realworld -e POSTGRES_PASSWORD=realworld \
@@ -117,7 +123,8 @@ realworld-hurl port="8091":
     export REALWORLD_PORT={{ port }}
 
     # From the project rather than :dev, which carries :main-opts for portal.
-    (cd projects/{{main}} && \
+    # Pass `project` if you serve the API from a project other than this one.
+    (cd projects/{{ project }} && \
       clojure -M -m {{top-ns}}.realworld-api.main \
         --config-file classpath:realworld-api/application.yml \
         --profile default) >"$log" 2>&1 &

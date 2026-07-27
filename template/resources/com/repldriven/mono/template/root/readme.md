@@ -77,7 +77,9 @@ The starter is held to the official RealWorld conformance suite, vendored
 under `bases/realworld-api/test-resources/realworld-api/hurl`:
 
 ```bash
-just realworld-hurl     # starts postgres and the service, runs all 13 files
+just realworld-hurl                    # postgres, the service, all 13 files
+just realworld-hurl 8099               # on another port
+just realworld-hurl 8099 other-service # from another project
 ```
 
 Where the suite and your own tests disagree, the suite is the contract.

@@ -1,15 +1,15 @@
 set shell := ["zsh", "-cu"]
 
-# Both example domains. DOMAIN_ALIASES is concatenated onto -M/-A, so the
-# aliases run together; POLY_PROFILES is the space-separated form poly wants,
-# and poly spells profiles without the leading colon.
-DOMAIN_ALIASES := ":+example:+realworld"
-POLY_PROFILES := "+example +realworld"
+# The example domain. DOMAIN_ALIASES is concatenated onto -M/-A; POLY_PROFILES
+# is the space-separated form poly wants, and poly spells profiles without the
+# leading colon.
+DOMAIN_ALIASES := ":+realworld"
+POLY_PROFILES := "+realworld"
 
-# Only the FoundationDB example generates code, so prep needs that profile
-# alone. Kept separate from DOMAIN_ALIASES because :aliases takes a vector of
-# distinct keywords rather than one concatenated string.
-PREP_ALIASES := "[:+example :dev]"
+# Only test-schema generates code, and it is on :dev. Kept separate from
+# DOMAIN_ALIASES because :aliases takes a vector of distinct keywords rather
+# than one concatenated string.
+PREP_ALIASES := "[:dev]"
 
 list:
     just --list
@@ -58,7 +58,11 @@ doctor:
 # release exists.
 
 # Generate a throwaway workspace from the template and verify it
-template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
+#
+# A hyphenated name by default: deps-new munges hyphens to underscores for
+# {{main/file}} and leaves them alone for {{main}}, so a single-word name
+# cannot tell a correct substitution from a wrong one.
+template-test name="com.acme/my-blog" out="/tmp/mono-template-test":
     #!/usr/bin/env zsh
     set -e
     rm -rf {{ out }}
@@ -78,6 +82,19 @@ template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
     fi
     if ! grep -rq 'com\.repldriven\.mono\.error' .; then
         echo "FAIL: library namespaces were rewritten but should not have been"; exit 1
+    fi
+    # poly names a project after its directory, so a directory that disagrees
+    # with workspace.edn yields a project with no alias, and `poly check` still
+    # passes. Assert the two agree, and that the Justfile can find it.
+    project=$(basename {{ name }})
+    if [ ! -d "projects/$project" ]; then
+        echo "FAIL: expected projects/$project, found $(ls projects)"; exit 1
+    fi
+    if ! grep -q "\"$project\" {:alias" workspace.edn; then
+        echo "FAIL: workspace.edn does not declare a project called $project"; exit 1
+    fi
+    if ! just --dry-run realworld-hurl 2>&1 | grep -q "cd projects/$project "; then
+        echo "FAIL: realworld-hurl does not point at projects/$project"; exit 1
     fi
     clojure -X:deps prep :aliases '[:dev :+realworld]'
     clojure -M:poly check +realworld
@@ -252,13 +269,8 @@ nvd project="":
     clojure -J-Dclojure.main.report=stderr -J-Danalyzer.ossindex.enabled=false -J-Ddata.directory="$data_dir" -M:nvd "nvd-clojure.edn" "$classpath"
 
 # Linter
-lint-eastwood:
-    clojure -M{{ DOMAIN_ALIASES }}:dev:test:lint/eastwood
-lint-clj-kondo:
-    clojure -M:lint/clj-kondo --lint bases components projects template/src deps.edn workspace.edn
 lint:
-  just lint-eastwood
-  just lint-clj-kondo
+    clojure -M:lint/clj-kondo --lint bases components projects template/src deps.edn workspace.edn
 
 # Formatter - uses .zprint.edn config in project root
 format:
