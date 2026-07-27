@@ -1,0 +1,45 @@
+# Testcontainer config is inlined rather than !include'd from the shared
+# test-resources brick. That brick is not published, so a generated workspace
+# has none of it — example-bookmark inlines its FoundationDB config for the
+# same reason.
+system:
+  postgres:
+    container: !system/component
+      system/component-kind: postgres/container
+      exposed-port: 5432
+
+    container-mapped-exposed-port: !system/component
+      system/component-kind: postgres/container-mapped-exposed-port
+      container: !system/local-ref container
+      exposed-port: 5432
+
+  jdbc:
+    datasource: !system/component
+      system/component-kind: jdbc/datasource
+      database: test
+      dbtype: postgres
+      host: localhost
+      password: test
+      port: !system/ref postgres.container-mapped-exposed-port
+      user: test
+
+  migrator:
+    # The instance of this component IS the datasource, so anything that
+    # refs it is guaranteed to start after the schema exists. That ordering
+    # is the reason the store below refs migrator rather than jdbc.
+    migrations: !system/component
+      system/component-kind: migrator/migrations
+      datasource: !system/ref jdbc.datasource
+      changelogs:
+        - realworld-store/changelog.sql
+
+  auth:
+    jwt: !system/component
+      system/component-kind: auth/signer
+      secret: test-secret-not-for-production
+
+  realworld:
+    store: !system/component
+      system/component-kind: realworld-store/store
+      datasource: !system/ref migrator.migrations
+      signer: !system/ref auth.jwt
