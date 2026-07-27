@@ -3,10 +3,14 @@
     com.repldriven.mono.testcontainers.interface ;; extends
                                                  ;; `system/components`
     com.repldriven.mono.migrator.interface
+    com.repldriven.mono.command-processor.interface
+    com.repldriven.mono.message-bus.interface
 
     [com.repldriven.mono.realworld-store.interface :as SUT]
 
     [com.repldriven.mono.auth.interface :as auth]
+    [com.repldriven.mono.command.interface :as command]
+    [com.repldriven.mono.realworld-domain.interface :as domain]
     [com.repldriven.mono.error.interface :as error]
     [com.repldriven.mono.jdbc.interface :as jdbc]
     [com.repldriven.mono.system.interface :as system]
@@ -374,3 +378,63 @@
            (is (nil? (SUT/article store slug nil)))
            (is (= :realworld/article-not-found
                   (error/kind (SUT/comments store slug nil))))))))))
+
+(defn- with-system
+  "The whole write path: store, processor, command-processor and a
+  dispatcher over a local bus."
+  [f]
+  (with-test-system
+   [sys "classpath:realworld-store/application-test.yml"]
+   (f (system/instance sys [:realworld :store])
+      (system/instance sys [:realworld :dispatcher]))))
+
+(defn- send!
+  [dispatcher command payload]
+  (command/send dispatcher
+                {:command command
+                 :id (str (random-uuid))
+                 :correlation-id (str (random-uuid))
+                 :payload payload}))
+
+(deftest command-path-test
+  (with-system
+    (fn [store dispatcher]
+      (let [u (unique)]
+        (testing "a write arrives through the bus and comes back ACCEPTED"
+          (let [reply (send! dispatcher
+                             "register"
+                             {:username (str "cmd" u)
+                              :email (str "cmd" u "@test.com")
+                              :password "password123"})]
+            (is (= "ACCEPTED" (:status reply)))
+            (is (int? (get-in reply [:payload :id])))))
+        (testing "a rejection comes back REJECTED, carrying its kind as reason"
+          ;; The envelope keeps only the kind, which is why the error table
+          ;; in realworld-domain is keyed by its string form.
+          (let [reply (send! dispatcher
+                             "register"
+                             {:username (str "cmd" u)
+                              :email (str "other" u "@test.com")
+                              :password "password123"})]
+            (is (= "REJECTED" (:status reply)))
+            (is (= ":realworld/username-taken" (:reason reply)))
+            (is (some? (domain/reason->response (:reason reply)))
+                "the reason must resolve in the response table")))
+        (testing "an ownership failure is REJECTED, not silently ACCEPTED"
+          ;; command/command-response tests rejection? then error? and
+          ;; treats anything else as success, so building this with
+          ;; error/unauthorized would report a forbidden write as ACCEPTED
+          ;; with a null payload. This asserts we did not.
+          (let [jake (author! store u "cmd-own")
+                thief (author! store u "cmd-thief")
+                a (article! store jake "Owned" [])
+                reply (send! dispatcher
+                             "delete-article"
+                             {:slug (:slug a) :actor-id (:id thief)})]
+            (is (= "REJECTED" (:status reply)))
+            (is (= ":realworld/article-forbidden" (:reason reply)))
+            (is (some? (SUT/article store (:slug a) nil))
+                "and the article is still there")))
+        (testing "an unknown command is rejected rather than ignored"
+          (let [reply (send! dispatcher "not-a-command" {})]
+            (is (= "REJECTED" (:status reply)))))))))

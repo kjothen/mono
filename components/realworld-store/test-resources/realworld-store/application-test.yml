@@ -38,8 +38,30 @@ system:
       system/component-kind: auth/signer
       secret: test-secret-not-for-production
 
+  message-bus:
+    bus: !system/component
+      system/component-kind: message-bus/local-bus
+      channels: [realworld-command, realworld-command-response]
+
   realworld:
     store: !system/component
       system/component-kind: realworld-store/store
       datasource: !system/ref migrator.migrations
       signer: !system/ref auth.jwt
+
+    processor: !system/component
+      system/component-kind: realworld-store/processor
+      store: !system/local-ref store
+
+    command-processor: !system/component
+      system/component-kind: command-processor/command-processor
+      bus: !system/ref message-bus.bus
+      processor: !system/local-ref processor
+      command-channel: !keyword realworld-command
+      command-response-channel: !keyword realworld-command-response
+
+    dispatcher: !system/component
+      system/component-kind: command/dispatcher
+      bus: !system/ref message-bus.bus
+      command-channel: !keyword realworld-command
+      command-response-channel: !keyword realworld-command-response
