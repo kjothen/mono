@@ -422,7 +422,7 @@
                    "user.name=you"
                    "commit"
                    "-qm" "Generated from the mono template")
-              (println "  initialised a git repository")))))))
+              (println "  initialised a git repository and committed")))))))
 
 (defn post-process-fn
   "deps-new :post-process-fn. Everything it needs is in the options, because
@@ -448,5 +448,8 @@
     (println)
     (println "Workspace created. Next:")
     (println "  cd" target-dir)
-    (println "  clojure -M:poly check")
-    (println "  just test")))
+    (println "  just check           # clojure -M:poly check")
+    (println "  just test            # brick tests, needs Docker")
+    (println "  just realworld-hurl  # the RealWorld conformance suite")
+    (println)
+    (println "  just doctor          # if any of those cannot find a tool")))

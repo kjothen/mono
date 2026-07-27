@@ -10,6 +10,8 @@ list:
 # Short, because the toolchain is short: a JDK, the Clojure CLI and Docker.
 # flake.nix provides all three; this is what tells you what is missing when
 # it is not active.
+
+# Check the toolchain this workspace needs is on PATH
 doctor:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -35,6 +37,8 @@ doctor:
 # Prep any brick that declares :deps/prep-lib. Nothing in the starter does,
 # so this is a no-op until you add a brick that generates code — it is here
 # because that is a normal thing to want, not because you need it now.
+
+# Run codegen for any brick declaring :deps/prep-lib
 setup:
     clojure -X:deps prep :aliases '[{{ DOMAIN_ALIASES }} :dev]'
 
@@ -69,6 +73,8 @@ build snapshot="true":
 # postgres, which is a different shape of thing from a brick test. The suite
 # is vendored under bases/realworld-api/test-resources; where it and your
 # own tests disagree, it wins.
+
+# Run the official RealWorld conformance suite against a live service
 realworld-hurl port="8091":
     #!/usr/bin/env bash
     set -uo pipefail
