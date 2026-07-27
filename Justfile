@@ -58,7 +58,11 @@ doctor:
 # release exists.
 
 # Generate a throwaway workspace from the template and verify it
-template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
+#
+# A hyphenated name by default: deps-new munges hyphens to underscores for
+# {{main/file}} and leaves them alone for {{main}}, so a single-word name
+# cannot tell a correct substitution from a wrong one.
+template-test name="com.acme/my-blog" out="/tmp/mono-template-test":
     #!/usr/bin/env zsh
     set -e
     rm -rf {{ out }}
@@ -78,6 +82,19 @@ template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
     fi
     if ! grep -rq 'com\.repldriven\.mono\.error' .; then
         echo "FAIL: library namespaces were rewritten but should not have been"; exit 1
+    fi
+    # poly names a project after its directory, so a directory that disagrees
+    # with workspace.edn yields a project with no alias, and `poly check` still
+    # passes. Assert the two agree, and that the Justfile can find it.
+    project=$(basename {{ name }})
+    if [ ! -d "projects/$project" ]; then
+        echo "FAIL: expected projects/$project, found $(ls projects)"; exit 1
+    fi
+    if ! grep -q "\"$project\" {:alias" workspace.edn; then
+        echo "FAIL: workspace.edn does not declare a project called $project"; exit 1
+    fi
+    if ! just --dry-run realworld-hurl 2>&1 | grep -q "cd projects/$project "; then
+        echo "FAIL: realworld-hurl does not point at projects/$project"; exit 1
     fi
     clojure -X:deps prep :aliases '[:dev :+realworld]'
     clojure -M:poly check +realworld
