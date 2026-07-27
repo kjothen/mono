@@ -59,33 +59,6 @@ jobs:
         with:
           cli: latest
 
-      # Needed only by the template check: the starter brick declares
-      # :deps/prep-lib, so its classpath cannot be built until codegen has run.
-      # No FoundationDB client and no Docker: nothing here starts a container.
-      # versions.json is the single source of truth the nix devshell also
-      # builds from, so CI and a local shell cannot drift apart.
-      - name: Read toolchain versions
-        id: versions
-        run: |
-          set -euo pipefail
-          {
-            echo "protoc=$(jq -r '.protoc.version' versions.json)"
-            echo "protoc_gen_clojure=$(jq -r '."protoc-gen-clojure".version' versions.json)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Setup Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: ${{ steps.versions.outputs.protoc }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install protoc-gen-clojure
-        run: |
-          set -euo pipefail
-          sudo curl -fL "https://github.com/protojure/protoc-plugin/releases/download/v${{ steps.versions.outputs.protoc_gen_clojure }}/protoc-gen-clojure" \
-            -o /usr/local/bin/protoc-gen-clojure
-          sudo chmod +x /usr/local/bin/protoc-gen-clojure
-
       - name: Cache dependencies
         uses: actions/cache@v6
         with:
@@ -253,7 +226,6 @@ jobs:
               || { echo "::error::$ns was rewritten but should have been left pointing at mono"; exit 1; }
           done
 
-          clojure -X:deps prep :aliases '[:dev :+realworld]'
           clojure -M:poly check +realworld
           echo "template generates a workspace that checks"
 
@@ -293,30 +265,6 @@ jobs:
         uses: DeLaGuardo/setup-clojure@13.6.1
         with:
           cli: latest
-
-      # versions.json is the single source of truth the nix devshell also
-      # builds from, so CI and a local shell cannot drift apart.
-      - name: Read toolchain versions
-        id: versions
-        run: |
-          set -euo pipefail
-          {
-            echo "protoc=$(jq -r '.protoc.version' versions.json)"
-            echo "protoc_gen_clojure=$(jq -r '."protoc-gen-clojure".version' versions.json)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Setup Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: ${{ steps.versions.outputs.protoc }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install protoc-gen-clojure
-        run: |
-          set -euo pipefail
-          sudo curl -fL "https://github.com/protojure/protoc-plugin/releases/download/v${{ steps.versions.outputs.protoc_gen_clojure }}/protoc-gen-clojure" \
-            -o /usr/local/bin/protoc-gen-clojure
-          sudo chmod +x /usr/local/bin/protoc-gen-clojure
 
       - name: Install deps-new
         run: clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
@@ -391,7 +339,6 @@ jobs:
           grep -q "$SHA" deps.edn \
             || { echo "::error::generated deps.edn does not pin the released sha"; exit 1; }
 
-          clojure -X:deps prep :aliases '[:dev :+realworld]'
           clojure -M:poly check +realworld
           echo "the published template generates a portable workspace that checks"
 

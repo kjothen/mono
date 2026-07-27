@@ -65,7 +65,7 @@ that follows the Polylith architecture.
   methods on a started container instance to extract runtime information, as this
   creates a hidden dependency on the component's library. Any component group
   that interrogates a running container instance (e.g. extracting a connection
-  URL or cluster file path) MUST be defined in the `system/` folder of the
+  URL or a mapped port) MUST be defined in the `system/` folder of the
   relevant component (i.e. `system/components.clj`, registered via
   `system/core.clj`), not in `testcontainers`
 - **Web Service Interceptors**: Server (`server` component) interceptors inject component instances into request context, such as datasources, MQTT clients, Pulsar consumers/producers
@@ -188,22 +188,12 @@ that follows the Polylith architecture.
 
 ## Code Generation
 
-- All code generation MUST use Clojure's standard prepping libraries
-  support, using `:deps/prep-lib` in the appropriate `deps.edn`, with
-  implementation through a co-located `build.clj` file
-- **Prep all libraries**:
+No brick generates code, so there is no prep step to run. If one is added:
 
-  ```bash
-  clj -X:deps prep :aliases '[:dev]'
-  ```
-
-- **Force preparation** after a code change (e.g. changing a src file in
-  the brick or project):
-
-  ```bash
-  clj -X:deps prep :aliases '[:dev]' :force true
-  ```
-
+- It MUST use Clojure's standard prepping libraries support, using
+  `:deps/prep-lib` in the brick's `deps.edn`, with implementation through a
+  co-located `build.clj` file, and prep it with
+  `clj -X:deps prep :aliases '[:dev]'` (`:force true` after a source change)
 - Generated code MUST follow Polylith naming conventions and remain
   inside the brick src tree in a `gen` folder
 - Generated code MUST NOT be committed to git — use a locally scoped

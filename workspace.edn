@@ -10,7 +10,7 @@
             "mono-lib" {:alias "lib"
                         :necessary ["auth" "cache" "cli" "command-processor"
                                     "command-schema" "event-processor"
-                                    "event-schema" "fdb" "jdbc" "kafka"
+                                    "event-schema" "jdbc" "kafka"
                                     "keycloak" "migrator" "mqtt"
                                     "pulsar-vault-crypto"
                                     "scheduler" "secret" "server"
@@ -22,11 +22,11 @@
                              :necessary ["auth" "cache" "cli"
                                          "command-processor"
                                          "command-schema" "event-processor"
-                                         "event-schema" "fdb" "jdbc" "kafka"
+                                         "event-schema" "jdbc" "kafka"
                                          "keycloak" "migrator" "mqtt"
                                          "pulsar-vault-crypto" "scheduler"
                                          "secret" "server" "test-resources"
-                                         "test-schema" "testcontainers"]}}
+                                         "testcontainers"]}}
  :tag-patterns {:release "v[0-9]*" :stable "stable-*"}
  :test {:create-test-runner
         com.repldriven.mono.external-test-runner.core/create}

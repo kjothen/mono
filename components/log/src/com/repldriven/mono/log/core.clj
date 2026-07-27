@@ -6,7 +6,7 @@
     (org.slf4j.bridge SLF4JBridgeHandler)))
 
 ;; Install JUL→SLF4J bridge at namespace load so library log
-;; records (e.g. from FDB, Pulsar) reach the same backend.
+;; records (e.g. from Pulsar, Liquibase) reach the same backend.
 (when-not *compile-files*
   (SLF4JBridgeHandler/removeHandlersForRootLogger)
   (SLF4JBridgeHandler/install))

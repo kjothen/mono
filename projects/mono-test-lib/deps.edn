@@ -26,10 +26,6 @@
 ;; component and adds the test bricks. The release workflow asserts the superset
 ;; property; do not hand-prune this list.
 ;;
-;; test-schema is intentionally absent: it carries :deps/prep-lib, and keeping a
-;; prep step out of the published surface is worth protecting. It stays an alias
-;; dep, used only inside this workspace.
-;;
 ;; test-resources is absent from :deps for a different reason: its :paths is
 ;; ["src"], which holds nothing but an empty namespace. The shared config it
 ;; exists to carry (testcontainers/*.yml, the pulsar keypairs) lives on
@@ -67,8 +63,6 @@
   {:local/root "../../components/event-processor"}
   com.repldriven.mono.components/event-schema
   {:local/root "../../components/event-schema"}
-  com.repldriven.mono.components/fdb
-  {:local/root "../../components/fdb"}
   com.repldriven.mono.components/http-client
   {:local/root "../../components/http-client"}
   com.repldriven.mono.components/identity-provider
@@ -127,7 +121,5 @@
    :extra-deps
    {com.repldriven.mono.components/test-resources
     {:local/root "../../components/test-resources"}
-    com.repldriven.mono.components/test-schema
-    {:local/root "../../components/test-schema"}
     com.repldriven.mono.bases/external-test-runner
     {:local/root "../../bases/external-test-runner"}}}}}

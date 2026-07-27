@@ -2,7 +2,6 @@
  {:exclude-files
   ["target/"
    ".clj-kondo/imports/"
-   "components/test-schema/gen/com/repldriven/mono/test_schemas/*.*\\.cljc"
    "components/.*/build\\.clj"]}
 
  ;; The jdbc brick mirrors next.jdbc's `[sym transactable opts]` binding, which

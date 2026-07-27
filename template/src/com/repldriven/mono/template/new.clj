@@ -281,8 +281,7 @@
   onto the consumer's top namespace.
 
   Up to four shapes per segment, because the same name appears as a hyphenated
-  Clojure namespace, as a munged Java or protobuf package, and as both forms of
-  file path. Segments are applied longest first and each pattern ends in a
+  Clojure namespace, as a munged Java package, and as both forms of file path. Segments are applied longest first and each pattern ends in a
   negative lookahead, so one segment cannot match a prefix of a longer sibling.
 
   Only the listed segments are rewritten. That is the whole point of the design:

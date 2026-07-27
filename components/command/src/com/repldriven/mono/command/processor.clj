@@ -16,8 +16,8 @@
   flattened response envelope) so the kind, message, and any
   underlying exception class/message survive into the log. The
   response builder only carries `:message` forward, which strips
-  the FDB/library cause text — exactly what we need to diagnose
-  things like unique-index violations or schema mismatches."
+  the underlying library's cause text — exactly what we need to
+  diagnose things like unique-index violations or schema mismatches."
   [channel command result resp start-ns]
   (let [ms (/ (- (System/nanoTime) start-ns) 1e6)
         {:keys [status]} resp]
