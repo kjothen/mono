@@ -12,6 +12,7 @@
     [com.repldriven.mono.system.interface :as system]
     [com.repldriven.mono.test-system.interface :refer [with-test-system]]
 
+    [clojure.set :as set]
     [clojure.test :refer [deftest is testing]]))
 
 (def ^:private tables
@@ -195,3 +196,181 @@
          (is (= :realworld/profile-not-found
                 (error/kind (SUT/follow store (:id me) (str "ghost" u)))))
          (is (nil? (SUT/profile store (str "ghost" u) nil))))))))
+(defn- author!
+  [store u n]
+  (SUT/register store
+                {:username (str n u)
+                 :email (str n u "@test.com")
+                 :password "password123"}))
+
+(defn- article!
+  [store author title tags]
+  (SUT/create-article store
+                      {:author-id (:id author)
+                       :slug (str "slug-" (subs (str (random-uuid)) 0 13))
+                       :title title
+                       :description "d"
+                       :body "b"
+                       :tagList tags}))
+
+(deftest article-read-test
+  (with-store
+   (fn [store]
+     (let [u (unique)
+           jake (author! store u "jake")
+           a (article! store
+                       jake
+                       "How to train your dragon"
+                       ["dragons" "training"])]
+       (testing "tagList comes back as strings, not a java.sql.Array"
+         ;; pgjdbc hands array_agg back as a PgArray; unconverted it would
+         ;; serialise into the JSON body as an opaque object.
+         (is (vector? (:tag-list a)))
+         (is (every? string? (:tag-list a)))
+         (is (= ["dragons" "training"] (:tag-list a))
+             "alphabetical, which is what the suite's index assertions expect"))
+       (testing "an article with no tags is an empty vector, not nil"
+         (let [none (article! store jake "Untagged" [])]
+           (is (= [] (:tag-list none)))))
+       (testing "an anonymous viewer sees false rather than an error"
+         (let [seen (SUT/article store (:slug a) nil)]
+           (is (false? (:favorited seen)))
+           (is (false? (:author-following seen)))
+           (is (= 0 (:favorites-count seen)))))
+       (testing "an unknown slug is nil"
+         (is (nil? (SUT/article store "no-such-slug" nil))))))))
+
+(deftest article-favorite-and-count-test
+  (with-store
+   (fn [store]
+     (let [u (unique)
+           jake (author! store u "fav")
+           fan (author! store u "fan")
+           a (article! store jake "Favoured" ["x"])]
+       (testing "favoriting is reflected for the actor and counted for all"
+         (let [mine (SUT/favorite store (:slug a) (:id fan))]
+           (is (true? (:favorited mine)))
+           (is (= 1 (:favorites-count mine))))
+         (is (false? (:favorited (SUT/article store (:slug a) (:id jake))))
+             "someone else's favorite is counted but not attributed")
+         (is (= 1 (:favorites-count (SUT/article store (:slug a) (:id jake))))))
+       (testing "favoriting twice does not double count"
+         (let [again (SUT/favorite store (:slug a) (:id fan))]
+           (is (= 1 (:favorites-count again)))))
+       (testing "unfavoriting is idempotent"
+         (is (= 0
+                (:favorites-count (SUT/unfavorite store (:slug a) (:id fan)))))
+         (is (= 0
+                (:favorites-count
+                 (SUT/unfavorite store (:slug a) (:id fan))))))))))
+
+(deftest article-update-test
+  (with-store
+   (fn [store]
+     (let [u (unique)
+           jake (author! store u "upd-a")
+           other (author! store u "other-a")
+           a (article! store jake "Original" ["keep" "these"])]
+       (testing "an absent tagList preserves tags; an empty one clears them"
+         (let [kept (SUT/update-article store
+                                        (:slug a)
+                                        (:id jake)
+                                        {:title "Changed"})]
+           (is (= "Changed" (:title kept)))
+           (is (= ["keep" "these"] (:tag-list kept))))
+         (let [cleared
+               (SUT/update-article store (:slug a) (:id jake) {:tagList []})]
+           (is (= [] (:tag-list cleared)))))
+       (testing "the slug does not change and updatedAt moves past createdAt"
+         (let [updated
+               (SUT/update-article store (:slug a) (:id jake) {:body "new"})]
+           (is (= (:slug a) (:slug updated)))
+           (is (not= (:created-at updated) (:updated-at updated))
+               "microsecond precision is what makes this reliable")))
+       (testing "a non-owner is forbidden, an unknown slug is not found"
+         (is (= :realworld/article-forbidden
+                (error/kind
+                 (SUT/update-article store (:slug a) (:id other) {:body "x"}))))
+         (is (= :realworld/article-forbidden
+                (error/kind (SUT/delete-article store (:slug a) (:id other)))))
+         (is
+          (= :realworld/article-not-found
+             (error/kind
+              (SUT/update-article store "nope" (:id jake) {:body "x"})))))))))
+
+(deftest article-list-and-feed-test
+  (with-store
+   (fn [store]
+     (let [u (unique)
+           jake (author! store u "list-a")
+           bob (author! store u "list-b")
+           _ (article! store jake "One" ["shared" (str "t" u)])
+           _ (article! store jake "Two" [(str "t" u)])
+           _ (article! store bob "Three" [(str "t" u)])]
+       (testing "articlesCount is the total, while rows are the page"
+         (let [{:keys [rows total]}
+               (SUT/articles store {:tag (str "t" u) :limit 1} nil)]
+           (is (= 1 (count rows)))
+           (is (= 3 total) "count(*) over () counts matches, not the page")))
+       (testing "filtering by author narrows both rows and total"
+         (let [{:keys [rows total]} (SUT/articles store
+                                                  {:tag (str "t" u)
+                                                   :author (:username jake)}
+                                                  nil)]
+           (is (= 2 (count rows)))
+           (is (= 2 total))))
+       (testing "offset pages through without repeating"
+         (let [p1 (:rows (SUT/articles store
+                                       {:tag (str "t" u) :limit 2 :offset 0}
+                                       nil))
+               p2 (:rows (SUT/articles store
+                                       {:tag (str "t" u) :limit 2 :offset 2}
+                                       nil))]
+           (is (= 2 (count p1)))
+           (is (= 1 (count p2)))
+           (is (empty? (set/intersection (set (map :slug p1))
+                                         (set (map :slug p2)))))))
+       (testing "a feed is empty until you follow someone, then it is theirs"
+         (is (= 0 (:total (SUT/feed store (:id bob) nil nil))))
+         (SUT/follow store (:id bob) (:username jake))
+         (let [{:keys [rows total]} (SUT/feed store (:id bob) nil nil)]
+           (is (= 2 total))
+           (is (every? #(= (:username jake) (:author-username %)) rows))))))))
+
+(deftest comments-and-tags-test
+  (with-store
+   (fn [store]
+     (let [u (unique)
+           jake (author! store u "cm-a")
+           other (author! store u "cm-b")
+           a (article! store jake "Commented" [(str "tag" u)])
+           c (SUT/create-comment store
+                                 (:slug a)
+                                 (:id jake)
+                                 "It takes a Jacobian")]
+       (testing "a comment has an integer id and its author"
+         (is (int? (:id c)))
+         (is (= (:username jake) (:author-username c)))
+         (is (= "It takes a Jacobian" (:body c))))
+       (testing "comments list oldest first"
+         (SUT/create-comment store (:slug a) (:id other) "second")
+         (let [rows (SUT/comments store (:slug a) nil)]
+           (is (= ["It takes a Jacobian" "second"] (mapv :body rows)))))
+       (testing "only the author may delete, and not-found beats forbidden"
+         (is (= :realworld/comment-forbidden
+                (error/kind
+                 (SUT/delete-comment store (:slug a) (:id c) (:id other)))))
+         (is (= :realworld/comment-not-found
+                (error/kind
+                 (SUT/delete-comment store (:slug a) 999999 (:id jake)))))
+         (is (= :realworld/article-not-found
+                (error/kind (SUT/comments store "no-such-slug" nil))))
+         (is (nil? (SUT/delete-comment store (:slug a) (:id c) (:id jake)))))
+       (testing "tags in use are listed"
+         (is (some #{(str "tag" u)} (SUT/tags store))))
+       (testing "deleting an article cascades to its comments"
+         (let [slug (:slug a)]
+           (is (nil? (SUT/delete-article store slug (:id jake))))
+           (is (nil? (SUT/article store slug nil)))
+           (is (= :realworld/article-not-found
+                  (error/kind (SUT/comments store slug nil))))))))))

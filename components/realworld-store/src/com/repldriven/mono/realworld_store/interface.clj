@@ -15,6 +15,8 @@
   (:require
     com.repldriven.mono.realworld-store.system
 
+    [com.repldriven.mono.realworld-store.articles :as article-store]
+    [com.repldriven.mono.realworld-store.comments :as comment-store]
     [com.repldriven.mono.realworld-store.profiles :as profiles]
     [com.repldriven.mono.realworld-store.users :as users]))
 
@@ -106,3 +108,131 @@
   - username: whom to unfollow."
   [store follower-id username]
   (profiles/unfollow (:datasource store) follower-id username))
+
+;; --- articles ------------------------------------------------------------
+
+(defn article
+  "One article, or nil. `viewer-id` may be nil, giving `favorited` and
+  `following` false.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: the article slug.
+  - viewer-id: the caller's user id, or nil."
+  [store slug viewer-id]
+  (article-store/by-slug (:datasource store) slug viewer-id))
+
+(defn articles
+  "A filtered page as `{:rows [...] :total n}`, where `total` counts all
+  matches rather than this page.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - params: `{:tag :author :favorited :limit :offset}`, all optional.
+  - viewer-id: the caller's user id, or nil."
+  [store params viewer-id]
+  (article-store/find-articles (:datasource store) params viewer-id))
+
+(defn feed
+  "A page of articles by the people `viewer-id` follows.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - viewer-id: the caller's user id.
+  - limit, offset: paging, both may be nil."
+  [store viewer-id limit offset]
+  (article-store/feed (:datasource store) viewer-id limit offset))
+
+(defn create-article
+  "Create an article and return it. The caller supplies the slug, since
+  slugs come from `realworld-domain`.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - data: `{:author-id :slug :title :description :body :tagList}`."
+  [store data]
+  (article-store/create (:datasource store) data))
+
+(defn update-article
+  "Patch an article. `tagList` absent leaves tags alone; present replaces
+  them, empty list included. Rejects with not-found or forbidden.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - author-id: the caller, who must own it.
+  - data: only the keys the request carried."
+  [store slug author-id data]
+  (article-store/update-article (:datasource store) slug author-id data))
+
+(defn delete-article
+  "Delete an article and, by cascade, its tags, favorites and comments.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - author-id: the caller, who must own it."
+  [store slug author-id]
+  (article-store/delete-article (:datasource store) slug author-id))
+
+(defn favorite
+  "Favorite an article, idempotently, returning it.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - user-id: the caller."
+  [store slug user-id]
+  (article-store/favorite (:datasource store) slug user-id))
+
+(defn unfavorite
+  "Unfavorite an article, idempotently, returning it.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - user-id: the caller."
+  [store slug user-id]
+  (article-store/unfavorite (:datasource store) slug user-id))
+
+;; --- comments and tags ---------------------------------------------------
+
+(defn comments
+  "An article's comments, oldest first, or a not-found rejection.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - viewer-id: the caller's user id, or nil."
+  [store slug viewer-id]
+  (comment-store/for-article (:datasource store) slug viewer-id))
+
+(defn create-comment
+  "Add a comment and return it.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - author-id: the caller.
+  - body: the comment text."
+  [store slug author-id body]
+  (comment-store/create (:datasource store) slug author-id body))
+
+(defn delete-comment
+  "Delete one of the caller's comments. Rejects with not-found or forbidden.
+
+  Args:
+  - store: a `realworld-store/store` instance.
+  - slug: which article.
+  - comment-id: which comment.
+  - author-id: the caller, who must own it."
+  [store slug comment-id author-id]
+  (comment-store/delete-comment (:datasource store) slug comment-id author-id))
+
+(defn tags
+  "Tag names in use, alphabetically.
+
+  Args:
+  - store: a `realworld-store/store` instance."
+  [store]
+  (article-store/tags (:datasource store)))
