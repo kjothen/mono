@@ -1,0 +1,77 @@
+# Runtime config. No testcontainers: postgres is wherever the environment
+# says it is, and the schema is applied at start by migrator.
+system:
+  jdbc:
+    datasource: !system/component
+      system/component-kind: jdbc/datasource
+      dbtype: postgres
+      host: !env REALWORLD_DB_HOST
+      port: !env REALWORLD_DB_PORT
+      database: !env REALWORLD_DB_NAME
+      user: !env REALWORLD_DB_USER
+      password: !env REALWORLD_DB_PASSWORD
+
+  migrator:
+    migrations: !system/component
+      system/component-kind: migrator/migrations
+      datasource: !system/ref jdbc.datasource
+      changelogs:
+        - realworld-store/changelog.sql
+
+  auth:
+    # No default. A signing key with a default is a key everyone has, and
+    # the failure is silent — tokens verify fine against the wrong secret
+    # as long as everyone shares it.
+    jwt: !system/component
+      system/component-kind: auth/signer
+      secret: !env REALWORLD_JWT_SECRET
+
+  message-bus:
+    bus: !system/component
+      system/component-kind: message-bus/local-bus
+      channels: [realworld-command, realworld-command-response]
+
+  realworld:
+    store: !system/component
+      system/component-kind: realworld-store/store
+      datasource: !system/ref migrator.migrations
+      signer: !system/ref auth.jwt
+
+    processor: !system/component
+      system/component-kind: realworld-store/processor
+      store: !system/local-ref store
+
+    command-processor: !system/component
+      system/component-kind: command-processor/command-processor
+      bus: !system/ref message-bus.bus
+      processor: !system/local-ref processor
+      command-channel: !keyword realworld-command
+      command-response-channel: !keyword realworld-command-response
+
+    dispatcher: !system/component
+      system/component-kind: command/dispatcher
+      bus: !system/ref message-bus.bus
+      command-channel: !keyword realworld-command
+      command-response-channel: !keyword realworld-command-response
+
+  server:
+    handler: !system/required-component
+
+    interceptors: !system/component
+      system/component-kind: server/interceptors
+      store: !system/ref realworld.store
+      commands: !system/ref realworld.dispatcher
+      signer: !system/ref auth.jwt
+
+    jetty-adapter: !system/component
+      system/component-kind: server/jetty-adapter
+      handler: !system/local-ref handler
+      interceptors: !system/local-ref interceptors
+      options:
+        # A literal rather than !env, because !env yields a string and Jetty
+        # wants a number — and tags do not nest, so there is no way to spell
+        # "this environment variable, as an int". Worth adding to the env
+        # brick; until then a service that needs a different port changes it
+        # here. `!port 0` would take any free one, but the conformance suite
+        # has to know where to look.
+        port: !port 8091

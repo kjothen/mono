@@ -108,6 +108,83 @@ build snapshot="true":
     done
 
 
+# Run the official RealWorld conformance suite against a live service.
+#
+# Not part of `just test`: it needs a real server on a fixed port and a real
+# postgres, which is a different shape of thing from a brick test. The suite
+# is the contract — where our own tests and these disagree, these win.
+#
+# The port is fixed at 8091 in application.yml, not a parameter: !env yields
+# a string and Jetty wants a number, so the port cannot come from the
+# environment today. 8091 rather than 8080 because 8080 is what the dev
+# profile uses, and a stray dev server answering instead is a confusing way
+# to fail — every request 404s and nothing says why.
+realworld-hurl:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    root="$PWD"
+    hurl_dir="$root/bases/realworld-api/test-resources/realworld-api/hurl"
+    log="$root/target/realworld-hurl.log"
+    mkdir -p "$(dirname "$log")"
+
+    cleanup() {
+      [ -n "${service_pid:-}" ] && kill "$service_pid" 2>/dev/null
+      docker rm -f realworld-pg >/dev/null 2>&1
+    }
+    trap cleanup EXIT
+
+    if lsof -nP -iTCP:8091 -sTCP:LISTEN >/dev/null 2>&1; then
+      echo "port 8091 is already in use; pass another, e.g."
+      echo "  just realworld-hurl 8099"
+      exit 1
+    fi
+
+    docker rm -f realworld-pg >/dev/null 2>&1
+    docker run -d --name realworld-pg -p 55432:5432 \
+      -e POSTGRES_USER=realworld -e POSTGRES_PASSWORD=realworld \
+      -e POSTGRES_DB=realworld postgres:16.2 >/dev/null
+    echo "waiting for postgres..."
+    for _ in $(seq 1 60); do
+      docker exec realworld-pg pg_isready -U realworld >/dev/null 2>&1 && break
+      sleep 1
+    done
+
+    export REALWORLD_DB_HOST=localhost REALWORLD_DB_PORT=55432
+    export REALWORLD_DB_NAME=realworld REALWORLD_DB_USER=realworld
+    export REALWORLD_DB_PASSWORD=realworld
+    export REALWORLD_JWT_SECRET=conformance-secret-not-for-production
+
+    # From the project rather than the dev alias: :dev carries :main-opts
+    # for portal, which fights with -m. This is also the classpath a
+    # deployment actually uses.
+    (cd projects/realworld-service && \
+      clojure -M -m com.repldriven.mono.realworld-api.main \
+        --config-file classpath:realworld-api/application.yml \
+        --profile default) >"$log" 2>&1 &
+    service_pid=$!
+
+    echo "waiting for the service on 8091..."
+    ready=false
+    for _ in $(seq 1 120); do
+      if curl -fsS "http://localhost:8091/api/tags" >/dev/null 2>&1; then
+        ready=true; break
+      fi
+      kill -0 "$service_pid" 2>/dev/null || break
+      sleep 1
+    done
+
+    if [ "$ready" != true ]; then
+      echo "the service never became ready; its output was:"
+      echo "----------------------------------------------------------------"
+      tail -40 "$log"
+      exit 1
+    fi
+
+    hurl --test --jobs 1 \
+      --variable host="http://localhost:8091" \
+      --variable uid="$(date +%s)" \
+      "$hurl_dir"/*.hurl
+
 # Run all polylith project tests
 test: start-docker
     SKIP_META=repl clojure -M:poly test :all {{ POLY_PROFILES }}

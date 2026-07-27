@@ -137,6 +137,8 @@
             pkgs.docker
             pkgs.docker-credential-helpers
             fdbBinary
+            # for the RealWorld conformance suite
+            pkgs.hurl
             pkgs.jdk21
             pkgs.jq
             pkgs.just

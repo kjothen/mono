@@ -31,11 +31,16 @@
 
 (defn -main
   [& args]
-  (let [{:keys [exit-message ok? config-file profile]}
+  (let [{:keys [options exit-message ok?]}
         (cli/validate-args "realworld-api" args)]
     (if exit-message
-      (cli/exit (if ok? 0 1) exit-message)
-      (let [sys (start config-file profile)]
+      (cli/exit ok? exit-message)
+      (let [{:keys [config-file profile]} options
+            sys (start config-file (keyword profile))]
         (if (error/anomaly? sys)
-          (cli/exit 1 (str "Failed to start: " (error/kind sys)))
+          (cli/exit false
+                    (str "Failed to start ["
+                         (error/kind sys)
+                         "]: "
+                         (or (:message (error/payload sys)) "Unknown error")))
           (do (log/info "realworld-api started") @(promise)))))))
