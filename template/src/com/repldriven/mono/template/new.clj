@@ -412,12 +412,16 @@
       (println "  already inside a git repository, leaving it alone")
       (let [{:keys [exit err]} (run "git" "init" "-q")]
         (if-not (zero? exit)
-          (println "  could not initialise git:" (str/trim (str err))
+          (println "  could not initialise git:"
+                   (str/trim (str err))
                    "\n  `poly test` finds no changed bricks without one.")
           (do (run "git" "add" "-A")
-              (run "git" "-c" "user.email=you@example.com"
-                   "-c" "user.name=you"
-                   "commit" "-qm" "Generated from the mono template")
+              (run "git" "-c"
+                   "user.email=you@example.com"
+                   "-c"
+                   "user.name=you"
+                   "commit"
+                   "-qm" "Generated from the mono template")
               (println "  initialised a git repository")))))))
 
 (defn post-process-fn
