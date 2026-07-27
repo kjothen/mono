@@ -26,6 +26,24 @@
     (java.util.function Function)))
 
 ;; ---
+;; api-version
+;; ---
+
+;; The FDB API version, as a number.
+;;
+;; `FDB/selectAPIVersion` is JVM-global and one-shot: the first call wins, and
+;; a later call with a different number throws "FoundationDB API already
+;; started at different version". So `db` and `record-db` cannot disagree
+;; within a process. Both default to this and both take it as config, rather
+;; than one reading config while the other hardcodes a constant.
+;;
+;; 710 is also the ceiling the Record Layer can express. Its `APIVersion` enum
+;; stops at `API_VERSION_7_1`, and `fromVersionNumber` rejects 730 and 740
+;; even though a 7.4 client selects either happily. Raising this waits on the
+;; Record Layer gaining an enum constant, not on a newer client.
+(def default-api-version 710)
+
+;; ---
 ;; cluster-file-path
 ;; ---
 
@@ -70,7 +88,7 @@
 (def db
   {:system/start (fn [{:system/keys [config instance]}]
                    (let [{:keys [cluster-file-path api-version]} config
-                         api-version (or api-version 710)]
+                         api-version (or api-version default-api-version)]
                      (log/info "FDB database start called, instance:" instance
                                "config:" config)
                      (or instance
@@ -88,9 +106,10 @@
                     (log/info "Closing FDB database")
                     (.close instance)))
    :system/config {:cluster-file-path system/required-component
-                   :api-version 710}
+                   :api-version default-api-version}
    :system/config-schema [:map
-                          [:cluster-file-path string?]]
+                          [:cluster-file-path string?]
+                          [:api-version {:optional true} [:maybe pos-int?]]]
    :system/instance-schema some?})
 
 ;; ---
@@ -100,36 +119,48 @@
 (def record-db
   {:system/start
    (fn [{:system/keys [config instance]}]
-     (or instance
-         (try-nom
-          :fdb/create-record-db
-          {:message "Failed to create FDB Record Layer database"}
-          (let [{:keys [cluster-file-path async-to-sync-timeout-ms]} config
-                ;; Record Layer's default `getWithDeadline` is 5s,
-                ;; which is too tight for a single-process dev FDB
-                ;; under concurrent first-access from many services
-                ;; (each `FDBMetaDataStore.<init>` performs a
-                ;; directory-layer resolution that serialises on
-                ;; the cluster). Bump to 30s by default.
-                timeout-ms (or async-to-sync-timeout-ms 30000)
-                db (.getDatabase
-                    (doto (FDBDatabaseFactory/instance)
-                      (.setAPIVersion APIVersion/API_VERSION_7_1)
-                      (.setScheduledExecutor
-                       (Executors/newSingleThreadScheduledExecutor)))
-                    cluster-file-path)]
-            (log/info
-             "Opening FDB Record Layer database with async->sync timeout (ms):"
-             timeout-ms)
-            (.setAsyncToSyncTimeout db timeout-ms TimeUnit/MILLISECONDS)
-            db))))
+     (or
+      instance
+      (try-nom
+       :fdb/create-record-db
+       {:message (str "Failed to create FDB Record Layer database. If the "
+                      "api-version was rejected, the Record Layer supports "
+                      "630, 700 and 710 only, regardless of client version")}
+       (let [{:keys [cluster-file-path async-to-sync-timeout-ms api-version]}
+             config
+             ;; Record Layer's default `getWithDeadline` is 5s,
+             ;; which is too tight for a single-process dev FDB
+             ;; under concurrent first-access from many services
+             ;; (each `FDBMetaDataStore.<init>` performs a
+             ;; directory-layer resolution that serialises on
+             ;; the cluster). Bump to 30s by default.
+             timeout-ms (or async-to-sync-timeout-ms 30000)
+             ;; Throws RecordCoreArgumentException for anything
+             ;; the Record Layer cannot express, which try-nom
+             ;; turns into an anomaly naming the value. That is
+             ;; a narrower set than the client accepts: see
+             ;; `default-api-version`.
+             api-version (APIVersion/fromVersionNumber (or api-version
+                                                           default-api-version))
+             db (.getDatabase (doto (FDBDatabaseFactory/instance)
+                                (.setAPIVersion api-version)
+                                (.setScheduledExecutor
+                                 (Executors/newSingleThreadScheduledExecutor)))
+                              cluster-file-path)]
+         (log/info
+          "Opening FDB Record Layer database with async->sync timeout (ms):"
+          timeout-ms)
+         (.setAsyncToSyncTimeout db timeout-ms TimeUnit/MILLISECONDS)
+         db))))
    :system/stop (fn [{:system/keys [instance]}]
                   (when (some? instance)
                     (log/info "Closing FDB Record Layer database")
                     (.close instance)))
-   :system/config {:cluster-file-path system/required-component}
+   :system/config {:cluster-file-path system/required-component
+                   :api-version default-api-version}
    :system/config-schema [:map
                           [:cluster-file-path string?]
+                          [:api-version {:optional true} [:maybe pos-int?]]
                           [:async-to-sync-timeout-ms {:optional true}
                            [:maybe pos-int?]]]
    :system/instance-schema some?})
