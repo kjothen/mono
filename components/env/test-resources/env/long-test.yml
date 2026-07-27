@@ -1,0 +1,3 @@
+system:
+  from-literal: !long 8091
+  from-quoted: !long "8091"

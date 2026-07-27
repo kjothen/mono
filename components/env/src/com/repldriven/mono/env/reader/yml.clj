@@ -35,6 +35,8 @@
 
 (defmethod yml-reader :!env [{:keys [value]}] (System/getenv (name value)))
 
+(defmethod yml-reader :!long [{:keys [value]}] (symbol (str "#long " value)))
+
 (defmethod yml-reader :!keyword [{:keys [value]}] (keyword value))
 
 (defmethod yml-reader :!keywords

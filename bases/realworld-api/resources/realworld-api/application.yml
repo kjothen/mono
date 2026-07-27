@@ -68,10 +68,6 @@ system:
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
       options:
-        # A literal rather than !env, because !env yields a string and Jetty
-        # wants a number — and tags do not nest, so there is no way to spell
-        # "this environment variable, as an int". Worth adding to the env
-        # brick; until then a service that needs a different port changes it
-        # here. `!port 0` would take any free one, but the conformance suite
-        # has to know where to look.
-        port: !port 8091
+        # A literal: !env yields a string and Jetty wants a number, and the
+        # two cannot be composed in YAML.
+        port: 8091

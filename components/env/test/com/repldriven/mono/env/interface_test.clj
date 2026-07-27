@@ -28,3 +28,12 @@
     (let [environment (SUT/config "classpath:env/application-test.yml" :test)
           port (get-in environment [:system :port])]
       (is (and (>= port 1024) (<= port 65535))))))
+
+(deftest long-tag-test
+  (testing "!long coerces to a number, so a setting that needs one gets one"
+    (let [config (SUT/config "classpath:env/long-test.yml" :default)]
+      (is (= 8091 (get-in config [:system :from-literal])))
+      (is (instance? Long (get-in config [:system :from-literal])))
+      (is (= 8091 (get-in config [:system :from-quoted]))
+          "a quoted scalar is a string to YAML; this is the case worth having")
+      (is (instance? Long (get-in config [:system :from-quoted]))))))

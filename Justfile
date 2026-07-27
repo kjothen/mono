@@ -114,11 +114,10 @@ build snapshot="true":
 # postgres, which is a different shape of thing from a brick test. The suite
 # is the contract — where our own tests and these disagree, these win.
 #
-# The port is fixed at 8091 in application.yml, not a parameter: !env yields
-# a string and Jetty wants a number, so the port cannot come from the
-# environment today. 8091 rather than 8080 because 8080 is what the dev
-# profile uses, and a stray dev server answering instead is a confusing way
-# to fail — every request 404s and nothing says why.
+# The port is fixed at 8091 in application.yml because !env yields a string
+# and Jetty wants a number. 8091 rather than 8080 because 8080 is the dev
+# profile's, and a stray dev server answering instead is a confusing way to
+# fail: every request 404s and nothing says why.
 realworld-hurl:
     #!/usr/bin/env bash
     set -uo pipefail
