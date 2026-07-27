@@ -67,5 +67,10 @@ system:
       system/component-kind: server/jetty-adapter
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
+      cors:
+        # Where the RealWorld frontends run.
+        origins:
+          - http://localhost:3000
+          - http://localhost:4100
       options:
         port: !long [!or [!env REALWORLD_PORT, 8091]]

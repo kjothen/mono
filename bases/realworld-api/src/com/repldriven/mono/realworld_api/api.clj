@@ -320,10 +320,13 @@
 
 (defn app
   [ctx]
-  (http/ring-handler (http/router (routes ctx)
-                                  (assoc (server/router-data
-                                          exception-handlers)
-                                         :conflicts
-                                         nil))
-                     (ring/routes (ring/create-default-handler))
-                     server/standard-executor))
+  ;; The RealWorld frontends run on a different origin to the API, so a
+  ;; browser will not call it at all without the CORS wrapper.
+  (-> (http/ring-handler (http/router (routes ctx)
+                                      (assoc (server/router-data
+                                              exception-handlers)
+                                             :conflicts
+                                             nil))
+                         (ring/routes (ring/create-default-handler))
+                         server/standard-executor)
+      (server/wrap-cors (:cors ctx))))

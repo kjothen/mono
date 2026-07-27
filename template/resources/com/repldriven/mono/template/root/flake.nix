@@ -36,6 +36,8 @@
             pkgs.colima
             pkgs.docker
             pkgs.docker-credential-helpers
+            # for `just realworld-hurl`, the RealWorld conformance suite
+            pkgs.hurl
             pkgs.jdk21
             pkgs.just
           ];

@@ -77,7 +77,7 @@
   {:system/start
    (fn [{:system/keys [config instance]}]
      (or instance
-         (let [{:keys [handler interceptors ready-fn options]} config
+         (let [{:keys [handler interceptors ready-fn options cors]} config
                options (assoc options
                               :configurator
                               (fn [^Server server]
@@ -88,7 +88,7 @@
                                  (fn [] @ready-fn)
                                  :else
                                  (constantly true))
-               ctx {:interceptors interceptors :ready-fn ready-thunk}
+               ctx {:interceptors interceptors :ready-fn ready-thunk :cors cors}
                _ (log/info "Starting jetty adapter")
                server (jetty/run-jetty (handler ctx) options)]
            (log/info "Jetty listening on" (server-jetty/http-local-url server))
