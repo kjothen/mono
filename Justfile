@@ -1,15 +1,15 @@
 set shell := ["zsh", "-cu"]
 
-# Both example domains. DOMAIN_ALIASES is concatenated onto -M/-A, so the
-# aliases run together; POLY_PROFILES is the space-separated form poly wants,
-# and poly spells profiles without the leading colon.
-DOMAIN_ALIASES := ":+example:+realworld"
-POLY_PROFILES := "+example +realworld"
+# The example domain. DOMAIN_ALIASES is concatenated onto -M/-A; POLY_PROFILES
+# is the space-separated form poly wants, and poly spells profiles without the
+# leading colon.
+DOMAIN_ALIASES := ":+realworld"
+POLY_PROFILES := "+realworld"
 
-# Only the FoundationDB example generates code, so prep needs that profile
-# alone. Kept separate from DOMAIN_ALIASES because :aliases takes a vector of
-# distinct keywords rather than one concatenated string.
-PREP_ALIASES := "[:+example :dev]"
+# Only test-schema generates code, and it is on :dev. Kept separate from
+# DOMAIN_ALIASES because :aliases takes a vector of distinct keywords rather
+# than one concatenated string.
+PREP_ALIASES := "[:dev]"
 
 list:
     just --list

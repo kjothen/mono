@@ -97,9 +97,9 @@ jobs:
             ${{ runner.os }}-clojure-
 
       - name: Check workspace
-        # Both example profiles: each carries bricks the other does not, and
-        # an unactivated profile's bricks are invisible to check.
-        run: clojure -M:poly check +example +realworld
+        # With the profile, because an unactivated profile's bricks are
+        # invisible to check.
+        run: clojure -M:poly check +realworld
 
       # The template pins the tag of the release that contains it, and derives
       # the sha from that tag at generation time. If the pin disagrees with what
@@ -224,11 +224,21 @@ jobs:
           clojure -Sdeps "{:deps {com.repldriven.mono/template {:local/root \"$PWD/template\"}}}" \
             -Tnew create \
             :template com.repldriven.mono/template \
-            :name com.acme/bookmarks \
+            :name com.acme/my-blog \
             :target-dir "\"$out\"" \
             :mono/dir "\"$PWD\"" \
             :overwrite :delete
           cd "$out"
+
+          # A hyphenated name on purpose: poly names a project after its
+          # directory, so a directory munged out of step with workspace.edn
+          # gives a project with no alias, and `poly check` still passes.
+          if [ ! -d projects/my-blog ]; then
+            echo "::error::expected projects/my-blog, found $(ls projects)"
+            exit 1
+          fi
+          grep -q '"my-blog" {:alias' workspace.edn \
+            || { echo "::error::workspace.edn does not declare a project called my-blog"; exit 1; }
 
           # The rewrite policy, as assertions. Starter bricks belong to the
           # consumer and must be rewritten; everything else arrives from the
@@ -366,7 +376,7 @@ jobs:
                                    :deps/root \"template\"}}}" \
             -Tnew create \
             :template com.repldriven.mono/template \
-            :name com.acme/bookmarks \
+            :name com.acme/my-blog \
             :target-dir "\"$out\""
           cd "$out"
 

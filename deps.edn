@@ -97,16 +97,9 @@
                        "bases/service/test"
                        "bases/service/test-resources"
                        "bases/external-test-runner/test"]}
-  ;; Two example domains, kept in separate profiles so neither pays for the
-  ;; other's infrastructure. :+example is the FoundationDB demo;
-  ;; :+realworld is the starter the template ships, and needs only postgres.
-  :+example {:extra-deps {components/example-bookmark
-                          {:local/root "components/example-bookmark"}
-                          bases/example-api {:local/root "bases/example-api"}}
-             :extra-paths ["components/example-bookmark/test"
-                           "components/example-bookmark/test-resources"
-                           "bases/example-api/test"
-                           "bases/example-api/test-resources"]}
+  ;; The example domain, in a profile of its own so the library bricks do not
+  ;; pay for its infrastructure. It is the starter the template ships, and
+  ;; needs only postgres.
   :+realworld {:extra-deps {components/realworld-domain
                             {:local/root "components/realworld-domain"}
                             components/realworld-store

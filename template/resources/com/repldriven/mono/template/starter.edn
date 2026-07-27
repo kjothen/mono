@@ -35,9 +35,8 @@
            "^\\.cpcache/" "^\\.clj-kondo/" "^\\.lsp/" "^\\.nrepl-port$"]
 
  ;; A staged brick's own deps.edn may reference mono bricks by :local/root that
- ;; are not shipped in mono-lib. Those become pinned git deps on the mono repo.
- ;; example-bookmark's :build alias reaching for ../../bases/build is why this
- ;; exists.
+ ;; are not shipped in mono-lib — a :build alias reaching for ../../bases/build,
+ ;; say. Those become pinned git deps on the mono repo.
  :local-root->git
  {"../../bases/build"
   {:lib com.repldriven.mono/build :deps/root "bases/build"}

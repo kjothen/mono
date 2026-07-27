@@ -74,9 +74,9 @@ jobs:
             ${{ runner.os }}-clojure-
 
       - name: Check workspace
-        # Both example profiles: each carries bricks the other does not, and
-        # an unactivated profile's bricks are invisible to check.
-        run: clojure -M:poly check +example +realworld
+        # With the profile, because an unactivated profile's bricks are
+        # invisible to check.
+        run: clojure -M:poly check +realworld
 
       - name: Resolve published library artifacts
         run: |
@@ -164,13 +164,12 @@ jobs:
 
       - name: Run tests
         env:
-          MONO_ADMIN_API_KEY: ${{ secrets.MONO_ADMIN_API_KEY }}
           TESTCONTAINERS_REUSE_ENABLE: "true"
           COVERAGE: "true"
           COVERAGE_THRESHOLD: "50"
         run: |
-          clojure -X:deps prep :aliases '[:dev :+example]'
-          clojure -M:poly test project:${{ matrix.project }} :all +example +realworld
+          clojure -X:deps prep :aliases '[:dev]'
+          clojure -M:poly test project:${{ matrix.project }} :all +realworld
 
       - name: Publish test report
         uses: dorny/test-reporter@v3
