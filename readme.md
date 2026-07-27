@@ -27,7 +27,7 @@ Generate a Polylith workspace already wired to mono as a library:
 clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
 
 clojure -Tnew create \
-  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.16' \
+  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.17' \
   :name com.acme/my-thing
 ```
 
@@ -50,7 +50,7 @@ involved; everything resolves from a tag and its sha.
 ```clojure
 {:deps {com.repldriven/mono
         {:git/url "https://github.com/repldriven/mono.git"
-         :git/tag "v0.0.16"
+         :git/tag "v0.0.17"
          :git/sha "<full-sha>"
          :deps/root "projects/mono-lib"}}
 
@@ -58,7 +58,7 @@ involved; everything resolves from a tag and its sha.
  {:test {:extra-deps
          {com.repldriven/mono
           {:git/url "https://github.com/repldriven/mono.git"
-           :git/tag "v0.0.16"
+           :git/tag "v0.0.17"
            :git/sha "<full-sha>"
            :deps/root "projects/mono-test-lib"}}}}}
 ```
@@ -109,19 +109,9 @@ Verify your setup with:
 ./scripts/check-setup.sh
 ```
 
-That checks you have nix and direnv. Once the environment is active, check that
-the native toolchain on `PATH` is the one this workspace pins:
-
-```bash
-just doctor
-```
-
-Those versions live in `versions.json`, the single source that `flake.nix`, CI,
-and the workspace template all build from. Two of them are exact rather than
-minimums: the FoundationDB client must share a protocol version with the server
-the testcontainers image builds, and `protoc` must stay on the line that emits
-code for the pinned `protobuf-java`. Both fail at runtime rather than at build
-time, which is what `just doctor` exists to catch.
+That checks you have nix and direnv. There is nothing native to install and no
+code generation step: a JDK, Clojure and Docker are the whole toolchain, and
+the devshell provides them.
 
 ### Run all tests
 
@@ -178,7 +168,6 @@ relying on ours.
 | Component  | Purpose                                                        | Library                    | Kind    |
 | ---------- | -------------------------------------------------------------- | -------------------------- | ------- |
 | `cache`    | In-memory caching                                              | `core.cache`               | Curated |
-| `fdb`      | FoundationDB — KV layer, record layer, changelog processing    | `fdb-java`, `fdb-record-layer-core` | Curated |
 | `jdbc`     | All of next.jdbc, returning anomalies; kebab keys, snake_case SQL | `next.jdbc`             | Facade  |
 | `migrator` | Liquibase schema migrations                                    | `liquibase-core`           | Curated |
 
@@ -241,7 +230,6 @@ relying on ours.
 | Component        | Purpose                                                    | Library          | Kind    |
 | ---------------- | ---------------------------------------------------------- | ---------------- | ------- |
 | `test-resources` | Shared test configuration                                  | —                | —       |
-| `test-schema`    | Protobuf and Avro test fixtures                            | `protojure`      | Curated |
 | `test-system`    | `with-test-system` lifecycle macro, `nom-test>` assertions | —                | —       |
 | `testcontainers` | Declarative container infrastructure for integration tests | `testcontainers` | Curated |
 
@@ -270,7 +258,7 @@ entry point for the RealWorld starter.
 
 **No global state** — systems are values; started systems are maps.
 
-**Testcontainers as system components** — FoundationDB, Pulsar, Vault, and other
+**Testcontainers as system components** — postgres, Pulsar, Vault, and other
 infrastructure are declared in test YAML configs and managed by the same
 lifecycle machinery used in production.
 

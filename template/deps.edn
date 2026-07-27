@@ -2,7 +2,7 @@
 ;; not published as a library; it exists to be resolved by `clojure -Tnew`.
 ;;
 ;; Deliberately no dependency on mono itself. Depending on projects/mono-lib
-;; here would drag the whole FoundationDB, Pulsar and Jetty transitive tree onto
+;; here would drag the whole Pulsar, Kafka and Jetty transitive tree onto
 ;; the -Tnew classpath, when all the template needs is mono's source tree on
 ;; disk. The pinned coordinate lives as data in template.edn and is resolved
 ;; lazily through tools.gitlibs, which populates the same ~/.gitlibs checkout a

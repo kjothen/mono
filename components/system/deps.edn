@@ -1,8 +1,7 @@
 {:aliases {:test {:extra-deps {} :extra-paths ["test"]}}
  :deps {party.donut/system {:mvn/version "1.0.259"
-                            :exclusions [;; closure-compiler bundles a package-
-                                         ;; private WireFormat that shadows
-                                         ;; protobuf-java, breaking protojure
+                            :exclusions [;; a compiler nothing here uses,
+                                         ;; dragged in transitively
                                          com.google.javascript/closure-compiler
                                          ;; clojurescript 1.7.170 (via loom via
                                          ;; donut) has CVE-2023-0247; unused

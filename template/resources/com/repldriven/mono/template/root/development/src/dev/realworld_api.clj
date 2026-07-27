@@ -11,7 +11,7 @@
 ;; after starting the system:
 ;; * the openapi3 documentation can be viewed at http://localhost:8080
 ;; NOTE: on a fresh install, it may take several minutes to download
-;; required images for FDB, etc
+;; required images
 
 (comment
   (def sys (main/start "classpath:realworld-api/application-test.yml" :dev))

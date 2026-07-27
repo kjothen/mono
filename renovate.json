@@ -53,18 +53,7 @@
         "deps-edn"
       ],
       "matchPackageNames": [
-        "earth.adi/testcontainers-foundationdb",
         "/^org\\.testcontainers:/"
-      ]
-    },
-    {
-      "groupName": "foundationdb",
-      "matchManagers": [
-        "deps-edn"
-      ],
-      "enabled": false,
-      "matchPackageNames": [
-        "/^org\\.foundationdb:/"
       ]
     },
     {
@@ -85,17 +74,6 @@
       "matchPackageNames": [
         "/^io\\.opentelemetry:/",
         "/^com\\.github\\.steffan-westcott/clj-otel-/"
-      ]
-    },
-    {
-      "groupName": "protobuf",
-      "matchManagers": [
-        "deps-edn"
-      ],
-      "enabled": false,
-      "matchPackageNames": [
-        "/^com\\.google\\.protobuf:/",
-        "/^io\\.github\\.protojure:/"
       ]
     },
     {

@@ -1,12 +1,9 @@
 system:
   message-bus: !include service/message-bus-test.yml
-  fdb: !include testcontainers/fdb-test.yml
   avro: !include avro/avro-pet-test.yml
   pets:
     processor: !system/component
       system/component-kind: pets/processor
-      record-db: !system/ref fdb.record-db
-      record-store: !system/ref fdb.pet-store
       schemas: !system/ref avro.serde
     command-processor: !system/component
       system/component-kind: command-processor/command-processor

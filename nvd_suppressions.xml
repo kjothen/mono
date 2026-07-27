@@ -11,13 +11,6 @@
     <cve>CVE-2023-37475</cve>
   </suppress>
 
-  <!-- False positive: CVE-2010-0538 affects Apple Java for Mac OS X 10.5/10.6
-       (com.sun.medialib.mlib). No relation to FoundationDB. -->
-  <suppress>
-    <packageUrl regex="true">^pkg:maven/org\.foundationdb/fdb-java.*$</packageUrl>
-    <cve>CVE-2010-0538</cve>
-  </suppress>
-
   <!-- False positive: CVE-2025-10543 affects paho.mqtt.golang (the Go client).
        This jar is the Java client, org.eclipse.paho.client.mqttv3. -->
   <suppress>
@@ -25,19 +18,4 @@
     <cve>CVE-2025-10543</cve>
   </suppress>
 
-  <!-- Known/accepted: CVE-2024-7254 affects protobuf-java 4.28.0 (fixed in 4.28.2+).
-       Brought in by protojure, which is required at runtime by the generated
-       Clojure protobuf code. FDB Record Layer is incompatible with 4.28.2+
-       specifically — tested 4.28.2, 4.33.5, 4.34.0, all fail — so protobuf-java
-       is pinned to 3.25.8 in the top-level deps.edn.
-       Upstream is not close to fixing this: the Record Layer shipped protobuf 4
-       in 4.11 and reverted it a week later (FoundationDB/fdb-record-layer#3286,
-       2025-04-02), citing the same multi-dependency compatibility problem. As of
-       Record Layer 4.12.14.0 the declared dependency is still protobuf-java
-       3.25.8, and there is no protobuf-4 artifact variant.
-       Risk is accepted until FDB Record Layer ships a compatible release. -->
-  <suppress>
-    <packageUrl regex="true">^pkg:maven/com\.google\.protobuf/protobuf-java@.*$</packageUrl>
-    <cve>CVE-2024-7254</cve>
-  </suppress>
 </suppressions>

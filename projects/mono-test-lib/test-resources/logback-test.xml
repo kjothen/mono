@@ -26,10 +26,6 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
   
-    <logger name="com.apple.foundationdb" level="info" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
-  
     <logger name="org.apache.pulsar" level="warn" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>

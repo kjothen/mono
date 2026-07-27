@@ -42,9 +42,8 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Discovered projects: $matrix"
 
-  # Validates the whole workspace, including the base-less library projects that
-  # the test matrix skips. Needs no protoc, FoundationDB or Docker: poly check
-  # is static analysis and does not read generated code.
+  # Validates the whole workspace, including the base-less library projects
+  # that the test matrix skips. Needs no Docker: poly check is static analysis.
   check:
     runs-on: ubuntu-latest
 
@@ -113,37 +112,9 @@ jobs:
         with:
           cli: latest
 
-      # versions.json is the single source of truth the nix devshell also
-      # builds from, so CI and a local shell cannot drift apart.
-      - name: Read toolchain versions
-        id: versions
+      - name: Install lcov
         run: |
           set -euo pipefail
-          {
-            echo "protoc=$(jq -r '.protoc.version' versions.json)"
-            echo "protoc_gen_clojure=$(jq -r '."protoc-gen-clojure".version' versions.json)"
-            echo "foundationdb=$(jq -r '.foundationdb.version' versions.json)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Setup Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: ${{ steps.versions.outputs.protoc }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install protoc-gen-clojure
-        run: |
-          set -euo pipefail
-          sudo curl -fL "https://github.com/protojure/protoc-plugin/releases/download/v${{ steps.versions.outputs.protoc_gen_clojure }}/protoc-gen-clojure" \
-            -o /usr/local/bin/protoc-gen-clojure
-          sudo chmod +x /usr/local/bin/protoc-gen-clojure
-
-      - name: Install FoundationDB client library and lcov
-        run: |
-          set -euo pipefail
-          fdb="${{ steps.versions.outputs.foundationdb }}"
-          curl -fLO "https://github.com/apple/foundationdb/releases/download/${fdb}/foundationdb-clients_${fdb}-1_amd64.deb"
-          sudo dpkg -i "foundationdb-clients_${fdb}-1_amd64.deb"
           sudo apt-get install -y lcov
           sudo sed -i 's/lcov_branch_coverage/branch_coverage/' /etc/lcovrc
 
@@ -168,7 +139,6 @@ jobs:
           COVERAGE: "true"
           COVERAGE_THRESHOLD: "50"
         run: |
-          clojure -X:deps prep :aliases '[:dev]'
           clojure -M:poly test project:${{ matrix.project }} :all +realworld
 
       - name: Publish test report

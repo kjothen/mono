@@ -1,7 +1,7 @@
 ;; The RealWorld example, as a deployable service.
 ;;
-;; It needs no protobuf pin and no native client: postgres is a driver, and the
-;; driver is named here because `jdbc` stays deliberately driver-agnostic.
+;; The postgres driver is named here because `jdbc` stays deliberately
+;; driver-agnostic.
 {:paths ["resources"]
  :deps {components/auth {:local/root "../../components/auth"}
         components/cli {:local/root "../../components/cli"}
