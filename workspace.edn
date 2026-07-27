@@ -26,8 +26,8 @@
                                          "event-schema" "fdb" "jdbc" "kafka"
                                          "keycloak" "migrator" "mqtt"
                                          "pulsar-vault-crypto" "scheduler"
-                                         "secret" "server" "test-schema"
-                                         "testcontainers"]}}
+                                         "secret" "server" "test-resources"
+                                         "test-schema" "testcontainers"]}}
  :tag-patterns {:release "v[0-9]*" :stable "stable-*"}
  :test {:create-test-runner
         com.repldriven.mono.external-test-runner.core/create}
