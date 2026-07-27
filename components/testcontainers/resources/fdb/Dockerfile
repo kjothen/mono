@@ -1,6 +1,8 @@
 FROM debian:13-slim
 
-ARG FDB_VERSION=7.4.6
+# No default: the caller supplies it. fdb.clj passes this as a build arg so
+# the version has a single definition in this component.
+ARG FDB_VERSION
 RUN ARCH=$(uname -m) && \
   TINI_ARCH=$([ "$ARCH" = "aarch64" ] && echo "arm64" || echo "amd64") && \
   FDB_ARCH=$ARCH && \

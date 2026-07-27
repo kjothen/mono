@@ -109,6 +109,20 @@ Verify your setup with:
 ./scripts/check-setup.sh
 ```
 
+That checks you have nix and direnv. Once the environment is active, check that
+the native toolchain on `PATH` is the one this workspace pins:
+
+```bash
+just doctor
+```
+
+Those versions live in `versions.json`, the single source that `flake.nix`, CI,
+and the workspace template all build from. Two of them are exact rather than
+minimums: the FoundationDB client must share a protocol version with the server
+the testcontainers image builds, and `protoc` must stay on the line that emits
+code for the pinned `protobuf-java`. Both fail at runtime rather than at build
+time, which is what `just doctor` exists to catch.
+
 ### Run all tests
 
 ```bash

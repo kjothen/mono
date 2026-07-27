@@ -5,6 +5,43 @@ DOMAIN_ALIASES := ":+example"
 list:
     just --list
 
+# Check the native toolchain on PATH against versions.json. The nix devshell
+# provides these; this is what tells you what is wrong when it is not active.
+doctor:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    fail=0
+    check() {
+      local name="$1" want="$2" got="$3"
+      if [ -z "$got" ]; then
+        printf '  %-19s \033[31mmissing\033[0m (need %s)\n' "$name" "$want"
+        fail=1
+      elif [ "$got" = "$want" ]; then
+        printf '  %-19s \033[32m%s\033[0m\n' "$name" "$got"
+      else
+        printf '  %-19s \033[31m%s\033[0m (need %s)\n' "$name" "$got" "$want"
+        fail=1
+      fi
+    }
+    echo "Native toolchain, against versions.json:"
+    check foundationdb \
+      "$(jq -r '.foundationdb.version' versions.json)" \
+      "$(fdbcli --version 2>/dev/null | sed -n '1s/.*(v\([0-9.]*\)).*/\1/p')"
+    check protoc \
+      "$(jq -r '.protoc.version' versions.json)" \
+      "$(protoc --version 2>/dev/null | awk '{print $2}')"
+    check protoc-gen-clojure \
+      "$(jq -r '."protoc-gen-clojure".version' versions.json)" \
+      "$(protoc-gen-clojure -v 2>/dev/null | sed -n 's/.*v\([0-9.]*\).*/\1/p')"
+    if [ "$fail" -ne 0 ]; then
+      echo
+      echo "Enter the nix devshell to get these, or install them at the"
+      echo "versions above. A mismatched FoundationDB client cannot talk to"
+      echo "the test cluster, and a newer protoc emits protobuf 4 code that"
+      echo "the pinned FDB Record Layer cannot load."
+      exit 1
+    fi
+
 # Generate a throwaway workspace from the template and verify it end to end.
 # Uses the working copy rather than a published tag, so it can run before a
 # release exists.

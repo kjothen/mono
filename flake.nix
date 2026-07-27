@@ -20,6 +20,11 @@
           config.allowUnsupportedSystem = true;
         };
 
+        # Native toolchain versions come from versions.json, which is the
+        # single source of truth shared with CI, `just doctor`, and the
+        # deps-new template generator. Bump a version there, not here.
+        versions = builtins.fromJSON (builtins.readFile ./versions.json);
+
         # Fetch pre-built FDB binary directly from GitHub releases.
         #
         # On 7.4.x rather than 7.3.x because 7.3.75 is the last 7.3 release
@@ -29,23 +34,24 @@
         # internal layout (FoundationDB-clients.pkg/Payload -> usr/local),
         # so the unpack below is unchanged.
         #
-        # The client version is coupled to the FDB server built by the
-        # testcontainers image: FDB requires a compatible protocol version
-        # between client and cluster, so this, FDB_VERSION in
-        # components/testcontainers/resources/fdb/Dockerfile, fdb-version in
-        # the matching fdb.clj, org.foundationdb/fdb-java in
-        # components/fdb/deps.edn, and the client .deb in CI must move
-        # together.
+        # FDB requires a compatible protocol version between client and
+        # cluster, so this client and the FDB server built by the
+        # testcontainers image must agree. Everything driven by versions.json
+        # moves together automatically; the two values that cannot read it are
+        # org.foundationdb/fdb-java in components/fdb/deps.edn and fdb-version
+        # in the testcontainers component, which is published as a library and
+        # so must stay self-contained. A test asserts that pair still matches.
+        fdbVersion = versions.foundationdb.version;
         fdbArch = if pkgs.stdenv.isAarch64 then "arm64" else "x86_64";
         fdbBinary = pkgs.stdenv.mkDerivation {
-          name = "foundationdb-7.4.6";
+          name = "foundationdb-${fdbVersion}";
           src = pkgs.fetchurl {
-            url = "https://github.com/apple/foundationdb/releases/download/7.4.6/FoundationDB-7.4.6_${fdbArch}.pkg";
+            url = "https://github.com/apple/foundationdb/releases/download/${fdbVersion}/FoundationDB-${fdbVersion}_${fdbArch}.pkg";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                "sha256-ZyjANtLdvhurQR20xpZsfWZ3A25foE4IV2Sj9macqZ4="
+                versions.foundationdb.sha256.aarch64
               else
-                "sha256-9YFxonwO0jBBo9UyRRkfSFHVITeWkPOE3k2zJctP43s=";
+                versions.foundationdb.sha256.x86_64;
           };
           buildInputs = [
             pkgs.xar
@@ -62,11 +68,12 @@
           '';
         };
 
+        protocGenClojureVersion = versions."protoc-gen-clojure".version;
         protocGenClojure = pkgs.stdenv.mkDerivation {
-          name = "protoc-gen-clojure-2.1.2";
+          name = "protoc-gen-clojure-${protocGenClojureVersion}";
           src = pkgs.fetchurl {
-            url = "https://github.com/protojure/protoc-plugin/releases/download/v2.1.2/protoc-gen-clojure";
-            sha256 = "0vzz78fd4awbsc5iykych9yqd86yab18f8fbbgydrw556lmhv8hh";
+            url = "https://github.com/protojure/protoc-plugin/releases/download/v${protocGenClojureVersion}/protoc-gen-clojure";
+            sha256 = versions."protoc-gen-clojure".sha256;
           };
           dontUnpack = true;
           installPhase = ''
@@ -76,16 +83,20 @@
           '';
         };
 
+        # protoc must stay on the 25.x line: protobuf-java is pinned to 3.25.8
+        # for the FDB Record Layer, and a newer protoc emits code targeting the
+        # protobuf 4 runtime.
+        protocVersion = versions.protoc.version;
         protocArch = if pkgs.stdenv.isAarch64 then "aarch_64" else "x86_64";
         protocBinary = pkgs.stdenv.mkDerivation {
-          name = "protoc-25.8";
+          name = "protoc-${protocVersion}";
           src = pkgs.fetchurl {
-            url = "https://github.com/protocolbuffers/protobuf/releases/download/v25.8/protoc-25.8-osx-${protocArch}.zip";
+            url = "https://github.com/protocolbuffers/protobuf/releases/download/v${protocVersion}/protoc-${protocVersion}-osx-${protocArch}.zip";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                "sha256-UIIE7oJiT01MQUF81XNyHzqZWkzqTzCD+wYp7Gk2ZxI="
+                versions.protoc.sha256.aarch64
               else
-                "sha256-J2NjPhXHFDEra/dW+H1YGaXypsbc6291RPDht9bblm0=";
+                versions.protoc.sha256.x86_64;
           };
           sourceRoot = ".";
           nativeBuildInputs = [ pkgs.unzip ];
@@ -127,6 +138,7 @@
             pkgs.docker-credential-helpers
             fdbBinary
             pkgs.jdk21
+            pkgs.jq
             pkgs.just
             pkgs.k6
             pkgs.openssl
@@ -138,7 +150,7 @@
           ];
 
           shellHook = ''
-            # Ensure pinned protoc (v25.8) takes precedence over any protoc
+            # Ensure the pinned protoc takes precedence over any protoc
             # inherited from parent direnv environments (e.g. buf's protoc)
             export PATH="${protocBinary}/bin:$PATH"
 
