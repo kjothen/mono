@@ -30,15 +30,20 @@
 ;; prep step out of the published surface is worth protecting. It stays an alias
 ;; dep, used only inside this workspace.
 ;;
-;; test-resources is absent for a different reason: its :paths is ["src"], which
-;; holds nothing but an empty namespace. The shared config it exists to carry
-;; (testcontainers/*.yml, the pulsar keypairs) lives on :extra-paths under the
-;; brick's own :test alias, and a git-dep consumer never activates a dep's
-;; aliases — so publishing it would ship an empty ns. The config is workspace
-;; -internal anyway: it wires our bricks, and only our brick tests !include it.
+;; test-resources is absent from :deps for a different reason: its :paths is
+;; ["src"], which holds nothing but an empty namespace. The shared config it
+;; exists to carry (testcontainers/*.yml, the pulsar keypairs) lives on
+;; :extra-paths under the brick's own :test alias, and a git-dep consumer never
+;; activates a dep's aliases — so publishing it would ship an empty ns. The
+;; config is workspace-internal anyway: it wires our bricks, and only our brick
+;; tests !include it. It is in the :test alias below, because poly adds a
+;; brick's test paths only for bricks the project has, and without it every
+;; brick test that !includes shared config fails here but passes in mono-lib.
 {:paths []
  :deps
- {com.repldriven.mono.components/avro
+ {com.repldriven.mono.components/auth
+  {:local/root "../../components/auth"}
+  com.repldriven.mono.components/avro
   {:local/root "../../components/avro"}
   com.repldriven.mono.components/cache
   {:local/root "../../components/cache"}
@@ -120,7 +125,9 @@
  {:test
   {:extra-paths ["test-resources"]
    :extra-deps
-   {com.repldriven.mono.components/test-schema
+   {com.repldriven.mono.components/test-resources
+    {:local/root "../../components/test-resources"}
+    com.repldriven.mono.components/test-schema
     {:local/root "../../components/test-schema"}
     com.repldriven.mono.bases/external-test-runner
     {:local/root "../../bases/external-test-runner"}}}}}

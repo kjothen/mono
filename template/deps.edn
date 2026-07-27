@@ -7,10 +7,6 @@
 ;; disk. The pinned coordinate lives as data in template.edn and is resolved
 ;; lazily through tools.gitlibs, which populates the same ~/.gitlibs checkout a
 ;; real dependency resolution would use.
-;; data.json is here to read versions.json out of the pinned mono checkout, so
-;; a generated workspace's flake.nix is stamped with that release's toolchain
-;; versions. It is a leaf library, not a route back to mono.
 {:paths ["src" "resources"]
  :deps {org.clojure/clojure {:mvn/version "1.12.5"}
-        org.clojure/data.json {:mvn/version "2.5.2"}
         org.clojure/tools.gitlibs {:mvn/version "2.6.217"}}}

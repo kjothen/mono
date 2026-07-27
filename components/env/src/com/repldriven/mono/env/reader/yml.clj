@@ -35,6 +35,20 @@
 
 (defmethod yml-reader :!env [{:keys [value]}] (System/getenv (name value)))
 
+;; `!long 8080`, or `!long [!or [!env PORT, 8080]]` to wrap another tag —
+;; a one-item sequence, because YAML rejects a tag on a tagged scalar but
+;; allows one on a sequence item.
+(defmethod yml-reader :!long
+  [{:keys [value]}]
+  (symbol (str "#long " (if (sequential? value) (first value) value))))
+
+;; First value that resolves. Aero needs any coercion outside this, not in
+;; it: `#or [#long #env "X" 8080]` throws on the absent case before the
+;; fallback is reached, where `#long #or [...]` does not.
+(defmethod yml-reader :!or
+  [{:keys [value]}]
+  (symbol (str "#or " (util/yaml-collections->edn-collections value))))
+
 (defmethod yml-reader :!keyword [{:keys [value]}] (keyword value))
 
 (defmethod yml-reader :!keywords

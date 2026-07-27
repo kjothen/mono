@@ -5,31 +5,84 @@ system component registration, and key-value operations.
 
 ## Requirements
 
-The FoundationDB Java client requires the native `libfdb_c` library to be
-installed on the host. Without it, the client will fail at runtime.
+The FoundationDB Java client requires the native `libfdb_c` library on the
+host. Without it, the client fails at runtime rather than at build time.
+
+The version matters: FoundationDB requires a compatible protocol version
+between client and cluster, so a client that does not match the server cannot
+connect, and says nothing useful about why. The required version is
+`foundationdb.version` in [`versions.json`](../../versions.json) at the
+workspace root, which is also what the Nix flake and CI build from. The
+commands below read it rather than naming a version, so they cannot go stale;
+run them from the workspace root.
+
+Run `just doctor` at any point to check what is actually on `PATH`.
 
 ### Installation
 
-**macOS (with Nix):** The Nix flake provides the native library automatically.
+**With Nix (recommended).** The flake provides the native library and
+`fdbcli` automatically; `direnv allow` or `nix develop` is all that is needed.
 
-**macOS (without Nix):** `brew install foundationdb`
+**macOS without Nix.** Homebrew has no FoundationDB formula. Install the
+official package:
 
-**Linux:** Download and install `foundationdb-clients_7.3.27-1_amd64.deb`
-from https://github.com/apple/foundationdb/releases/tag/7.3.27
+```bash
+FDB=$(jq -r .foundationdb.version versions.json)
+ARCH=$([ "$(uname -m)" = "arm64" ] && echo arm64 || echo x86_64)
+curl -fLO "https://github.com/apple/foundationdb/releases/download/${FDB}/FoundationDB-${FDB}_${ARCH}.pkg"
+sudo installer -pkg "FoundationDB-${FDB}_${ARCH}.pkg" -target /
+```
+
+Note that only the 7.4 line and 7.3.75 and earlier ship macOS packages; 7.3.76
+through 7.3.79 are Linux-only.
+
+**Linux.**
+
+```bash
+FDB=$(jq -r .foundationdb.version versions.json)
+ARCH=$([ "$(uname -m)" = "aarch64" ] && echo aarch64 || echo amd64)
+curl -fLO "https://github.com/apple/foundationdb/releases/download/${FDB}/foundationdb-clients_${FDB}-1_${ARCH}.deb"
+sudo dpkg -i "foundationdb-clients_${FDB}-1_${ARCH}.deb"
+```
 
 ## Usage
 
-The component registers `:fdb/cluster-file-path` and `:fdb/db` system
-components. Include via `testcontainers/fdb-test.yml` in tests, or configure
-directly with a cluster file path in production:
+The component registers `fdb/cluster-file-path`, `fdb/db` (plain key-value)
+and `fdb/record-db` (Record Layer) system components. Include via
+`testcontainers/fdb-test.yml` in tests, or configure directly with a cluster
+file path in production:
 
 ```yaml
 system:
   fdb:
-    cluster-file-path: /path/to/fdb.cluster
-    database:
-      api-version: 730  # optional, defaults to 730
+    cluster-file-path: !system/component
+      system/component-kind: fdb/cluster-file-path
+      path: !env FDB_CLUSTER_FILE
+
+    record-db: !system/component
+      system/component-kind: fdb/record-db
+      cluster-file-path: !system/local-ref cluster-file-path
+      api-version: 710  # optional, defaults to 710
 ```
+
+### On `api-version`
+
+The API version is the client API contract, not the server version and not the
+version of the client library installed. Two constraints apply, and both fail
+in ways that name neither the config key nor this component:
+
+- **It is process-wide.** `FDB/selectAPIVersion` is JVM-global and one-shot, so
+  `db` and `record-db` cannot be given different values in the same process.
+  The second one to start fails with "FoundationDB API already started at
+  different version", and which one that is depends on start order.
+- **The Record Layer supports fewer versions than the client.** Its `APIVersion`
+  enum offers 630, 700 and 710 only. A 7.4 client selects 730 or 740 quite
+  happily, but the Record Layer rejects both, so 710 is the usable ceiling
+  regardless of how new the installed client is. Raising it waits on the
+  Record Layer, not on FoundationDB.
+
+Both components default to 710 and validate what they are given, so an
+unsupported value fails at start with the supported set named.
 
 Access the database and use the interface:
 
@@ -42,5 +95,11 @@ Access the database and use the interface:
 
 ## Testing
 
-Tests use the `earth.adi/testcontainers-foundationdb` testcontainer, which
-works on both macOS and Linux provided `libfdb_c` is installed on the host.
+Tests run against a FoundationDB server in a container, built from
+`components/testcontainers/resources/fdb/Dockerfile` at the version in
+`fdb-version` in the matching `fdb.clj`. That version is asserted to match
+`versions.json`, so the containerised server and the client on the host cannot
+disagree on protocol version.
+
+The host still needs `libfdb_c` installed, as above — the container provides
+the server, not the client.

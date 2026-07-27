@@ -27,7 +27,7 @@ Generate a Polylith workspace already wired to mono as a library:
 clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
 
 clojure -Tnew create \
-  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.13' \
+  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.14' \
   :name com.acme/my-thing
 ```
 
@@ -50,7 +50,7 @@ involved; everything resolves from a tag and its sha.
 ```clojure
 {:deps {com.repldriven/mono
         {:git/url "https://github.com/repldriven/mono.git"
-         :git/tag "v0.0.13"
+         :git/tag "v0.0.14"
          :git/sha "<full-sha>"
          :deps/root "projects/mono-lib"}}
 
@@ -58,7 +58,7 @@ involved; everything resolves from a tag and its sha.
  {:test {:extra-deps
          {com.repldriven/mono
           {:git/url "https://github.com/repldriven/mono.git"
-           :git/tag "v0.0.13"
+           :git/tag "v0.0.14"
            :git/sha "<full-sha>"
            :deps/root "projects/mono-test-lib"}}}}}
 ```
@@ -209,6 +209,7 @@ relying on ours.
 
 | Component             | Purpose                                             | Library        | Kind        |
 | --------------------- | --------------------------------------------------- | -------------- | ----------- |
+| `auth`                | Password hashing, JWT, and `Authorization` interceptors | `buddy-hashers`, `buddy-sign` | Curated |
 | `encryption`          | RSA keys, opaque tokens, constant-time comparison   | `buddy-core`   | Curated     |
 | `identity-provider`   | Service-account and token protocol, with local impl | `buddy-sign`   | Abstraction |
 | `keycloak`            | Keycloak-backed `identity-provider` implementation  | `buddy-sign`   | Curated     |
@@ -244,8 +245,17 @@ relying on ours.
 | `test-system`    | `with-test-system` lifecycle macro, `nom-test>` assertions | —                | —       |
 | `testcontainers` | Declarative container infrastructure for integration tests | `testcontainers` | Curated |
 
-`example-bookmark` is not shared: it is the starter domain the template copies
-into a new workspace, and yours to edit or delete.
+Four bricks are examples rather than library code, and none of them ships in
+`mono-lib`. `realworld-domain`, `realworld-store` and `realworld-api` are a
+working [RealWorld](https://realworld-docs.netlify.app/) implementation over
+postgres, and are what the template copies into a new workspace — yours to
+edit or delete once it is there. `example-bookmark` and `example-api` stay as
+the worked FoundationDB example, since `fdb` is published and would otherwise
+have no end-to-end demonstration.
+
+The RealWorld example is held to the official conformance suite: `just
+realworld-hurl` stands up postgres, starts the service and runs all 13 files
+of it. Where our own tests and that suite disagree, the suite wins.
 
 ## Mono Bases
 
@@ -254,6 +264,10 @@ into a new workspace, and yours to edit or delete.
 | `build`                | Uberjar build tooling and Protobuf code generation |
 | `external-test-runner` | Out-of-process test runner for Polylith            |
 | `service`              | Generic async command handler entry point          |
+
+Two more are examples rather than library code: `realworld-api`, the HTTP
+entry point for the RealWorld starter, and `example-api`, the same for the
+FoundationDB demo.
 
 ## Key Patterns
 

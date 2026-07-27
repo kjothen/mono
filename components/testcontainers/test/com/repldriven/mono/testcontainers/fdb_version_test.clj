@@ -22,7 +22,8 @@
   (testing "the testcontainers FDB server version matches versions.json"
     (let [f (io/file "versions.json")]
       (is (.exists f)
-          (str "versions.json not found at " (.getAbsolutePath f)
+          (str "versions.json not found at "
+               (.getAbsolutePath f)
                " — this test reads it relative to the workspace root"))
       (when (.exists f)
         (let [declared (-> (slurp f)
@@ -31,7 +32,6 @@
           (is (= declared fdb/fdb-version)
               (str "fdb-version in the testcontainers component is "
                    fdb/fdb-version
-                   " but versions.json declares "
-                   declared
+                   " but versions.json declares " declared
                    ". The FDB client and the testcontainers server share a "
                    "protocol version and must be bumped together.")))))))

@@ -1,3 +1,6 @@
+;; core.async is required by this brick's own sources. It was previously
+;; supplied only by the workspace :dev alias, which meant the brick resolved
+;; inside mono and failed at require time for any consumer of mono-lib.
 {:aliases {:test {:extra-deps {} :extra-paths ["test" "test-resources"]}}
- :deps {}
+ :deps {org.clojure/core.async {:mvn/version "1.9.865"}}
  :paths ["src"]}

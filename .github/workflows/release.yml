@@ -97,7 +97,9 @@ jobs:
             ${{ runner.os }}-clojure-
 
       - name: Check workspace
-        run: clojure -M:poly check
+        # Both example profiles: each carries bricks the other does not, and
+        # an unactivated profile's bricks are invisible to check.
+        run: clojure -M:poly check +example +realworld
 
       # The template pins the tag of the release that contains it, and derives
       # the sha from that tag at generation time. If the pin disagrees with what
@@ -231,18 +233,18 @@ jobs:
           # The rewrite policy, as assertions. Starter bricks belong to the
           # consumer and must be rewritten; everything else arrives from the
           # frozen library and must NOT be.
-          if grep -rq 'com\.repldriven\.mono\.example' .; then
+          if grep -rq 'com\.repldriven\.mono\.realworld' .; then
             echo "::error::starter namespaces leaked into the generated workspace"
-            grep -rn 'com\.repldriven\.mono\.example' . | head
+            grep -rn 'com\.repldriven\.mono\.realworld' . | head
             exit 1
           fi
-          for ns in error fdb system utility; do
+          for ns in error jdbc auth system utility; do
             grep -rq "com\.repldriven\.mono\.$ns" . \
               || { echo "::error::$ns was rewritten but should have been left pointing at mono"; exit 1; }
           done
 
-          clojure -X:deps prep :aliases '[:dev :+example]'
-          clojure -M:poly check
+          clojure -X:deps prep :aliases '[:dev :+realworld]'
+          clojure -M:poly check +realworld
           echo "template generates a workspace that checks"
 
   release:
@@ -379,8 +381,8 @@ jobs:
           grep -q "$SHA" deps.edn \
             || { echo "::error::generated deps.edn does not pin the released sha"; exit 1; }
 
-          clojure -X:deps prep :aliases '[:dev :+example]'
-          clojure -M:poly check
+          clojure -X:deps prep :aliases '[:dev :+realworld]'
+          clojure -M:poly check +realworld
           echo "the published template generates a portable workspace that checks"
 
       - name: Create the GitHub release

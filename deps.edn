@@ -1,7 +1,8 @@
 {:aliases
  {:dev
   {:extra-deps
-   {components/avro {:local/root "components/avro"}
+   {components/auth {:local/root "components/auth"}
+    components/avro {:local/root "components/avro"}
     components/cache {:local/root "components/cache"}
     components/cli {:local/root "components/cli"}
     components/command {:local/root "components/command"}
@@ -52,7 +53,8 @@
    :extra-paths ["development/resources"]
    :jvm-opts
    ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"]}
-  :test {:extra-paths ["components/avro/test"
+  :test {:extra-paths ["components/auth/test"
+                       "components/avro/test"
                        "components/cache/test"
                        "components/cli/test"
                        "components/command/test"
@@ -95,6 +97,9 @@
                        "bases/service/test"
                        "bases/service/test-resources"
                        "bases/external-test-runner/test"]}
+  ;; Two example domains, kept in separate profiles so neither pays for the
+  ;; other's infrastructure. :+example is the FoundationDB demo;
+  ;; :+realworld is the starter the template ships, and needs only postgres.
   :+example {:extra-deps {components/example-bookmark
                           {:local/root "components/example-bookmark"}
                           bases/example-api {:local/root "bases/example-api"}}
@@ -102,6 +107,18 @@
                            "components/example-bookmark/test-resources"
                            "bases/example-api/test"
                            "bases/example-api/test-resources"]}
+  :+realworld {:extra-deps {components/realworld-domain
+                            {:local/root "components/realworld-domain"}
+                            components/realworld-store
+                            {:local/root "components/realworld-store"}
+                            bases/realworld-api
+                            {:local/root "bases/realworld-api"}
+                            org.postgresql/postgresql {:mvn/version "42.7.13"}}
+               :extra-paths ["components/realworld-domain/test"
+                             "components/realworld-store/test"
+                             "components/realworld-store/test-resources"
+                             "bases/realworld-api/test"
+                             "bases/realworld-api/test-resources"]}
   :format/zprint {:extra-deps #:zprint{zprint {:mvn/version "1.3.0"}}
                   :main-opts ["-m" "zprint.main"]}
   :lint/clj-kondo {:extra-deps #:clj-kondo{clj-kondo {:mvn/version

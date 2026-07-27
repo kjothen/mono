@@ -9,8 +9,9 @@
  ;; :gen?     the brick generates code into gen/ via :deps/prep-lib, so it needs
  ;;           a clj-kondo exclusion.
  :bricks
- [{:kind "components" :name "example-bookmark" :profile? true :gen? true}
-  {:kind "bases" :name "example-api" :profile? true}]
+ [{:kind "components" :name "realworld-domain" :profile? true}
+  {:kind "components" :name "realworld-store" :profile? true}
+  {:kind "bases" :name "realworld-api" :profile? true}]
 
  ;; Namespace segments owned by the starter bricks. `com.repldriven.mono.<seg>`
  ;; becomes `<top-ns>.<seg>`, in hyphenated and munged form, as namespace and as
@@ -21,10 +22,9 @@
  ;; error arrives from the frozen mono-lib dependency rather than being copied.
  ;; Rewriting it would produce a dangling namespace.
  ;;
- ;; example-schemas is not a brick: it is the protobuf package generated into
- ;; components/example-bookmark/gen and compiled into classes/. It has no
- ;; upstream in mono-lib, so it belongs to the consumer and must be rewritten.
- :rewrite-segments ["example-bookmark" "example-api" "example-schemas"]
+ ;; No generated package to rewrite any more: the starter is postgres-backed
+ ;; and has no codegen step, so these are just the three brick names.
+ :rewrite-segments ["realworld-domain" "realworld-store" "realworld-api"]
 
  ;; Brick-relative paths never copied, as regexes. Generated and build output.
  ;; gen/.gitignore is kept, because it is what keeps generated code out of the

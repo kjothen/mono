@@ -21,4 +21,4 @@
                        {{mono/build-coord}}}
           :ns-default com.repldriven.mono.build.build
           :exec-args {:lib {{top-ns}}/{{main}}
-                      :main {{top-ns}}.example-api.main}}}}
+                      :main {{top-ns}}.realworld-api.main}}}}
