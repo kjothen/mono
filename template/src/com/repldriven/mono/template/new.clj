@@ -24,6 +24,7 @@
   (:require
     [clojure.edn :as edn]
     [clojure.java.io :as io]
+    [clojure.java.shell :as shell]
     [clojure.pprint :as pprint]
     [clojure.string :as str]
     [clojure.tools.gitlibs :as gitlibs])
@@ -399,6 +400,30 @@
 
 ;; ---------------------------------------------------------------------------
 
+;; Polylith works out which bricks changed by asking git, so in a workspace
+;; that is not a repository `poly test` finds nothing to run and exits
+;; reporting success. Initialising one here is what makes `just test` do
+;; something on the first try; workspace.edn already declares :vcs "git".
+(defn- git-init!
+  [target-dir]
+  (let [run (fn [& args]
+              (apply shell/sh (concat args [:dir target-dir])))]
+    (if (zero? (:exit (run "git" "rev-parse" "--is-inside-work-tree")))
+      (println "  already inside a git repository, leaving it alone")
+      (let [{:keys [exit err]} (run "git" "init" "-q")]
+        (if-not (zero? exit)
+          (println "  could not initialise git:"
+                   (str/trim (str err))
+                   "\n  `poly test` finds no changed bricks without one.")
+          (do (run "git" "add" "-A")
+              (run "git" "-c"
+                   "user.email=you@example.com"
+                   "-c"
+                   "user.name=you"
+                   "commit"
+                   "-qm" "Generated from the mono template")
+              (println "  initialised a git repository and committed")))))))
+
 (defn post-process-fn
   "deps-new :post-process-fn. Everything it needs is in the options, because
   template-fn put it there."
@@ -419,8 +444,12 @@
       (let [f (io/file target-dir (:kind b) (:name b) "deps.edn")]
         (when (.exists f)
           (relink-brick-deps! f local-root->git opts))))
+    (git-init! target-dir)
     (println)
     (println "Workspace created. Next:")
     (println "  cd" target-dir)
-    (println "  clojure -M:poly check")
-    (println "  just test")))
+    (println "  just check           # clojure -M:poly check")
+    (println "  just test            # brick tests, needs Docker")
+    (println "  just realworld-hurl  # the RealWorld conformance suite")
+    (println)
+    (println "  just doctor          # if any of those cannot find a tool")))

@@ -4,7 +4,10 @@
  :deps {com.repldriven/mono
         {{mono/project-lib-coord}}
         {{starter/project-deps}}
-        com.google.protobuf/protobuf-java {:mvn/version "3.25.8"}
+        ;; jdbc ships driver-agnostic on purpose, so the deployable names
+        ;; the driver. Brick tests get it from their own :test alias, which
+        ;; is why they pass without this and a running service does not.
+        org.postgresql/postgresql {:mvn/version "42.7.13"}
         org.clojure/clojure {:mvn/version "1.12.4"}}
  :aliases
  {:test

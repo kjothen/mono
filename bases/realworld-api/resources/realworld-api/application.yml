@@ -67,5 +67,10 @@ system:
       system/component-kind: server/jetty-adapter
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
+      cors:
+        # A list, though one origin is the normal case: a deployment has one
+        # frontend, and dev has localhost.
+        origins:
+          - !or [!env REALWORLD_CORS_ORIGIN, "http://localhost:3000"]
       options:
         port: !long [!or [!env REALWORLD_PORT, 8091]]

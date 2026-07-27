@@ -16,6 +16,8 @@ list:
 
 # Check the native toolchain on PATH against versions.json. The nix devshell
 # provides these; this is what tells you what is wrong when it is not active.
+
+# Check the native toolchain on PATH against versions.json
 doctor:
     #!/usr/bin/env bash
     set -uo pipefail
@@ -54,6 +56,8 @@ doctor:
 # Generate a throwaway workspace from the template and verify it end to end.
 # Uses the working copy rather than a published tag, so it can run before a
 # release exists.
+
+# Generate a throwaway workspace from the template and verify it
 template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
     #!/usr/bin/env zsh
     set -e
@@ -107,7 +111,6 @@ build snapshot="true":
         (cd "$project" && clojure -X:build uber :snapshot {{ snapshot }})
     done
 
-
 # Run the official RealWorld conformance suite against a live service.
 #
 # Not part of `just test`: it needs a real server on a fixed port and a real
@@ -117,6 +120,8 @@ build snapshot="true":
 # 8091 rather than 8080 because 8080 is the dev profile's, and a stray dev
 # server answering instead is a confusing way to fail: every request 404s
 # and nothing says why.
+
+# Run the official RealWorld conformance suite against a live service
 realworld-hurl port="8091":
     #!/usr/bin/env bash
     set -uo pipefail

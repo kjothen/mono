@@ -69,7 +69,24 @@ just test           # needs Docker
 ```
 
 There is no mandatory setup step. `just setup` exists for when you add a
-brick that generates code, but nothing in the starter does.
+brick that generates code, but nothing in the starter does. The workspace is
+initialised as a git repository at generation, because Polylith asks git
+which bricks changed and finds nothing to run without one.
+
+The starter is held to the official RealWorld conformance suite, vendored
+under `bases/realworld-api/test-resources/realworld-api/hurl`:
+
+```bash
+just realworld-hurl     # starts postgres and the service, runs all 13 files
+```
+
+Where the suite and your own tests disagree, the suite is the contract.
+
+The API allows browser requests from `http://localhost:3000`, where the
+RealWorld frontends run. Set `REALWORLD_CORS_ORIGIN` to point it at a
+deployed frontend instead; `server.jetty-adapter.cors.origins` in
+`bases/realworld-api/resources/realworld-api/application.yml` takes a list,
+if you need more than one.
 
 ## Adding a brick
 

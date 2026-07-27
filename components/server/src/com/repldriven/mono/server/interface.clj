@@ -2,6 +2,7 @@
   (:require
     com.repldriven.mono.server.system
     [com.repldriven.mono.server.core :as core]
+    [com.repldriven.mono.server.cors :as cors]
     [com.repldriven.mono.server.interceptors :as interceptors]))
 
 (def require-idempotency-key
@@ -60,3 +61,21 @@
     [["/actuator/health" {:get {:no-doc true :handler aggregate}}]
      ["/actuator/health/liveness" {:get {:no-doc true :handler liveness}}]
      ["/actuator/health/readiness" {:get {:no-doc true :handler readiness}}]]))
+
+(defn wrap-cors
+  "Wrap `handler` so browsers may call it from `:origins`.
+
+  Middleware rather than an interceptor: a preflight arrives as OPTIONS on a
+  path whose route declares no OPTIONS handler, which the router answers
+  with a 404 before any interceptor runs.
+
+  Returns `handler` unchanged when no origins are configured, so the default
+  is to permit nothing.
+
+  Args:
+  - handler: the Ring handler to wrap.
+  - opts: `{:origins [\"http://localhost:3000\"] :methods [...]
+    :request-headers [...] :max-age 3600 :credentials? false}`. Only
+    `:origins` is required."
+  [handler opts]
+  (cors/wrap-cors handler opts))
