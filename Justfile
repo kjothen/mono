@@ -114,11 +114,10 @@ build snapshot="true":
 # postgres, which is a different shape of thing from a brick test. The suite
 # is the contract — where our own tests and these disagree, these win.
 #
-# The port is fixed at 8091 in application.yml because !env yields a string
-# and Jetty wants a number. 8091 rather than 8080 because 8080 is the dev
-# profile's, and a stray dev server answering instead is a confusing way to
-# fail: every request 404s and nothing says why.
-realworld-hurl:
+# 8091 rather than 8080 because 8080 is the dev profile's, and a stray dev
+# server answering instead is a confusing way to fail: every request 404s
+# and nothing says why.
+realworld-hurl port="8091":
     #!/usr/bin/env bash
     set -uo pipefail
     root="$PWD"
@@ -132,8 +131,8 @@ realworld-hurl:
     }
     trap cleanup EXIT
 
-    if lsof -nP -iTCP:8091 -sTCP:LISTEN >/dev/null 2>&1; then
-      echo "port 8091 is already in use; pass another, e.g."
+    if lsof -nP -iTCP:{{ port }} -sTCP:LISTEN >/dev/null 2>&1; then
+      echo "port {{ port }} is already in use; pass another, e.g."
       echo "  just realworld-hurl 8099"
       exit 1
     fi
@@ -152,6 +151,7 @@ realworld-hurl:
     export REALWORLD_DB_NAME=realworld REALWORLD_DB_USER=realworld
     export REALWORLD_DB_PASSWORD=realworld
     export REALWORLD_JWT_SECRET=conformance-secret-not-for-production
+    export REALWORLD_PORT={{ port }}
 
     # From the project rather than the dev alias: :dev carries :main-opts
     # for portal, which fights with -m. This is also the classpath a
@@ -162,10 +162,10 @@ realworld-hurl:
         --profile default) >"$log" 2>&1 &
     service_pid=$!
 
-    echo "waiting for the service on 8091..."
+    echo "waiting for the service on {{ port }}..."
     ready=false
     for _ in $(seq 1 120); do
-      if curl -fsS "http://localhost:8091/api/tags" >/dev/null 2>&1; then
+      if curl -fsS "http://localhost:{{ port }}/api/tags" >/dev/null 2>&1; then
         ready=true; break
       fi
       kill -0 "$service_pid" 2>/dev/null || break
@@ -180,7 +180,7 @@ realworld-hurl:
     fi
 
     hurl --test --jobs 1 \
-      --variable host="http://localhost:8091" \
+      --variable host="http://localhost:{{ port }}" \
       --variable uid="$(date +%s)" \
       "$hurl_dir"/*.hurl
 

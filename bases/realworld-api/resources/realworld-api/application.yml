@@ -68,6 +68,4 @@ system:
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
       options:
-        # A literal: !env yields a string and Jetty wants a number, and the
-        # two cannot be composed in YAML.
-        port: 8091
+        port: !long-env REALWORLD_PORT

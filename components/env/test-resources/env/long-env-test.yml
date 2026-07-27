@@ -1,0 +1,2 @@
+system:
+  from-env: !long-env MONO_TEST_LONG_ABSENT

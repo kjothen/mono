@@ -37,6 +37,12 @@
 
 (defmethod yml-reader :!long [{:keys [value]}] (symbol (str "#long " value)))
 
+;; Its own tag rather than `!long` over `!env`: YAML rejects a tag on a
+;; tagged scalar, so the two can only be composed as one aero form.
+(defmethod yml-reader :!long-env
+  [{:keys [value]}]
+  (symbol (str "#long #env \"" (name value) "\"")))
+
 (defmethod yml-reader :!keyword [{:keys [value]}] (keyword value))
 
 (defmethod yml-reader :!keywords
