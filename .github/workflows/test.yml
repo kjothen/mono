@@ -74,7 +74,9 @@ jobs:
             ${{ runner.os }}-clojure-
 
       - name: Check workspace
-        run: clojure -M:poly check
+        # Both example profiles: each carries bricks the other does not, and
+        # an unactivated profile's bricks are invisible to check.
+        run: clojure -M:poly check +example +realworld
 
       - name: Resolve published library artifacts
         run: |
@@ -168,7 +170,7 @@ jobs:
           COVERAGE_THRESHOLD: "50"
         run: |
           clojure -X:deps prep :aliases '[:dev :+example]'
-          clojure -M:poly test project:${{ matrix.project }} :all
+          clojure -M:poly test project:${{ matrix.project }} :all +example +realworld
 
       - name: Publish test report
         uses: dorny/test-reporter@v3

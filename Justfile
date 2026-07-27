@@ -1,6 +1,15 @@
 set shell := ["zsh", "-cu"]
 
-DOMAIN_ALIASES := ":+example"
+# Both example domains. DOMAIN_ALIASES is concatenated onto -M/-A, so the
+# aliases run together; POLY_PROFILES is the space-separated form poly wants,
+# and poly spells profiles without the leading colon.
+DOMAIN_ALIASES := ":+example:+realworld"
+POLY_PROFILES := "+example +realworld"
+
+# Only the FoundationDB example generates code, so prep needs that profile
+# alone. Kept separate from DOMAIN_ALIASES because :aliases takes a vector of
+# distinct keywords rather than one concatenated string.
+PREP_ALIASES := "[:+example :dev]"
 
 list:
     just --list
@@ -101,7 +110,7 @@ build snapshot="true":
 
 # Run all polylith project tests
 test: start-docker
-    SKIP_META=repl clojure -M:poly test :all
+    SKIP_META=repl clojure -M:poly test :all {{ POLY_PROFILES }}
 
 # Check test failures from last test run
 poly-test-check:
@@ -154,7 +163,12 @@ nvd project="":
     else
       classpath=$(cd projects/{{ project }} && clojure -Spath)
     fi
-    clojure -J-Dclojure.main.report=stderr -J-Danalyzer.ossindex.enabled=false -M:nvd "nvd-clojure.edn" "$classpath"
+    # The NVD database defaults to a path under the dependency-check jar in
+    # ~/.m2, so it is re-downloaded whenever that dep is bumped; cache it
+    # machine-wide instead, without the schema-version subdir so dependency-
+    # check can rebuild in place
+    data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/dependency-check"
+    clojure -J-Dclojure.main.report=stderr -J-Danalyzer.ossindex.enabled=false -J-Ddata.directory="$data_dir" -M:nvd "nvd-clojure.edn" "$classpath"
 
 # Linter
 lint-eastwood:
@@ -181,7 +195,7 @@ format:
     fi
 
 force-prep:
-    clojure -X:deps prep :aliases '[{{ DOMAIN_ALIASES }} :dev]' :force true
+    clojure -X:deps prep :aliases '{{ PREP_ALIASES }}' :force true
 
 # Start Docker via Colima
 start-docker:
