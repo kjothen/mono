@@ -69,14 +69,14 @@ template-test name="com.acme/bookmarks" out="/tmp/mono-template-test":
     cd {{ out }}
     # the rewrite policy, as an assertion: starter namespaces must be gone,
     # library namespaces must remain
-    if grep -rq 'com\.repldriven\.mono\.example' .; then
+    if grep -rq 'com\.repldriven\.mono\.realworld' .; then
         echo "FAIL: starter namespaces leaked into the generated workspace"; exit 1
     fi
     if ! grep -rq 'com\.repldriven\.mono\.error' .; then
         echo "FAIL: library namespaces were rewritten but should not have been"; exit 1
     fi
-    clojure -X:deps prep :aliases '[:dev :+example]'
-    clojure -M:poly check
+    clojure -X:deps prep :aliases '[:dev :+realworld]'
+    clojure -M:poly check +realworld
     echo "✓ template generates a workspace that checks"
 
 # Start nREPL server for Conjure connection

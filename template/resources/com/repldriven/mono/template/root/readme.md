@@ -37,51 +37,39 @@ or delete them freely.
 
 ## Prerequisites
 
-The starter bricks demonstrate a protobuf and FoundationDB pipeline, which is
-the most demanding thing mono supports.
+The starter bricks are a working implementation of the
+[RealWorld](https://realworld-docs.netlify.app/) ("Conduit") API — users,
+articles, comments, tags, favorites and follows — backed by postgres. Reads
+query the database; writes go through a command bus. It is a real
+application rather than a toy, so the shapes it uses are ones worth copying.
 
-The quickest route is [nix](https://nixos.org/download) and
-[direnv](https://direnv.net). `flake.nix` pins the whole native toolchain at
-the versions mono `{{mono/tag}}` was built against, so:
+You need:
+
+- Java 21 and the Clojure CLI
+- Docker, to run the tests (they use testcontainers)
+- Network access on first generation, to resolve the pinned mono release
+
+That is the whole list. With [nix](https://nixos.org/download) and
+[direnv](https://direnv.net) you need none of it directly:
 
 ```bash
 direnv allow     # or: nix develop
 just doctor      # confirms what is actually on PATH
 ```
 
-Without nix you need these yourself, at these versions:
-
-- Java 21 and the Clojure CLI
-- [`protoc`](https://github.com/protocolbuffers/protobuf)
-  `{{toolchain/protoc-version}}` and
-  [`protoc-gen-clojure`](https://github.com/protojure/protoc-plugin)
-  `{{toolchain/protoc-gen-clojure-version}}` on `PATH`, for code generation
-- The [FoundationDB](https://github.com/apple/foundationdb/releases) client
-  library `{{toolchain/fdb-version}}`, to run anything that touches `fdb`
-- Docker, to run the tests (they use testcontainers)
-- Network access on first generation, to resolve the pinned mono release
-
-The versions are exact, not minimums, and both failures are silent until
-runtime. A FoundationDB client only talks to a cluster sharing its protocol
-version, and a newer `protoc` emits code for the protobuf 4 runtime, which the
-FDB Record Layer mono pins does not support. `just doctor` reports both.
-
-If you do not want FoundationDB, delete `components/example-bookmark` and
-`bases/example-api`, remove them from the three registration sites below, and
-the protobuf and FDB prerequisites go away with them — along with the need for
-`flake.nix`.
+If you do not want the example, delete `components/realworld-domain`,
+`components/realworld-store` and `bases/realworld-api`, and remove them from
+the three registration sites below. Nothing else depends on them.
 
 ## First run
 
 ```bash
-just setup          # clojure -X:deps prep, generates protobuf code into gen/
 just check          # clojure -M:poly check
 just test           # needs Docker
 ```
 
-`just setup` is not optional. `example-bookmark` declares `:deps/prep-lib`, and
-its `classes` path does not exist until prep has run, so tools.deps cannot build
-a classpath before then.
+There is no mandatory setup step. `just setup` exists for when you add a
+brick that generates code, but nothing in the starter does.
 
 ## Adding a brick
 
@@ -91,8 +79,8 @@ clojure -M:poly create component name:my-thing
 
 Then register it at **three sites, in lockstep**:
 
-1. `deps.edn`, the `:+example` profile `:extra-deps`
-2. `deps.edn`, the `:+example` profile `:extra-paths` (its `test` and
+1. `deps.edn`, the `:+realworld` profile `:extra-deps`
+2. `deps.edn`, the `:+realworld` profile `:extra-paths` (its `test` and
    `test-resources` directories)
 3. `projects/{{main}}/deps.edn`, `:deps`
 

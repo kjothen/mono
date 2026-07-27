@@ -1,5 +1,5 @@
 {:compact-views #{}
- :default-profile-name "example"
+ :default-profile-name "realworld"
  :interface-ns "interface"
  :projects {"development" {:alias "dev"}
             "{{main}}" {:alias "{{main}}"}}

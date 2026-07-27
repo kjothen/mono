@@ -1,8 +1,8 @@
-(ns dev.example-api
+(ns dev.realworld-api
   (:require
     com.repldriven.mono.testcontainers.interface
 
-    [{{top-ns}}.example-api.main :as main]))
+    [{{top-ns}}.realworld-api.main :as main]))
 
 ;; before starting the system:
 ;; * on Mac OS X, start docker (just start-docker),
@@ -14,7 +14,7 @@
 ;; required images for FDB, etc
 
 (comment
-  (def sys (main/start "classpath:example-api/application-test.yml" :dev))
+  (def sys (main/start "classpath:realworld-api/application-test.yml" :dev))
   (tap> sys)
   (main/stop sys))
 
