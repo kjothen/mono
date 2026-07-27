@@ -38,20 +38,38 @@ or delete them freely.
 ## Prerequisites
 
 The starter bricks demonstrate a protobuf and FoundationDB pipeline, which is
-the most demanding thing mono supports. You need:
+the most demanding thing mono supports.
+
+The quickest route is [nix](https://nixos.org/download) and
+[direnv](https://direnv.net). `flake.nix` pins the whole native toolchain at
+the versions mono `{{mono/tag}}` was built against, so:
+
+```bash
+direnv allow     # or: nix develop
+just doctor      # confirms what is actually on PATH
+```
+
+Without nix you need these yourself, at these versions:
 
 - Java 21 and the Clojure CLI
-- [`protoc`](https://github.com/protocolbuffers/protobuf) 25.8 and the
-  [`protoc-gen-clojure`](https://github.com/protojure/protoc-plugin) plugin on
-  `PATH`, for code generation
+- [`protoc`](https://github.com/protocolbuffers/protobuf)
+  `{{toolchain/protoc-version}}` and
+  [`protoc-gen-clojure`](https://github.com/protojure/protoc-plugin)
+  `{{toolchain/protoc-gen-clojure-version}}` on `PATH`, for code generation
 - The [FoundationDB](https://github.com/apple/foundationdb/releases) client
-  library 7.4.6, to run anything that touches `fdb`
+  library `{{toolchain/fdb-version}}`, to run anything that touches `fdb`
 - Docker, to run the tests (they use testcontainers)
 - Network access on first generation, to resolve the pinned mono release
 
+The versions are exact, not minimums, and both failures are silent until
+runtime. A FoundationDB client only talks to a cluster sharing its protocol
+version, and a newer `protoc` emits code for the protobuf 4 runtime, which the
+FDB Record Layer mono pins does not support. `just doctor` reports both.
+
 If you do not want FoundationDB, delete `components/example-bookmark` and
 `bases/example-api`, remove them from the three registration sites below, and
-the protobuf and FDB prerequisites go away with them.
+the protobuf and FDB prerequisites go away with them — along with the need for
+`flake.nix`.
 
 ## First run
 

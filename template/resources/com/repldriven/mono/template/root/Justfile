@@ -5,6 +5,44 @@ DOMAIN_ALIASES := ":+example"
 list:
     just --list
 
+# Check the native toolchain on PATH against what mono {{mono/tag}} requires.
+# The versions below were stamped in at generation time; flake.nix provides
+# them, and this is what tells you what is wrong when it is not active.
+doctor:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    fail=0
+    check() {
+      local name="$1" want="$2" got="$3"
+      if [ -z "$got" ]; then
+        printf '  %-19s \033[31mmissing\033[0m (need %s)\n' "$name" "$want"
+        fail=1
+      elif [ "$got" = "$want" ]; then
+        printf '  %-19s \033[32m%s\033[0m\n' "$name" "$got"
+      else
+        printf '  %-19s \033[31m%s\033[0m (need %s)\n' "$name" "$got" "$want"
+        fail=1
+      fi
+    }
+    echo "Native toolchain, against mono {{mono/tag}}:"
+    check foundationdb "{{toolchain/fdb-version}}" \
+      "$(fdbcli --version 2>/dev/null | sed -n '1s/.*(v\([0-9.]*\)).*/\1/p')"
+    check protoc "{{toolchain/protoc-version}}" \
+      "$(protoc --version 2>/dev/null | awk '{print $2}')"
+    check protoc-gen-clojure "{{toolchain/protoc-gen-clojure-version}}" \
+      "$(protoc-gen-clojure -v 2>/dev/null | sed -n 's/.*v\([0-9.]*\).*/\1/p')"
+    if [ "$fail" -ne 0 ]; then
+      echo
+      echo "Run 'direnv allow' to get these from flake.nix, or install them at"
+      echo "the versions above. A mismatched FoundationDB client cannot talk to"
+      echo "the test cluster, and a newer protoc emits protobuf 4 code that the"
+      echo "FDB Record Layer this release pins cannot load."
+      echo
+      echo "If you do not use FoundationDB, see the readme on removing the"
+      echo "example bricks; these prerequisites go away with them."
+      exit 1
+    fi
+
 # One-off after generating this workspace: run protobuf codegen. Required
 # before any classpath will build, because example-bookmark declares
 # :deps/prep-lib and its "classes" path does not exist until prep has run.

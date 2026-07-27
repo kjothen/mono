@@ -22,6 +22,7 @@
   rename map is flat, so moving `src/com/repldriven/mono/example_bookmark/` to
   `src/com/acme/bookmarks/example_bookmark/` cannot be expressed either."
   (:require
+    [clojure.data.json :as json]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.pprint :as pprint]
@@ -110,6 +111,38 @@
          :sha resolved
          :dir (gitlibs/procure url mono-lib resolved)
          :local? false}))))
+
+(defn- toolchain-data
+  "Read versions.json out of the pinned mono checkout, as substitution values
+  for the generated workspace's flake.nix.
+
+  Stamping the versions in is the whole point. A generated workspace pins one
+  mono release, and the native toolchain that release was built and tested
+  against is a property of it: the FoundationDB client must match the server
+  the testcontainers image builds, and protoc must stay on the line that emits
+  code for the pinned protobuf-java runtime. Shipping a versions.json for the
+  consumer to read instead would be a second copy, free to drift from the
+  release it accompanies."
+  [mono-dir]
+  (let [f (io/file mono-dir "versions.json")]
+    (when-not (.exists f)
+      (die "versions.json is missing from the mono checkout"
+           {:mono/dir mono-dir}))
+    (let [v (json/read-str (slurp f))
+          at (fn [& ks]
+               (or (get-in v ks)
+                   (die (str "versions.json has no " (str/join "." ks))
+                        {:mono/dir mono-dir :path ks})))]
+      {:toolchain/fdb-version (at "foundationdb" "version")
+       :toolchain/fdb-sha256-aarch64 (at "foundationdb" "sha256" "aarch64")
+       :toolchain/fdb-sha256-x86-64 (at "foundationdb" "sha256" "x86_64")
+       :toolchain/protoc-version (at "protoc" "version")
+       :toolchain/protoc-sha256-aarch64 (at "protoc" "sha256" "aarch64")
+       :toolchain/protoc-sha256-x86-64 (at "protoc" "sha256" "x86_64")
+       :toolchain/protoc-gen-clojure-version
+       (at "protoc-gen-clojure" "version")
+       :toolchain/protoc-gen-clojure-sha256
+       (at "protoc-gen-clojure" "sha256")})))
 
 (defn- workspace-top-ns
   "The Polylith :top-namespace for the generated workspace.
@@ -229,8 +262,9 @@
   returns the template EDN augmented with substitution data.
 
   Everything returned here lands in the substitution map, so generated files can
-  refer to {{mono/url}}, {{mono/tag}}, {{mono/sha}}, {{top-ns}}, {{top-ns/file}}
-  and the {{starter/*}} registration blocks.
+  refer to {{mono/url}}, {{mono/tag}}, {{mono/sha}}, {{top-ns}}, {{top-ns/file}},
+  the {{starter/*}} registration blocks, and the {{toolchain/*}} native tool
+  versions that the generated flake.nix is built from.
 
   :top-ns is left unqualified so deps-new synthesises the /ns and /file variants
   from it. The :mono/* and :starter/* keys are qualified, so they substitute as
@@ -269,6 +303,7 @@
         :mono/project-test-runner-coord
         (coord mono "bases/external-test-runner" 5)
         :mono/build-coord (coord mono "bases/build" 24)}
+       (toolchain-data dir)
        (registration-data {:mono-dir dir :top-ns top-ns :bricks bricks})))))
 
 ;; ---------------------------------------------------------------------------
