@@ -28,7 +28,8 @@
 ;; there is no snapshot channel, so it requires a version bump.
 {:paths []
  :deps
- {com.repldriven.mono.components/avro {:local/root "../../components/avro"}
+ {com.repldriven.mono.components/auth {:local/root "../../components/auth"}
+  com.repldriven.mono.components/avro {:local/root "../../components/avro"}
   com.repldriven.mono.components/cache {:local/root "../../components/cache"}
   com.repldriven.mono.components/cli {:local/root "../../components/cli"}
   com.repldriven.mono.components/command {:local/root "../../components/command"}

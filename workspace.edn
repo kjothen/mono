@@ -7,7 +7,7 @@
             ;; else depends on looks unnecessary to warning 207. Listing them as
             ;; :necessary is how a base-less project is declared intentional.
             "mono-lib" {:alias "lib"
-                        :necessary ["cache" "cli" "command-processor"
+                        :necessary ["auth" "cache" "cli" "command-processor"
                                     "command-schema" "event-processor"
                                     "event-schema" "fdb" "jdbc" "kafka"
                                     "keycloak" "migrator" "mqtt"
@@ -18,7 +18,8 @@
             ;; is consumed by REPLACING mono-lib on the :test alias, so it has
             ;; to be a superset. See its deps.edn header.
             "mono-test-lib" {:alias "test-lib"
-                             :necessary ["cache" "cli" "command-processor"
+                             :necessary ["auth" "cache" "cli"
+                                         "command-processor"
                                          "command-schema" "event-processor"
                                          "event-schema" "fdb" "jdbc" "kafka"
                                          "keycloak" "migrator" "mqtt"

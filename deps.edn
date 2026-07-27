@@ -1,7 +1,8 @@
 {:aliases
  {:dev
   {:extra-deps
-   {components/avro {:local/root "components/avro"}
+   {components/auth {:local/root "components/auth"}
+    components/avro {:local/root "components/avro"}
     components/cache {:local/root "components/cache"}
     components/cli {:local/root "components/cli"}
     components/command {:local/root "components/command"}
@@ -52,7 +53,8 @@
    :extra-paths ["development/resources"]
    :jvm-opts
    ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"]}
-  :test {:extra-paths ["components/avro/test"
+  :test {:extra-paths ["components/auth/test"
+                       "components/avro/test"
                        "components/cache/test"
                        "components/cli/test"
                        "components/command/test"

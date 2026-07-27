@@ -38,7 +38,9 @@
 ;; -internal anyway: it wires our bricks, and only our brick tests !include it.
 {:paths []
  :deps
- {com.repldriven.mono.components/avro
+ {com.repldriven.mono.components/auth
+  {:local/root "../../components/auth"}
+  com.repldriven.mono.components/avro
   {:local/root "../../components/avro"}
   com.repldriven.mono.components/cache
   {:local/root "../../components/cache"}
