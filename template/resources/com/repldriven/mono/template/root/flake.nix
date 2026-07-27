@@ -1,5 +1,26 @@
 {
-  description = "Clojure monorepo development environment";
+  description = "{{main}} development environment";
+
+  # Native toolchain for a workspace built on mono.
+  #
+  # The versions below are not editable defaults: they were stamped in at
+  # generation time from the versions.json of the mono release this workspace
+  # pins ({{mono/tag}}), because they are a property of that release rather
+  # than a local preference.
+  #
+  #   FoundationDB  the client must share a protocol version with the server
+  #                 mono's testcontainers image builds, or tests fail at
+  #                 connect time with an error that mentions no versions
+  #   protoc        must stay on the line that emits code for the protobuf-java
+  #                 runtime mono pins; a newer protoc targets protobuf 4, which
+  #                 the FoundationDB Record Layer does not support
+  #
+  # To move them, take a newer mono release and regenerate, rather than editing
+  # here. If you do not use FoundationDB, this whole file is optional; see the
+  # prerequisites section of the readme.
+  #
+  # Targets macOS, matching mono's own devshell: the protoc and FoundationDB
+  # archives fetched below are the macOS builds.
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -20,38 +41,16 @@
           config.allowUnsupportedSystem = true;
         };
 
-        # Native toolchain versions come from versions.json, which is the
-        # single source of truth shared with CI, `just doctor`, and the
-        # deps-new template generator. Bump a version there, not here.
-        versions = builtins.fromJSON (builtins.readFile ./versions.json);
-
-        # Fetch pre-built FDB binary directly from GitHub releases.
-        #
-        # On 7.4.x rather than 7.3.x because 7.3.75 is the last 7.3 release
-        # that ships macOS .pkg assets — 7.3.76 through 7.3.79 publish Linux
-        # artifacts only (.deb, .rpm, libfdb_c.*.so), leaving this derivation
-        # nothing to unpack. macOS packaging resumes in 7.4.x, with the same
-        # internal layout (FoundationDB-clients.pkg/Payload -> usr/local),
-        # so the unpack below is unchanged.
-        #
-        # FDB requires a compatible protocol version between client and
-        # cluster, so this client and the FDB server built by the
-        # testcontainers image must agree. Everything driven by versions.json
-        # moves together automatically; the two values that cannot read it are
-        # org.foundationdb/fdb-java in components/fdb/deps.edn and fdb-version
-        # in the testcontainers component, which is published as a library and
-        # so must stay self-contained. A test asserts that pair still matches.
-        fdbVersion = versions.foundationdb.version;
         fdbArch = if pkgs.stdenv.isAarch64 then "arm64" else "x86_64";
         fdbBinary = pkgs.stdenv.mkDerivation {
-          name = "foundationdb-${fdbVersion}";
+          name = "foundationdb-{{toolchain/fdb-version}}";
           src = pkgs.fetchurl {
-            url = "https://github.com/apple/foundationdb/releases/download/${fdbVersion}/FoundationDB-${fdbVersion}_${fdbArch}.pkg";
+            url = "https://github.com/apple/foundationdb/releases/download/{{toolchain/fdb-version}}/FoundationDB-{{toolchain/fdb-version}}_${fdbArch}.pkg";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                versions.foundationdb.sha256.aarch64
+                "{{toolchain/fdb-sha256-aarch64}}"
               else
-                versions.foundationdb.sha256.x86_64;
+                "{{toolchain/fdb-sha256-x86-64}}";
           };
           buildInputs = [
             pkgs.xar
@@ -68,12 +67,11 @@
           '';
         };
 
-        protocGenClojureVersion = versions."protoc-gen-clojure".version;
         protocGenClojure = pkgs.stdenv.mkDerivation {
-          name = "protoc-gen-clojure-${protocGenClojureVersion}";
+          name = "protoc-gen-clojure-{{toolchain/protoc-gen-clojure-version}}";
           src = pkgs.fetchurl {
-            url = "https://github.com/protojure/protoc-plugin/releases/download/v${protocGenClojureVersion}/protoc-gen-clojure";
-            sha256 = versions."protoc-gen-clojure".sha256;
+            url = "https://github.com/protojure/protoc-plugin/releases/download/v{{toolchain/protoc-gen-clojure-version}}/protoc-gen-clojure";
+            sha256 = "{{toolchain/protoc-gen-clojure-sha256}}";
           };
           dontUnpack = true;
           installPhase = ''
@@ -83,20 +81,16 @@
           '';
         };
 
-        # protoc must stay on the 25.x line: protobuf-java is pinned to 3.25.8
-        # for the FDB Record Layer, and a newer protoc emits code targeting the
-        # protobuf 4 runtime.
-        protocVersion = versions.protoc.version;
         protocArch = if pkgs.stdenv.isAarch64 then "aarch_64" else "x86_64";
         protocBinary = pkgs.stdenv.mkDerivation {
-          name = "protoc-${protocVersion}";
+          name = "protoc-{{toolchain/protoc-version}}";
           src = pkgs.fetchurl {
-            url = "https://github.com/protocolbuffers/protobuf/releases/download/v${protocVersion}/protoc-${protocVersion}-osx-${protocArch}.zip";
+            url = "https://github.com/protocolbuffers/protobuf/releases/download/v{{toolchain/protoc-version}}/protoc-{{toolchain/protoc-version}}-osx-${protocArch}.zip";
             sha256 =
               if pkgs.stdenv.isAarch64 then
-                versions.protoc.sha256.aarch64
+                "{{toolchain/protoc-sha256-aarch64}}"
               else
-                versions.protoc.sha256.x86_64;
+                "{{toolchain/protoc-sha256-x86-64}}";
           };
           sourceRoot = ".";
           nativeBuildInputs = [ pkgs.unzip ];
@@ -111,10 +105,8 @@
 
         # Wrap clojure/clj to always set DYLD_LIBRARY_PATH for the FDB native
         # library. DYLD_* vars are stripped by macOS SIP when launching
-        # restricted processes (e.g. Claude Code), so env inheritance is
-        # unreliable — the wrapper bakes the path in at the binary level.
-        # Both binaries are wrapped: clojure (raw CLI) and clj (rlwrap
-        # variant for interactive REPLs).
+        # restricted processes, so env inheritance alone is unreliable — the
+        # wrapper bakes the path in at the binary level.
         clojureWithFdb = pkgs.writeShellScriptBin "clojure" ''
           export DYLD_LIBRARY_PATH="${libPath}:$DYLD_LIBRARY_PATH"
           exec ${pkgs.clojure}/bin/clojure "$@"
@@ -126,32 +118,26 @@
 
       in
       {
+        # Deliberately smaller than mono's own devshell. Formatting and linting
+        # come from deps.edn aliases (:format/zprint, :lint/clj-kondo), so they
+        # are not needed here.
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pkgs.babashka
             cljWithFdb
             clojureWithFdb
-            pkgs.clj-kondo
-            pkgs.clojure-lsp
             pkgs.colima
             pkgs.docker
             pkgs.docker-credential-helpers
             fdbBinary
             pkgs.jdk21
-            pkgs.jq
             pkgs.just
-            pkgs.k6
-            pkgs.openssl
             protocBinary
             protocGenClojure
-            pkgs.pnpm
-            pkgs.semgrep
-            pkgs.zprint
           ];
 
           shellHook = ''
             # Ensure the pinned protoc takes precedence over any protoc
-            # inherited from parent direnv environments (e.g. buf's protoc)
+            # inherited from a parent direnv environment
             export PATH="${protocBinary}/bin:$PATH"
 
             # Make libfdb_c findable by the JVM's JNI loader
@@ -163,13 +149,10 @@
             export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="/var/run/docker.sock"
             export TESTCONTAINERS_REUSE_ENABLE="TRUE"
 
-            echo "FDB libs: ${libPath}"
-            echo "fdbcli: $(command -v fdbcli || echo 'not found')"
-            echo "protoc-gen-clojure: $(protoc-gen-clojure -v 2>&1 || echo 'not found')"
             if ! colima status &>/dev/null; then
               echo "Docker not running — use 'just start-docker' to start"
             fi
-            echo "Clojure monorepo environment loaded"
+            echo "{{main}} environment loaded (mono {{mono/tag}})"
           '';
         };
       }

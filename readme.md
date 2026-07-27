@@ -27,7 +27,7 @@ Generate a Polylith workspace already wired to mono as a library:
 clojure -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
 
 clojure -Tnew create \
-  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.12' \
+  :template 'io.github.repldriven/mono%template%com.repldriven.mono/template#v0.0.13' \
   :name com.acme/my-thing
 ```
 
@@ -50,7 +50,7 @@ involved; everything resolves from a tag and its sha.
 ```clojure
 {:deps {com.repldriven/mono
         {:git/url "https://github.com/repldriven/mono.git"
-         :git/tag "v0.0.12"
+         :git/tag "v0.0.13"
          :git/sha "<full-sha>"
          :deps/root "projects/mono-lib"}}
 
@@ -58,7 +58,7 @@ involved; everything resolves from a tag and its sha.
  {:test {:extra-deps
          {com.repldriven/mono
           {:git/url "https://github.com/repldriven/mono.git"
-           :git/tag "v0.0.12"
+           :git/tag "v0.0.13"
            :git/sha "<full-sha>"
            :deps/root "projects/mono-test-lib"}}}}}
 ```
@@ -108,6 +108,20 @@ Verify your setup with:
 ```bash
 ./scripts/check-setup.sh
 ```
+
+That checks you have nix and direnv. Once the environment is active, check that
+the native toolchain on `PATH` is the one this workspace pins:
+
+```bash
+just doctor
+```
+
+Those versions live in `versions.json`, the single source that `flake.nix`, CI,
+and the workspace template all build from. Two of them are exact rather than
+minimums: the FoundationDB client must share a protocol version with the server
+the testcontainers image builds, and `protoc` must stay on the line that emits
+code for the pinned `protobuf-java`. Both fail at runtime rather than at build
+time, which is what `just doctor` exists to catch.
 
 ### Run all tests
 

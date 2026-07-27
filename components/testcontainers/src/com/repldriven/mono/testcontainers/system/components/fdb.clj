@@ -8,7 +8,7 @@
     (org.testcontainers.containers.wait.strategy Wait)
     (org.testcontainers.images.builder ImageFromDockerfile)))
 
-(def fdb-version "7.3.75")
+(def fdb-version "7.4.6")
 (def default-image-name (str "mono/foundationdb:" fdb-version))
 
 (defn- fdb-image
@@ -16,11 +16,17 @@
 
   Read from the classpath rather than from a path relative to the workspace
   root, so the component is self-contained when consumed as a library. A
-  consuming workspace has no infra directory of ours to find."
+  consuming workspace has no infra directory of ours to find.
+
+  `fdb-version` is passed as a build arg rather than defaulted in the
+  Dockerfile, so the server version has one definition in this component
+  instead of two that can drift. A test asserts it still matches
+  versions.json, which is what the client is built from."
   [image-name]
   (-> (ImageFromDockerfile. image-name false)
       (.withFileFromClasspath "Dockerfile" "fdb/Dockerfile")
-      (.withFileFromClasspath "fdb.bash" "fdb/fdb.bash")))
+      (.withFileFromClasspath "fdb.bash" "fdb/fdb.bash")
+      (.withBuildArg "FDB_VERSION" fdb-version)))
 
 (defn- free-port
   "Finds a free port by briefly opening and closing a server socket."

@@ -62,15 +62,27 @@ jobs:
       # Needed only by the template check: the starter brick declares
       # :deps/prep-lib, so its classpath cannot be built until codegen has run.
       # No FoundationDB client and no Docker: nothing here starts a container.
+      # versions.json is the single source of truth the nix devshell also
+      # builds from, so CI and a local shell cannot drift apart.
+      - name: Read toolchain versions
+        id: versions
+        run: |
+          set -euo pipefail
+          {
+            echo "protoc=$(jq -r '.protoc.version' versions.json)"
+            echo "protoc_gen_clojure=$(jq -r '."protoc-gen-clojure".version' versions.json)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Setup Protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: "25.8"
+          version: ${{ steps.versions.outputs.protoc }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install protoc-gen-clojure
         run: |
-          sudo curl -L https://github.com/protojure/protoc-plugin/releases/latest/download/protoc-gen-clojure \
+          set -euo pipefail
+          sudo curl -fL "https://github.com/protojure/protoc-plugin/releases/download/v${{ steps.versions.outputs.protoc_gen_clojure }}/protoc-gen-clojure" \
             -o /usr/local/bin/protoc-gen-clojure
           sudo chmod +x /usr/local/bin/protoc-gen-clojure
 
@@ -270,15 +282,27 @@ jobs:
         with:
           cli: latest
 
+      # versions.json is the single source of truth the nix devshell also
+      # builds from, so CI and a local shell cannot drift apart.
+      - name: Read toolchain versions
+        id: versions
+        run: |
+          set -euo pipefail
+          {
+            echo "protoc=$(jq -r '.protoc.version' versions.json)"
+            echo "protoc_gen_clojure=$(jq -r '."protoc-gen-clojure".version' versions.json)"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Setup Protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: "25.8"
+          version: ${{ steps.versions.outputs.protoc }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install protoc-gen-clojure
         run: |
-          sudo curl -L https://github.com/protojure/protoc-plugin/releases/latest/download/protoc-gen-clojure \
+          set -euo pipefail
+          sudo curl -fL "https://github.com/protojure/protoc-plugin/releases/download/v${{ steps.versions.outputs.protoc_gen_clojure }}/protoc-gen-clojure" \
             -o /usr/local/bin/protoc-gen-clojure
           sudo chmod +x /usr/local/bin/protoc-gen-clojure
 

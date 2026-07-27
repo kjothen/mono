@@ -47,4 +47,8 @@ projects/**/.lsp
 **/.nrepl-port
 .rebel_readline_history
 .eastwood
+
+# nix
 .direnv/
+result
+result-*
