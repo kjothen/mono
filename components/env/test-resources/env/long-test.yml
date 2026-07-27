@@ -1,3 +1,5 @@
 system:
   from-literal: !long 8091
   from-quoted: !long "8091"
+  from-env: !long [!or [!env MONO_TEST_LONG_ABSENT, 8080]]
+  or-alone: !or [!env MONO_TEST_LONG_ABSENT, "fallback"]

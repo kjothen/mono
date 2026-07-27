@@ -68,4 +68,4 @@ system:
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
       options:
-        port: !long-env REALWORLD_PORT
+        port: !long [!or [!env REALWORLD_PORT, 8091]]
