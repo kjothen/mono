@@ -27,8 +27,14 @@
 
   <!-- Known/accepted: CVE-2024-7254 affects protobuf-java 4.28.0 (fixed in 4.28.2+).
        Brought in by protojure, which is required at runtime by the generated
-       Clojure protobuf code. FDB Record Layer 4.10.4.0 is incompatible with
-       4.28.2+ specifically — tested 4.28.2, 4.33.5, 4.34.0, all fail.
+       Clojure protobuf code. FDB Record Layer is incompatible with 4.28.2+
+       specifically — tested 4.28.2, 4.33.5, 4.34.0, all fail — so protobuf-java
+       is pinned to 3.25.8 in the top-level deps.edn.
+       Upstream is not close to fixing this: the Record Layer shipped protobuf 4
+       in 4.11 and reverted it a week later (FoundationDB/fdb-record-layer#3286,
+       2025-04-02), citing the same multi-dependency compatibility problem. As of
+       Record Layer 4.12.14.0 the declared dependency is still protobuf-java
+       3.25.8, and there is no protobuf-4 artifact variant.
        Risk is accepted until FDB Record Layer ships a compatible release. -->
   <suppress>
     <packageUrl regex="true">^pkg:maven/com\.google\.protobuf/protobuf-java@.*$</packageUrl>
