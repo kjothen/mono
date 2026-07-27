@@ -25,6 +25,16 @@
         (let [credential (str/trim credential)]
           (when (seq credential) credential))))))
 
+(defn- ->signer
+  "A signer, from either a signer or something that finds one.
+
+  Interceptors are built once, at routing time, but a signer is a started
+  system component that only reaches the request later. Accepting a
+  resolver means a caller can pass `:signer` — a keyword is a function of
+  the request — instead of having to thread the component through routing."
+  [signer request]
+  (if (map? signer) signer (signer request)))
+
 (defn token-interceptor
   "Interceptor that verifies a bearer credential and assocs its claims
   onto the request.
@@ -40,9 +50,12 @@
          claims-key (or claims-key default-claims-key)]
      {:name ::token
       :enter (fn [ctx]
-               (let [header (get-in ctx [:request :headers "authorization"])
+               (let [{:keys [request]} ctx
+                     header (get-in request [:headers "authorization"])
                      credential (header->token header schemes)
-                     claims (when credential (token/verify signer credential))]
+                     claims (when credential
+                              (token/verify (->signer signer request)
+                                            credential))]
                  (if (and claims (not (error/anomaly? claims)))
                    (assoc-in ctx [:request claims-key] claims)
                    ctx)))})))

@@ -95,7 +95,11 @@
   Pair it with `require-auth` where a credential is mandatory.
 
   Args:
-  - signer: an `auth/signer` instance.
+  - signer: an `auth/signer` instance, or a function of the request that
+    returns one — a keyword works, so `:signer` reads it off the request.
+    Interceptors are built before a started component can reach them, so
+    the indirection is what lets a route be wired without threading the
+    component through routing.
   - opts: `{:schemes #{\"token\"} :claims-key :auth-claims}`, both optional."
   ([signer] (interceptors/token-interceptor signer))
   ([signer opts] (interceptors/token-interceptor signer opts)))

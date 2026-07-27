@@ -107,3 +107,20 @@
     (let [realworld {:status 401 :body {:errors {:token ["is missing"]}}}
           ctx (enter (SUT/require-auth realworld) {:headers {}})]
       (is (= realworld (:response ctx))))))
+
+(deftest signer-from-request-test
+  (testing "a signer can be resolved from the request rather than fixed"
+    ;; Interceptors are built at routing time, before a started system
+    ;; component can reach them, so a keyword resolver is how a route gets
+    ;; wired without threading the component through routing.
+    (let [jwt (SUT/sign-token signer {:sub "user-1"})
+          interceptor (SUT/token-interceptor :signer)
+          ctx (enter interceptor
+                     {:signer signer
+                      :headers {"authorization" (str "Token " jwt)}})]
+      (is (= "user-1" (get-in ctx [:request :auth-claims :sub])))))
+  (testing "a plain signer map still works"
+    (let [jwt (SUT/sign-token signer {:sub "user-2"})
+          ctx (enter (SUT/token-interceptor signer)
+                     {:headers {"authorization" (str "Token " jwt)}})]
+      (is (= "user-2" (get-in ctx [:request :auth-claims :sub]))))))
