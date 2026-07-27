@@ -269,13 +269,8 @@ nvd project="":
     clojure -J-Dclojure.main.report=stderr -J-Danalyzer.ossindex.enabled=false -J-Ddata.directory="$data_dir" -M:nvd "nvd-clojure.edn" "$classpath"
 
 # Linter
-lint-eastwood:
-    clojure -M{{ DOMAIN_ALIASES }}:dev:test:lint/eastwood
-lint-clj-kondo:
-    clojure -M:lint/clj-kondo --lint bases components projects template/src deps.edn workspace.edn
 lint:
-  just lint-eastwood
-  just lint-clj-kondo
+    clojure -M:lint/clj-kondo --lint bases components projects template/src deps.edn workspace.edn
 
 # Formatter - uses .zprint.edn config in project root
 format:
