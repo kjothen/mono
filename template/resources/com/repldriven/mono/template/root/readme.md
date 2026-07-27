@@ -82,10 +82,11 @@ just realworld-hurl     # starts postgres and the service, runs all 13 files
 
 Where the suite and your own tests disagree, the suite is the contract.
 
-The API allows browser requests from `http://localhost:3000` and
-`http://localhost:4100`, which is where the RealWorld frontends run. Change
-that under `server.jetty-adapter.cors.origins` in
-`bases/realworld-api/resources/realworld-api/application.yml`.
+The API allows browser requests from `http://localhost:3000`, where the
+RealWorld frontends run. Set `REALWORLD_CORS_ORIGIN` to point it at a
+deployed frontend instead; `server.jetty-adapter.cors.origins` in
+`bases/realworld-api/resources/realworld-api/application.yml` takes a list,
+if you need more than one.
 
 ## Adding a brick
 

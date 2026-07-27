@@ -82,10 +82,10 @@ system:
       handler: !system/local-ref handler
       interceptors: !system/local-ref interceptors
       cors:
-        # Where the RealWorld frontends run.
+        # A list, though one origin is the normal case: a deployment has one
+        # frontend, and dev has localhost.
         origins:
-          - http://localhost:3000
-          - http://localhost:4100
+          - !or [!env REALWORLD_CORS_ORIGIN, "http://localhost:3000"]
       options:
         port: !profile
           dev: 8080

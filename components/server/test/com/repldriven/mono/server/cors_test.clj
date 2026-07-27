@@ -54,9 +54,18 @@
           "RealWorld sends its token in Authorization, so it must be allowed")
       (is (re-find #"DELETE"
                    (get-in res [:headers "Access-Control-Allow-Methods"])))))
+  (testing "a single origin as a bare string works, not as a set of chars"
+    ;; Config makes this easy to reach: one origin is the normal case, and
+    ;; (set "http://...") would silently match nothing.
+    (let [res (call {:origins "http://localhost:3000"}
+                    {:request-method :get
+                     :headers {"origin" "http://localhost:3000"}})]
+      (is (= "http://localhost:3000"
+             (get-in res [:headers "Access-Control-Allow-Origin"])))))
   (testing "no origins configured means the handler is returned unchanged"
     (is (identical? handler (SUT/wrap-cors handler nil)))
-    (is (identical? handler (SUT/wrap-cors handler {:origins []}))))
+    (is (identical? handler (SUT/wrap-cors handler {:origins []})))
+    (is (identical? handler (SUT/wrap-cors handler {:origins ""}))))
   (testing "options are overridable"
     (let [res (call {:origins origins
                      :methods ["GET"]

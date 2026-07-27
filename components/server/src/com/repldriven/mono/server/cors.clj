@@ -8,13 +8,25 @@
 
 (def default-max-age 3600)
 
+(defn- ->set
+  "One origin or many, blanks dropped.
+
+  A bare string would otherwise become a set of its characters. Blanks are
+  reachable from config — an env var set but empty resolves to \"\" rather
+  than nil — and a whitelist containing \"\" matches nothing while still
+  looking configured."
+  [origins]
+  (into #{}
+        (remove str/blank?)
+        (if (string? origins) [origins] origins)))
+
 (defn- allowed
   "The origin to echo back, or nil.
 
   Echoed rather than listed: `Access-Control-Allow-Origin` takes one origin
   or `*`, so a whitelist has to answer per request."
   [origin origins]
-  (when (and origin (contains? (set origins) origin)) origin))
+  (when (and origin (contains? (->set origins) origin)) origin))
 
 (defn- headers
   [origin opts]
@@ -40,7 +52,7 @@
 (defn wrap-cors
   [handler opts]
   (let [{:keys [origins]} opts]
-    (if (empty? origins)
+    (if (empty? (->set origins))
       handler
       (fn [request]
         (let [origin (allowed (get-in request [:headers "origin"]) origins)]
