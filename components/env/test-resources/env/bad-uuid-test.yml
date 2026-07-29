@@ -1,0 +1,4 @@
+system:
+  path: !profile
+    dev: !uuid "definitely-not-a-uuid"
+    default: meta
