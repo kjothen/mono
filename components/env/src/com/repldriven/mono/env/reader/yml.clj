@@ -49,6 +49,21 @@
   [{:keys [value]}]
   (symbol (str "#or " (util/yaml-collections->edn-collections value))))
 
+;; Concatenates its sequence into one string, so a value can be built from
+;; parts: `!join ["meta-", !uuid ""]`.
+(defmethod yml-reader :!join
+  [{:keys [value]}]
+  (symbol (str "#join " (util/yaml-collections->edn-collections value))))
+
+;; `!random-uuid` generates one. It takes no value, but EDN has no
+;; zero-argument tagged literal, so a nil is supplied for it.
+(defmethod yml-reader :!random-uuid [_] (symbol "#random-uuid nil"))
+
+;; `!uuid "0192-..."` parses a literal, as `#uuid` does in EDN.
+(defmethod yml-reader :!uuid
+  [{:keys [value]}]
+  (symbol (str "#uuid " (pr-str value))))
+
 (defmethod yml-reader :!keyword [{:keys [value]}] (keyword value))
 
 (defmethod yml-reader :!keywords

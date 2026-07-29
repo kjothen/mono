@@ -1,0 +1,22 @@
+system:
+  # !random-uuid generates one; !uuid parses a literal, as #uuid does in EDN.
+  generated: !random-uuid
+  parsed: !uuid "0192f4e2-8f7a-7c3d-9b1e-2a4c6e8f0a1b"
+
+  # !join concatenates its sequence into one string.
+  plain-join: !join ["meta-", "fixed"]
+
+  # YAML rejects a bare tag as the last entry of a flow sequence, so a
+  # generated value inside !join is written either as a block sequence…
+  block-join: !join
+    - "meta-"
+    - !random-uuid
+
+  # …or with the empty scalar spelled out.
+  flow-join: !join ["meta-", !random-uuid ""]
+
+  path: !profile
+    dev: !join
+      - "meta-"
+      - !random-uuid
+    default: meta
