@@ -1,4 +1,4 @@
-(ns com.repldriven.mono.telemetry.span-tests
+(ns com.repldriven.mono.test-telemetry.span-tests
   (:require
     [steffan-westcott.clj-otel.api.trace.span :as span]
     [steffan-westcott.clj-otel.sdk.otel-sdk :as sdk]
