@@ -16,6 +16,9 @@
           true
           (.build)))
 
+;; OTLP over HTTP is the only exporter here, so that no service carries
+;; opentelemetry-sdk-testing on its runtime classpath. For spans collected in
+;; memory, name `test-telemetry/otel-sdk` in place of this component-kind.
 (def otel-sdk
   {:system/start
    (fn [{:system/keys [config instance]}]

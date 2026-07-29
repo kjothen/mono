@@ -36,6 +36,7 @@
     components/vault {:local/root "components/vault"}
     components/test-resources {:local/root "components/test-resources"}
     components/test-system {:local/root "components/test-system"}
+    components/test-telemetry {:local/root "components/test-telemetry"}
     components/testcontainers {:local/root "components/testcontainers"}
     components/utility {:local/root "components/utility"}
     bases/build {:local/root "bases/build"}
@@ -82,6 +83,9 @@
                        "components/system/test"
                        "components/test-resources/test-resources"
                        "components/telemetry/test"
+                       "components/telemetry/test-resources"
+                       "components/test-telemetry/test"
+                       "components/test-telemetry/test-resources"
                        "components/testcontainers/test"
                        "components/testcontainers/test-resources"
                        "components/utility/test"

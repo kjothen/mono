@@ -3,8 +3,7 @@
   (:require
     com.repldriven.mono.telemetry.system
     [com.repldriven.mono.telemetry.core :as core]
-    [com.repldriven.mono.telemetry.interceptors :as interceptors]
-    [com.repldriven.mono.telemetry.span-tests :as span-tests]))
+    [com.repldriven.mono.telemetry.interceptors :as interceptors]))
 
 ;; Tracing
 (defmacro with-span
@@ -69,22 +68,6 @@
   "Add a value to a counter with attributes."
   [counter value attrs]
   (core/add-counter! counter value attrs))
-
-;; Test support
-(defmacro with-span-tests
-  "Run body under an in-memory OTel SDK, then automatically assert:
-   - Each name in expected-names has a corresponding finished span
-   - All finished spans share the same trace ID (W3C propagation worked)
-
-   spans-sym is bound to a map of span-name -> SpanData after the body completes.
-   Use _ if you don't need to inspect individual spans.
-
-   Usage:
-     (with-span-tests [_ [\"process-command\"]]
-       (do-work))"
-  {:clj-kondo/lint-as 'clojure.core/let}
-  [[spans-sym expected-names] & body]
-  `(span-tests/with-span-tests [~spans-sym ~expected-names] ~@body))
 
 ;; Interceptors
 (def trace-span

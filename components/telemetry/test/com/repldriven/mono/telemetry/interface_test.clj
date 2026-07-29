@@ -1,8 +1,13 @@
-(ns com.repldriven.mono.telemetry.interface-test
+(ns ^:eftest/synchronized com.repldriven.mono.telemetry.interface-test
   (:require
     [com.repldriven.mono.telemetry.interface :as SUT]
 
-    [clojure.test :refer [deftest is testing]]))
+    [com.repldriven.mono.system.interface :as system]
+    [com.repldriven.mono.test-system.interface :refer [with-test-system]]
+
+    [clojure.test :refer [deftest is testing]])
+  (:import
+    (io.opentelemetry.exporter.otlp.http.trace OtlpHttpSpanExporter)))
 
 (deftest with-span-runs-its-body-once-test
   (testing "a successful body runs once and its value is returned"
@@ -58,3 +63,14 @@
     (is (some? (SUT/set-attribute :k "v"))))
   (testing "extract-parent-context always yields a context"
     (is (some? (SUT/extract-parent-context {})))))
+
+(deftest otel-sdk-component-test
+  (testing "a blank endpoint leaves the SDK unstarted"
+    (with-test-system [sys "classpath:telemetry/otlp-disabled-test.yml"]
+                      (is (nil? (system/instance sys [:telemetry :otel-sdk])))))
+  (testing "an endpoint gives OTLP over HTTP"
+    (with-test-system [sys "classpath:telemetry/otlp-test.yml"]
+                      (let [otel (system/instance sys [:telemetry :otel-sdk])]
+                        (is (some? (:sdk otel)))
+                        (is (instance? OtlpHttpSpanExporter
+                                       (:exporter otel)))))))

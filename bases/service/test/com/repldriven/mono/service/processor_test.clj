@@ -10,6 +10,7 @@
     [com.repldriven.mono.telemetry.interface :as telemetry]
     [com.repldriven.mono.test-system.interface :refer
      [with-test-system nom-test>]]
+    [com.repldriven.mono.test-telemetry.interface :as test-telemetry]
     [clojure.test :refer [deftest is testing]]))
 
 (defn send-command
@@ -38,7 +39,7 @@
   (testing "Commands sent are processed and replied to via message-bus"
     (with-test-system
      [sys "classpath:service/application-test.yml"]
-     (telemetry/with-span-tests
+     (test-telemetry/with-span-tests
       [_ ["send-command" "process-command"]]
       (let [schemas (system/instance sys [:avro :serde])]
         (nom-test> [result (send-command
