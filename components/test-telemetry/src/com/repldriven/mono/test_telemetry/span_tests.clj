@@ -7,9 +7,10 @@
     (io.opentelemetry.api GlobalOpenTelemetry)
     (io.opentelemetry.api.trace Span)
     (io.opentelemetry.sdk.testing.exporter InMemorySpanExporter)
+    (io.opentelemetry.sdk.trace.data SpanData)
     (io.opentelemetry.sdk.trace.export SimpleSpanProcessor)))
 
-(defonce shared-exporter (InMemorySpanExporter/create))
+(defonce ^InMemorySpanExporter shared-exporter (InMemorySpanExporter/create))
 
 (defonce sdk-lock (Object.))
 
@@ -26,6 +27,34 @@
                                            shared-exporter)]}})
   (span/set-default-tracer! (span/get-tracer)))
 
+(def ^:private await-tries 100)
+(def ^:private await-interval-ms 20)
+
+(defn- spans-by-name
+  [trace-id]
+  (into {}
+        (comp (filter (fn [^SpanData s]
+                        (= trace-id (.getTraceId (.getSpanContext s)))))
+              (map (fn [^SpanData s] [(.getName s) s])))
+        (.getFinishedSpanItems shared-exporter)))
+
+(defn await-spans
+  "Spans for `trace-id`, by name, once every name in
+  `expected-names` has one — or the tries run out, so a genuinely
+  missing span still fails its assertion rather than hanging.
+
+  A span reaches the exporter when it CLOSES, and a caller can be
+  unblocked from inside one: `command/process` sends its reply
+  within the `process-command` span, so the test thread resumes
+  while the consumer thread is still unwinding it. Reading once
+  races that unwind."
+  [trace-id expected-names]
+  (loop [n 0]
+    (let [spans (spans-by-name trace-id)]
+      (if (or (every? #(contains? spans %) expected-names) (>= n await-tries))
+        spans
+        (do (Thread/sleep await-interval-ms) (recur (inc n)))))))
+
 (defmacro with-span-tests
   "Run body under an in-memory OTel SDK, then automatically
   assert:
@@ -36,7 +65,8 @@
   Resets and re-installs the test SDK before each invocation
   to reclaim the global from any system component that may
   have overwritten it. Creates a root span to establish a
-  trace ID, then filters collected spans by that trace ID.
+  trace ID, then collects spans carrying that trace ID, waiting
+  for ones closed on another thread.
 
   spans-sym is bound to a map of span-name -> SpanData after
   the body completes. Use _ if you don't need to inspect
@@ -52,15 +82,12 @@
                       (reset! trace-id# (.getTraceId (.getSpanContext
                                                       (Span/current))))
                       ~@body)
-     (let [tid# @trace-id#
-           all-spans# (.getFinishedSpanItems shared-exporter)
-           test-spans# (filter #(= tid# (.getTraceId (.getSpanContext %)))
-                               all-spans#)
-           ~spans-sym (into {} (map (fn [s#] [(.getName s#) s#])) test-spans#)]
+     (let [~spans-sym (await-spans @trace-id# ~expected-names)]
        (doseq [n# ~expected-names]
          (is (some? (get ~spans-sym n#)) (str "Should have span named: " n#)))
        (let [trace-ids# (into #{}
-                              (map #(.getTraceId (.getSpanContext %)))
+                              (map (fn [^SpanData s#]
+                                     (.getTraceId (.getSpanContext s#))))
                               (vals ~spans-sym))]
          (is (= 1 (count trace-ids#))
              (str "Expected spans should share one trace ID, got: "

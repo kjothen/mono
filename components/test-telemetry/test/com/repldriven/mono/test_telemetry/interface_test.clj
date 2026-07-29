@@ -43,3 +43,25 @@
                          (telemetry/with-span ["outer" {}]
                                               (telemetry/with-span ["inner" {}]
                                                                    :done)))))
+
+(deftest with-span-tests-awaits-another-thread-test
+  (testing "a span still open when the caller resumes is waited for"
+    ;; The shape `command/process` has: the reply is sent from INSIDE the
+    ;; process-command span, so the caller unblocks while the consumer
+    ;; thread is still unwinding it. Reading finished spans once loses that
+    ;; race on a loaded machine.
+    (SUT/with-span-tests [_ ["async-work"]]
+                         (let [traceparent (telemetry/inject-traceparent)
+                               unblocked (promise)]
+                           (future (telemetry/with-span-parent
+                                    "async-work"
+                                    (telemetry/extract-parent-context
+                                     {:traceparent traceparent :tracestate nil})
+                                    {}
+                                    (fn []
+                                      (deliver unblocked :replied)
+                                      ;; the span closes well after the
+                                      ;; caller has moved on
+                                      (Thread/sleep 200))))
+                           (is (= :replied
+                                  (deref unblocked 5000 :timed-out)))))))
