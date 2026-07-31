@@ -55,10 +55,23 @@
                                                              :pet-2])
                                            500)]
          (async/put! stop :stop)
-         ;; the loop closes :c on its way out, so a take returns nil
-         ;; promptly
-         (let [[v _] (async/alts!! [c (async/timeout 10000)])]
-           (is (nil? v) "channel closed after stop"))))
+         ;; The loop closes :c on its way out, so a take eventually returns
+         ;; nil. Eventually, not immediately: if the polling thread reaches
+         ;; its stop check before this put lands, it polls first, and then
+         ;; races each record it fetched against the stop — so a record can
+         ;; arrive before the close. Drain to the close, which is what
+         ;; halting means here; asserting on the first take is asserting on
+         ;; that race.
+         (let [deadline (async/timeout 10000)
+               closed? (loop []
+                         (let [[v port] (async/alts!! [c deadline])]
+                           (cond (= port deadline)
+                                 false
+                                 (nil? v)
+                                 true
+                                 :else
+                                 (recur))))]
+           (is closed? "channel closed after stop"))))
      (testing "a failing send is an anomaly, not a throw"
        ;; an unserialisable value: the schema expects a map of pet fields
        (let [result (SUT/send producer "not-a-pet")]
