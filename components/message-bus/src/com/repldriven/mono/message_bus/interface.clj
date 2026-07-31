@@ -11,7 +11,17 @@
 (def Producer protocol/Producer)
 (def Consumer protocol/Consumer)
 
-(defn send [bus producer-name message] (core/send bus producer-name message))
+(defn send
+  "Send `message` to the named producer.
+
+  `opts` is per-send and backend-specific; a backend ignores what it
+  has no use for. `:key` is understood by every partitioned backend:
+  messages sharing a key are delivered in order, because they share a
+  partition. Without one, records round-robin and per-entity order
+  holds only while a topic has a single partition."
+  ([bus producer-name message] (core/send bus producer-name message))
+  ([bus producer-name message opts]
+   (core/send bus producer-name message opts)))
 
 (defn subscribe
   [bus consumer-name handler-fn]

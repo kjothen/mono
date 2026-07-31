@@ -6,7 +6,9 @@
 
 (defrecord LocalProducer [ch]
   proto/Producer
-    (send [_ message] (async/put! ch message)))
+    (send [_ message] (async/put! ch message))
+    ;; No partitions to key: a core.async channel is already ordered.
+    (send [_ message _opts] (async/put! ch message)))
 
 (defrecord LocalConsumer [ch stop-ch]
   proto/Consumer

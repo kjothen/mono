@@ -6,8 +6,10 @@
 (defrecord Bus [producers consumers])
 
 (defn send
-  [bus producer-name message]
-  (proto/send (get (:producers bus) producer-name) message))
+  ([bus producer-name message]
+   (proto/send (get (:producers bus) producer-name) message))
+  ([bus producer-name message opts]
+   (proto/send (get (:producers bus) producer-name) message opts)))
 
 (defn subscribe
   [bus consumer-name handler-fn]

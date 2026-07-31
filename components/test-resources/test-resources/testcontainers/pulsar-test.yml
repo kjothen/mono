@@ -45,6 +45,9 @@ schemas: !system/component
   pet:
     schema: schemas/pets/pet.avsc.json
     type: AVRO
+  event:
+    schema: schemas/event/event-envelope.avsc.json
+    type: AVRO
 
 tenants: !system/component
   system/component-kind: pulsar/tenants
@@ -87,6 +90,15 @@ topics: !system/component
     - topic: "persistent://tenant-1/namespace-1/topic-pet"
       partitions: 1
       schema: !keyword pet
+    # Partitioned, so a keyed publish has somewhere to choose between:
+    # Pulsar's default router hashes the key when one is set, and
+    # round-robins when it is not.
+    - topic: "persistent://tenant-1/namespace-1/topic-event"
+      partitions: 3
+      schema: !keyword event
+    - topic: "persistent://tenant-1/namespace-1/topic-event-retry"
+      partitions: 1
+      schema: !keyword event
 
 crypto-key-pair-file-readers: !system/component
   system/component-kind: pulsar/crypto-key-pair-file-readers
@@ -145,6 +157,26 @@ producers: !system/component
       encryptionKeys: [tenant-key-1]
       schema: !keyword pet
       topicName: "persistent://tenant-1/namespace-1/topic-pet"
+    schemas: !system/local-ref schemas
+  event:
+    _: !system/local-ref topics
+    client: !system/local-ref client
+    conf:
+      accessMode: !pulsar/access-mode Shared
+      cryptoKeyReader: !system/local-ref crypto-key-readers.r1
+      encryptionKeys: [tenant-key-1]
+      schema: !keyword event
+      topicName: "persistent://tenant-1/namespace-1/topic-event"
+    schemas: !system/local-ref schemas
+  event-retry:
+    _: !system/local-ref topics
+    client: !system/local-ref client
+    conf:
+      accessMode: !pulsar/access-mode Shared
+      cryptoKeyReader: !system/local-ref crypto-key-readers.r1
+      encryptionKeys: [tenant-key-1]
+      schema: !keyword event
+      topicName: "persistent://tenant-1/namespace-1/topic-event-retry"
     schemas: !system/local-ref schemas
 
 readers: !system/component
@@ -223,3 +255,47 @@ consumers: !system/component
       subscriptionType: !pulsar/subscription-type Shared
       topicNames: ["persistent://tenant-1/namespace-1/topic-pet"]
     schemas: !system/local-ref schemas
+
+  event:
+    _: !system/local-ref topics
+    client: !system/local-ref client
+    conf:
+      cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
+      cryptoKeyReader: !system/local-ref crypto-key-readers.r1
+      schema: !pulsar/schema AUTO_CONSUME
+      subscriptionName: tenant-1-event-subscriber
+      subscriptionType: !pulsar/subscription-type Shared
+      topicNames: ["persistent://tenant-1/namespace-1/topic-event"]
+    schemas: !system/local-ref schemas
+  event-retry:
+    _: !system/local-ref topics
+    client: !system/local-ref client
+    conf:
+      cryptoFailureAction: !pulsar/crypto-failure-action CONSUME
+      cryptoKeyReader: !system/local-ref crypto-key-readers.r1
+      schema: !pulsar/schema AUTO_CONSUME
+      subscriptionName: tenant-1-event-retry-subscriber
+      subscriptionType: !pulsar/subscription-type Shared
+      # A nack waits a minute by default, which is a minute this test
+      # would spend asleep.
+      negativeAckRedeliveryDelayMicros: 1000000
+      topicNames: ["persistent://tenant-1/namespace-1/topic-event-retry"]
+    schemas: !system/local-ref schemas
+
+message-bus-producers: !system/component
+  system/component-kind: pulsar/message-bus-producers
+  event:
+    producer: !system/local-ref producers.event
+  event-retry:
+    producer: !system/local-ref producers.event-retry
+
+message-bus-consumers: !system/component
+  system/component-kind: pulsar/message-bus-consumers
+  event-retry:
+    consumer: !system/local-ref consumers.event-retry
+    timeout: 500
+
+bus: !system/component
+  system/component-kind: message-bus/bus
+  producers: !system/local-ref message-bus-producers
+  consumers: !system/local-ref message-bus-consumers

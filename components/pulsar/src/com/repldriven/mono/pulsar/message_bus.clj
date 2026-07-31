@@ -7,7 +7,14 @@
 
 (defrecord PulsarProducer [producer]
   message-bus/Producer
-    (send [_ message] (pulsar/send producer message)))
+    (send [_ message] (pulsar/send producer message))
+    ;; Translated rather than passed through: Pulsar's message builder
+    ;; takes a string-keyed conf and throws on any key it does not know.
+    (send [_ message opts]
+      (let [{:keys [key]} opts]
+        (if key
+          (pulsar/send producer message {"key" key})
+          (pulsar/send producer message)))))
 
 (defrecord PulsarConsumer [consumer timeout stop-ch]
   message-bus/Consumer

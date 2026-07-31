@@ -2,7 +2,8 @@
   "Event envelope construction, publishing, and processing on top of
   the message-bus. Envelopes carry trace context so consumers resume
   a parent span; `process` wraps the handler in a child span and
-  funnels exceptions into `:event/process` anomalies."
+  turns a failure — thrown or returned as an anomaly — into a
+  redelivery request to the bus."
   (:require
     [com.repldriven.mono.event.publisher :as publisher]
     [com.repldriven.mono.event.processor :as processor]))
@@ -29,6 +30,10 @@
   - opts: optional map with keys:
     - :event-channel - keyword for the event channel
       (default :event)
+    - :key - partition key; events sharing one keep their
+      order. Passed through to the bus, never derived from
+      the envelope
+  Any other key is passed to the bus untouched.
 
   Returns the result of message-bus/send, which may be
   an anomaly."
@@ -45,6 +50,11 @@
   - opts: optional map with keys:
     - :event-channel - keyword for receiving events
       (default :event)
+
+  A handler-fn that throws, or returns an anomaly, leaves the
+  event unacknowledged: the bus redelivers it, and dead-letters
+  it once the backend's redelivery limit is reached. Handlers
+  must therefore tolerate duplicates.
 
   Returns: {:stop (fn [])} — call stop to unsubscribe"
   ([bus handler-fn] (processor/process bus handler-fn))

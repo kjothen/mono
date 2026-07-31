@@ -17,17 +17,23 @@
 (def ^:private byte-array-serializer
   "org.apache.kafka.common.serialization.ByteArraySerializer")
 
+;; Idempotence is stated rather than left to the default, because the default
+;; is conditional: the client turns it off, silently, for any producer whose
+;; config is incompatible with it — `acks: 1` is enough — while leaving
+;; retries and in-flight requests at values that then reorder a partition.
+;; Stated explicitly, the same config is a ConfigException at boot. A producer
+;; that genuinely wants the trade has to say `enable.idempotence: false`.
 (def ^:private defaults
   {"key.serializer" byte-array-serializer
-   "value.serializer" byte-array-serializer})
+   "value.serializer" byte-array-serializer
+   "enable.idempotence" "true"})
 
 (defn create
   [{:keys [conf schemas schema] :as opts}]
   (log/info "Creating Kafka producer:" (:name opts))
   (try-nom :kafka/producer-create
            "Failed to create Kafka producer"
-           {:instance (KafkaProducer. (config/->properties (merge defaults
-                                                                  conf)))
+           {:instance (KafkaProducer. (config/->properties defaults conf))
             :topic (get conf :topic (get conf "topic"))
             :schema (when schema (get schemas (name schema)))}))
 
