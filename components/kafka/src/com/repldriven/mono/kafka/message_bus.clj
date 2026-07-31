@@ -9,7 +9,11 @@
 
 (defrecord KafkaProducer [producer]
   message-bus/Producer
-    (send [_ message] (kafka/send producer message)))
+    (send [_ message] (kafka/send producer message))
+    ;; `:key` in opts becomes the record key, so Kafka's default
+    ;; partitioner hashes every message for one entity to one partition —
+    ;; which is where its ordering guarantee lives.
+    (send [_ message opts] (kafka/send producer message opts)))
 
 ;; `handles` holds the {:c :stop :ack} map from receive, because Kafka's
 ;; acknowledgements are queued to the polling thread rather than called on the

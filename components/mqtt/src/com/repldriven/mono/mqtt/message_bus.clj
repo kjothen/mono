@@ -6,7 +6,10 @@
 
 (defrecord MqttProducer [client topic qos]
   message-bus/Producer
-    (send [_ message] (client/publish client topic (json/write-str message))))
+    (send [_ message] (client/publish client topic (json/write-str message)))
+    ;; MQTT has no partitions, so there is nothing for a key to select.
+    (send [_ message _opts]
+      (client/publish client topic (json/write-str message))))
 
 (defrecord MqttConsumer [client topic qos]
   message-bus/Consumer

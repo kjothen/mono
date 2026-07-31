@@ -22,6 +22,7 @@ schemas: !system/component
   schemas:
     command: schemas/command/command-envelope.avsc.json
     command-response: schemas/command/command-response.avsc.json
+    event: schemas/event/event-envelope.avsc.json
     pet: schemas/pets/pet.avsc.json
 
 topics: !system/component
@@ -29,12 +30,18 @@ topics: !system/component
   admin: !system/local-ref admin
   topics:
     - topic: topic-command
-      partitions: 1
+      partitions: 3
     - topic: topic-command-response
       partitions: 1
     - topic: topic-pet
       partitions: 1
     - topic: topic-pet-dlq
+      partitions: 1
+    # The one multi-partition topic here: with a single partition, a test
+    # that keys its records cannot tell keying from luck.
+    - topic: topic-event
+      partitions: 3
+    - topic: topic-event-dlq
       partitions: 1
 
 producers: !system/component
@@ -71,6 +78,22 @@ producers: !system/component
       topic: topic-pet-dlq
       acks: all
 
+  event:
+    _: !system/local-ref topics
+    schemas: !system/local-ref schemas
+    schema: !keyword event
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      topic: topic-event
+      acks: all
+
+  event-dlq:
+    _: !system/local-ref topics
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      topic: topic-event-dlq
+      acks: all
+
 consumers: !system/component
   system/component-kind: kafka/consumers
   command:
@@ -89,6 +112,16 @@ consumers: !system/component
     conf:
       bootstrap.servers: !system/local-ref bootstrap-servers
       group.id: command-response-subscriber
+  # Reads topic-command alongside the command consumer, on its own group,
+  # so a test can see which partition a command was routed to.
+  command-keyed:
+    _: !system/local-ref topics
+    schemas: !system/local-ref schemas
+    schema: !keyword command
+    topics: [topic-command]
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      group.id: command-keyed-subscriber
 
   pet-1:
     _: !system/local-ref topics
@@ -118,10 +151,39 @@ consumers: !system/component
       bootstrap.servers: !system/local-ref bootstrap-servers
       group.id: pet-dlq-subscriber
 
+  # event-1 is read directly, to see which partition each record landed on;
+  # event-2 is the one behind the bus.
+  event-1:
+    _: !system/local-ref topics
+    schemas: !system/local-ref schemas
+    schema: !keyword event
+    topics: [topic-event]
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      group.id: event-subscriber-1
+  event-2:
+    _: !system/local-ref topics
+    schemas: !system/local-ref schemas
+    schema: !keyword event
+    topics: [topic-event]
+    dead-letter-producer: !system/local-ref producers.event-dlq
+    max-redeliveries: 2
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      group.id: event-subscriber-2
+  event-dlq:
+    _: !system/local-ref topics
+    topics: [topic-event-dlq]
+    conf:
+      bootstrap.servers: !system/local-ref bootstrap-servers
+      group.id: event-dlq-subscriber
+
 message-bus-producers: !system/component
   system/component-kind: kafka/message-bus-producers
   pet:
     producer: !system/local-ref producers.pet
+  event:
+    producer: !system/local-ref producers.event
   command:
     producer: !system/local-ref producers.command
   command-response:
@@ -131,6 +193,9 @@ message-bus-consumers: !system/component
   system/component-kind: kafka/message-bus-consumers
   pet:
     consumer: !system/local-ref consumers.pet-2
+    timeout: 500
+  event:
+    consumer: !system/local-ref consumers.event-2
     timeout: 500
   command:
     consumer: !system/local-ref consumers.command

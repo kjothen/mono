@@ -14,9 +14,8 @@
   (try-nom :kafka/admin-create
            "Failed to create Kafka admin client"
            (AdminClient/create
-            (config/->properties (merge {"bootstrap.servers"
-                                         bootstrap-servers}
-                                        (dissoc conf :bootstrap-servers))))))
+            (config/->properties {"bootstrap.servers" bootstrap-servers}
+                                 (dissoc conf :bootstrap-servers)))))
 
 (defn close-admin
   [^AdminClient admin]

@@ -57,7 +57,7 @@
   (try-nom
    :kafka/consumer-create
    "Failed to create Kafka consumer"
-   (let [instance (KafkaConsumer. (config/->properties (merge defaults conf)))]
+   (let [instance (KafkaConsumer. (config/->properties defaults conf))]
      (.subscribe instance (vec topics))
      {:instance instance
       :topics (vec topics)

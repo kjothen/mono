@@ -59,16 +59,21 @@
   - command: command envelope map
   - opts: optional map with keys:
     - :timeout-ms - timeout in milliseconds (default 10000)
+    - :key - partition key. Commands sharing one are
+      delivered in order, so an entity that must serialise
+      its commands — an account, say — keys on its id
 
   Returns response map or anomaly."
   ([dispatcher command] (send dispatcher command {}))
   ([{:keys [bus command-channel pending]} command opts]
-   (let [{:keys [timeout-ms] :or {timeout-ms 10000}} opts
+   (let [{:keys [timeout-ms key] :or {timeout-ms 10000}} opts
          command-id (str (utility/uuidv7))
          command (assoc command :command-id command-id)
          p (promise)]
      (swap! pending assoc command-id p)
-     (let [pub (message-bus/send bus command-channel command)]
+     ;; Only `:key` goes to the bus. `:timeout-ms` here is how long to
+     ;; wait for the reply, which is not the producer's ack timeout.
+     (let [pub (message-bus/send bus command-channel command {:key key})]
        (if (error/anomaly? pub)
          (do (swap! pending dissoc command-id) pub)
          (let [result (deref p timeout-ms ::timeout)]

@@ -4,6 +4,7 @@
     com.repldriven.mono.testcontainers.interface
     [com.repldriven.mono.pulsar.interface :as SUT]
     [com.repldriven.mono.error.interface :as error]
+    [com.repldriven.mono.event.interface :as event]
     [com.repldriven.mono.http-client.interface :as http]
     [com.repldriven.mono.system.interface :as system]
     [com.repldriven.mono.test-system.interface :refer
@@ -76,3 +77,104 @@
          (async/>!! stop :stop)
          (is (some? recv-msgs) "Should receive messages")
          (is (= msgs (mapv :data recv-msgs)) "Messages don't match"))))))
+
+(def ^:private causation-ids ["party-a" "party-b"])
+
+(defn- take-with-timeout
+  "Take `n` messages from `c`, giving up after `ms`. Returns what arrived."
+  [c n ms]
+  (let [deadline (async/timeout ms)]
+    (loop [acc []]
+      (if (= n (count acc))
+        acc
+        (let [[v port] (async/alts!! [c deadline])]
+          (if (or (= port deadline) (nil? v)) acc (recur (conj acc v))))))))
+
+(defn- event-envelopes
+  "Five events for each of two entities, interleaved, so an unkeyed send
+  cannot be rescued by send order."
+  []
+  (let [correlation-id (str (random-uuid))]
+    (vec (for [n (range 5)
+               id causation-ids]
+           (event/envelope (str "event-" n) id correlation-id)))))
+
+;; The same two properties the kafka brick is tested for, over Pulsar:
+;; message-bus is the seam both sit behind, so a workspace that swaps one
+;; for the other has to get keying and redelivery from either.
+(deftest event-over-pulsar-test
+  (with-test-system
+   [sys "classpath:pulsar/application-test.yml"]
+   (let [bus (system/instance sys [:pulsar :bus])
+         consumer (system/instance sys [:pulsar :consumers :event])
+         sent (event-envelopes)]
+     (testing "events for one entity land on one partition, in order"
+       ;; topic-event has three partitions and Pulsar's default router
+       ;; round-robins when a message has no key, so without one these
+       ;; five would be spread across all three.
+       (let [results (mapv #(event/publish bus % {:key (:causation-id %)})
+                           sent)]
+         (is (not-any? error/anomaly? results)
+             (str "every publish succeeded: " (pr-str results))))
+       (let [{:keys [c stop]} (SUT/receive consumer 50)
+             received (take-with-timeout c (count sent) 30000)]
+         (try
+           (is (= (count sent) (count received)))
+           (let [topics
+                 (into
+                  {}
+                  (map (fn [id]
+                         (let [for-id (filterv #(= id (:causation-id (:data %)))
+                                               received)]
+                           [id
+                            {:partitions (set (map #(.getTopicName (:message %))
+                                                   for-id))
+                             :order (mapv #(:event (:data %)) for-id)}])))
+                  causation-ids)]
+             (doseq [id causation-ids]
+               (let [{:keys [partitions order]} (get topics id)]
+                 (is (= 1 (count partitions))
+                     (str "every event for " id
+                          " landed on one partition: " partitions))
+                 (is
+                  (= (mapv :event (filter #(= id (:causation-id %)) sent))
+                     order)
+                  (str "and arrived for " id " in the order they were sent"))))
+             (is (apply distinct?
+                        (map #(:partitions (get topics %)) causation-ids))
+                 "and the two entities were routed apart, not merely batched"))
+           (doseq [{:keys [message]} received] (.acknowledge consumer message))
+           (finally (async/>!! stop :stop))))))))
+
+(deftest event-anomaly-redelivery-over-pulsar-test
+  (with-test-system
+   [sys "classpath:pulsar/application-test.yml"]
+   (let [bus (system/instance sys [:pulsar :bus])
+         attempts (atom 0)
+         received (promise)
+         envelope
+         (event/envelope "party-registered" "party-1" (str (random-uuid)))]
+     (testing "a handler that returns an anomaly gets the event again"
+       ;; The Pulsar consumer negative-acknowledges on a throw, so the
+       ;; anomaly `event/process` now rethrows becomes a redelivery here
+       ;; exactly as it does over Kafka.
+       (let [{:keys [stop]} (event/process bus
+                                           (fn [data]
+                                             (if (= 1 (swap! attempts inc))
+                                               (error/fail :test/transient
+                                                           {:message
+                                                            "handler failed"})
+                                               (deliver received data)))
+                                           {:event-channel :event-retry})]
+         (try (is (not (error/anomaly? (event/publish bus
+                                                      envelope
+                                                      {:event-channel
+                                                       :event-retry}))))
+              (let [data (deref received 30000 ::timeout)]
+                (is (not= ::timeout data)
+                    "the event was redelivered and processed on a later try")
+                (when (not= ::timeout data)
+                  (is (= (:id envelope) (:id data))
+                      "and it is the same event, not a fresh one")))
+              (is (> @attempts 1) "the first attempt did not acknowledge")
+              (finally (when stop (stop)))))))))

@@ -50,6 +50,8 @@
   - command: command envelope map
   - opts: optional map with keys:
     - :timeout-ms - timeout in milliseconds (default 10000)
+    - :key - partition key; commands sharing one are
+      delivered in order
 
   Returns: response map or anomaly"
   ([d command] (dispatcher/send d command))

@@ -7,13 +7,17 @@
 
     [com.repldriven.mono.command.interface :as command]
     [com.repldriven.mono.error.interface :as error]
+    [com.repldriven.mono.event.interface :as event]
     [com.repldriven.mono.message-bus.interface :as message-bus]
     [com.repldriven.mono.system.interface :as system]
     [com.repldriven.mono.test-system.interface :refer
      [with-test-system nom-test>]]
 
     [clojure.core.async :as async]
-    [clojure.test :refer [deftest is testing]]))
+    [clojure.test :refer [deftest is testing]])
+  (:import
+    (org.apache.kafka.clients.consumer ConsumerRecord)
+    (org.apache.kafka.clients.producer.internals BuiltInPartitioner)))
 
 (def ^:private pets
   [{:pet-id "pet-1" :name "Whiskers" :species "cat" :age-months 24}
@@ -51,10 +55,23 @@
                                                              :pet-2])
                                            500)]
          (async/put! stop :stop)
-         ;; the loop closes :c on its way out, so a take returns nil
-         ;; promptly
-         (let [[v _] (async/alts!! [c (async/timeout 10000)])]
-           (is (nil? v) "channel closed after stop"))))
+         ;; The loop closes :c on its way out, so a take eventually returns
+         ;; nil. Eventually, not immediately: if the polling thread reaches
+         ;; its stop check before this put lands, it polls first, and then
+         ;; races each record it fetched against the stop — so a record can
+         ;; arrive before the close. Drain to the close, which is what
+         ;; halting means here; asserting on the first take is asserting on
+         ;; that race.
+         (let [deadline (async/timeout 10000)
+               closed? (loop []
+                         (let [[v port] (async/alts!! [c deadline])]
+                           (cond (= port deadline)
+                                 false
+                                 (nil? v)
+                                 true
+                                 :else
+                                 (recur))))]
+           (is closed? "channel closed after stop"))))
      (testing "a failing send is an anomaly, not a throw"
        ;; an unserialisable value: the schema expects a map of pet fields
        (let [result (SUT/send producer "not-a-pet")]
@@ -125,35 +142,176 @@
               (finally (async/put! stop :stop)
                        (message-bus/unsubscribe bus :pet))))))))
 
+;; topic-event and topic-command both have three partitions. That alone does
+;; not make an unkeyed send land anywhere in particular: with no key the
+;; built-in partitioner sticks to one partition until batch.size bytes have
+;; gone to it, so a handful of small records all arrive together and "they
+;; share a partition" passes whether or not a key was set. The assertions
+;; below are therefore against the partition the key selects — the same
+;; function the producer uses — rather than against records merely agreeing.
+(def ^:private topic-partitions 3)
+
+(def ^:private causation-ids ["party-a" "party-b"])
+
+(defn- partition-for
+  [key]
+  (BuiltInPartitioner/partitionForKey (.getBytes ^String key "UTF-8")
+                                      topic-partitions))
+
+(defn- event-envelopes
+  "Five events for each of two entities, interleaved, so an unkeyed send
+  cannot be rescued by send order."
+  []
+  (let [correlation-id (str (random-uuid))]
+    (vec (for [n (range 5)
+               id causation-ids]
+           (event/envelope (str "event-" n) id correlation-id)))))
+
+(deftest event-partition-key-test
+  (with-test-system
+   [sys "classpath:kafka/application-test.yml"]
+   (let [bus (system/instance sys [:kafka :bus])
+         consumer (system/instance sys [:kafka :consumers :event-1])
+         sent (event-envelopes)]
+     (testing "events for one entity land on the partition its id hashes to"
+       (is (apply not= (map partition-for causation-ids))
+           "the two ids must hash apart, or this test proves nothing")
+       (let [results (mapv #(event/publish bus % {:key (:causation-id %)})
+                           sent)]
+         (is (not-any? error/anomaly? results)
+             (str "every publish succeeded: " (pr-str results))))
+       (let [{:keys [c stop ack]} (SUT/receive consumer 500)
+             received (take-with-timeout c (count sent) 30000)]
+         (try
+           (is (= (count sent) (count received)))
+           (doseq [id causation-ids]
+             (let [for-id (filterv #(= id (:causation-id (:data %))) received)
+                   partitions (set (map #(.partition ^ConsumerRecord
+                                                     (:message %))
+                                        for-id))]
+               (is (= #{(partition-for id)} partitions)
+                   (str "every event for " id
+                        " landed on the partition its key selects: "
+                        partitions))
+               (is (= (mapv :event (filter #(= id (:causation-id %)) sent))
+                      (mapv #(:event (:data %)) for-id))
+                   (str "and arrived for " id " in the order they were sent"))))
+           (doseq [{:keys [message]} received]
+             (SUT/acknowledge {:ack ack} message))
+           (finally (async/put! stop :stop))))))))
+
+(deftest event-anomaly-redelivery-test
+  (with-test-system
+   [sys "classpath:kafka/application-test.yml"]
+   (let [bus (system/instance sys [:kafka :bus])
+         attempts (atom 0)
+         received (promise)
+         envelope
+         (event/envelope "party-registered" "party-1" (str (random-uuid)))]
+     (testing "a handler that returns an anomaly gets the event again"
+       ;; An anomaly is a failure the handler expected; committing it would
+       ;; drop the event with nothing left to retry from. Exhausting the
+       ;; redeliveries dead-letters it, the same way a throw does — see
+       ;; dead-letter-test.
+       (let [{:keys [stop]} (event/process bus
+                                           (fn [data]
+                                             (if (= 1 (swap! attempts inc))
+                                               (error/fail :test/transient
+                                                           {:message
+                                                            "handler failed"})
+                                               (deliver received data))))]
+         (try (nom-test> [_ (event/publish bus envelope)])
+              (let [data (deref received 30000 ::timeout)]
+                (is (not= ::timeout data)
+                    "the event was redelivered and processed on a later try")
+                (when (not= ::timeout data)
+                  (is (= (:id envelope) (:id data))
+                      "and it is the same event, not a fresh one")))
+              (is (> @attempts 1) "the first attempt did not commit")
+              (finally (when stop (stop)))))))))
+
 (deftest command-over-kafka-test
   (with-test-system
    [sys "classpath:kafka/command-test.yml"]
    (let [bus (system/instance sys [:kafka :bus])
          dispatcher (system/instance sys [:command :dispatcher])
-         payload (.getBytes "pet-payload" "UTF-8")]
-     (testing "a command sent over Kafka gets its reply back"
-       ;; command knows nothing about the transport: it takes a bus, and
-       ;; this one is Kafka. Nothing in the command brick changed to make
-       ;; this work.
-       (let [{:keys [stop]}
-             (command/process
-              bus
-              (fn [envelope] {:status "ACCEPTED" :payload (:payload envelope)})
-              {:command-channel :command
-               :command-response-channel :command-response})]
-         (try (let [reply (command/send dispatcher
-                                        {:id (str (random-uuid))
-                                         :command "create-pet"
-                                         :correlation-id (str (random-uuid))
-                                         :causation-id nil
-                                         :traceparent nil
-                                         :tracestate nil
-                                         :payload payload
-                                         :reply-to nil}
-                                        {:timeout-ms 30000})]
-                (is (not (error/anomaly? reply))
-                    (str "command round-tripped over Kafka: " (pr-str reply)))
-                (is (= "ACCEPTED" (:status reply)))
-                (is (= "pet-payload" (String. ^bytes (:payload reply) "UTF-8"))
-                    "the payload survived Avro serialisation both ways"))
-              (finally (when stop (stop)))))))))
+         keyed-consumer (system/instance sys [:kafka :consumers :command-keyed])
+         payload (.getBytes "pet-payload" "UTF-8")
+         account-ids ["account-a" "account-b"]
+         ;; command-id -> the account it is keyed on
+         keyed (into {} (map (fn [id] [(str (random-uuid)) id])) account-ids)
+         unkeyed-id (str (random-uuid))
+         envelope (fn [id command]
+                    {:id id
+                     :command command
+                     :correlation-id (str (random-uuid))
+                     :causation-id nil
+                     :traceparent nil
+                     :tracestate nil
+                     :payload payload
+                     :reply-to nil})
+         ;; One processor for the whole deftest: stopping a subscription
+         ;; closes the Kafka consumer under it, so it cannot be started
+         ;; again in this system.
+         {:keys [stop]} (command/process
+                         bus
+                         (fn [envelope]
+                           {:status "ACCEPTED" :payload (:payload envelope)})
+                         {:command-channel :command
+                          :command-response-channel :command-response})]
+     (try
+       (testing "a command sent over Kafka gets its reply back"
+         ;; command knows nothing about the transport: it takes a bus, and
+         ;; this one is Kafka. Nothing in the command brick changed to make
+         ;; this work.
+         (let [reply (command/send dispatcher
+                                   (envelope unkeyed-id "create-pet")
+                                   {:timeout-ms 30000})]
+           (is (not (error/anomaly? reply))
+               (str "command round-tripped over Kafka: " (pr-str reply)))
+           (is (= "ACCEPTED" (:status reply)))
+           (is (= "pet-payload" (String. ^bytes (:payload reply) "UTF-8"))
+               "the payload survived Avro serialisation both ways")))
+       (testing "a keyed command lands on the partition its key selects"
+         ;; Commands for one account have to be processed in the order they
+         ;; were sent, and the key is how that is asked for — supplied by
+         ;; the caller, like the event path, rather than dug out of the
+         ;; envelope.
+         (is (apply not= (map partition-for account-ids))
+             "the two account ids must hash apart, or this proves nothing")
+         (doseq [[command-id account-id] keyed]
+           (let [reply (command/send dispatcher
+                                     (envelope command-id "update-account")
+                                     {:timeout-ms 30000 :key account-id})]
+             (is (not (error/anomaly? reply))
+                 (str "keyed command round-tripped: " (pr-str reply)))))
+         (let [{:keys [c stop ack]} (SUT/receive keyed-consumer 500)
+               ;; the unkeyed command from the block above is on this topic
+               ;; too, and is asserted on below
+               received (take-with-timeout c (inc (count keyed)) 30000)
+               records (into {}
+                             (map (fn [{:keys [message data]}] [(:id data)
+                                                                message]))
+                             received)
+               seen (into {}
+                          (keep (fn [[id ^ConsumerRecord record]]
+                                  (when (contains? keyed id)
+                                    [id (.partition record)])))
+                          records)]
+           (try (is (= (set (keys keyed)) (set (keys seen)))
+                    "both keyed commands were seen")
+                (doseq [[command-id account-id] keyed]
+                  (is (= (partition-for account-id) (get seen command-id))
+                      (str "the command for "
+                           account-id
+                           " landed on the partition its key selects")))
+                ;; A key is optional, and an absent one is absent: nothing
+                ;; is derived to stand in for it, so the record carries a
+                ;; null key and the partitioner places it as it sees fit.
+                (is (nil? (some-> ^ConsumerRecord (get records unkeyed-id)
+                                  (.key)))
+                    "a command sent without a key has no key on the wire")
+                (doseq [{:keys [message]} received]
+                  (SUT/acknowledge {:ack ack} message))
+                (finally (async/put! stop :stop)))))
+       (finally (when stop (stop)))))))

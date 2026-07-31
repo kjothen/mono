@@ -42,6 +42,19 @@
              (is (= "test-command" (get data "command")))))
          (SUT/unsubscribe bus :command)
          (SUT/unsubscribe bus :reply)))
+     (testing "Send with opts behaves exactly as send without them"
+       ;; The local bus has no partitions to key, so a keyed send is
+       ;; delivered like any other rather than rejected.
+       (let [received (promise)]
+         (SUT/subscribe bus :command (fn [data] (deliver received data)))
+         (nom-test> [_ (SUT/send bus
+                                 :command
+                                 (assoc test-message "id" "keyed-1")
+                                 {:key "some-entity"})])
+         (let [data (deref received 5000 ::timeout)]
+           (is (not= ::timeout data) "Should receive message within timeout")
+           (when (not= ::timeout data) (is (= "keyed-1" (get data "id")))))
+         (SUT/unsubscribe bus :command)))
      (testing "A handler throw does not wedge the channel loop"
        (let [calls (atom 0)
              received (promise)]

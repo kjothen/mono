@@ -30,8 +30,15 @@
                 "event.processor/process: [data=%s, result=%s]"
                 data
                 result)
+               ;; Rethrow rather than return: the consumer commits
+               ;; whatever the handler returns normally, so a swallowed
+               ;; anomaly drops the event. The bus catches this and asks
+               ;; for redelivery, bounded and dead-lettered underneath.
                (when (error/anomaly? result)
                  (log/errorf
                   "event.processor/process anomaly: %s"
-                  result))))))))
+                  result)
+                 ;; nosemgrep: no-raw-throw
+                 (throw (ex-info "Event processing failed"
+                                 {:anomaly result})))))))))
      {:stop (fn [] (message-bus/unsubscribe bus event-channel))})))
