@@ -183,7 +183,9 @@
     color-mode project-name test-namespace [test-namespace ...]
 
   Supports metadata-based test filtering via environment variables:
-  - ENV: SKIP_META=integration,slow FOCUS_META=unit"
+  - ENV: SKIP_META=integration,slow FOCUS_META=unit
+
+  JUNIT_NS_PREFIX trims that prefix off JUnit suite/classname attributes."
   [& args]
   (let [;; Parse positional args from Corfield runner: color-mode
         ;; project-name ...test-nses

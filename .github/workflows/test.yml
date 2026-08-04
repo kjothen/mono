@@ -138,6 +138,7 @@ jobs:
           TESTCONTAINERS_REUSE_ENABLE: "true"
           COVERAGE: "true"
           COVERAGE_THRESHOLD: "50"
+          JUNIT_NS_PREFIX: "com.repldriven.mono."
         run: |
           clojure -M:poly test project:${{ matrix.project }} :all +realworld
 
