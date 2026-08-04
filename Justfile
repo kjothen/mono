@@ -163,7 +163,8 @@ realworld-hurl port="8091":
 
 # Run all polylith project tests
 test: start-docker
-    SKIP_META=repl clojure -M:poly test :all {{ POLY_PROFILES }}
+    SKIP_META=repl JUNIT_NS_PREFIX=com.repldriven.mono. \
+      clojure -M:poly test :all {{ POLY_PROFILES }}
 
 # Check test failures from last test run
 poly-test-check:

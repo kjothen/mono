@@ -3,7 +3,7 @@
 
   Replaces eftest.report.junit to add:
   - time attribute on <testsuite> elements (fixes NaN in CI reports)
-  - strips com.repldriven.mono. prefix from suite/classname attributes"
+  - strips a workspace prefix from suite/classname attributes"
   (:require
     [clojure.stacktrace :as stack]
     [eftest.report :refer [*context*]]
@@ -11,11 +11,13 @@
 
 (set! *warn-on-reflection* true)
 
-(def ^:private ns-prefix "com.repldriven.mono.")
+;; The prefix to trim is the consuming workspace's top namespace, so it
+;; cannot be a constant here. Unset means no trimming.
+(def ^:private ns-prefix (or (System/getenv "JUNIT_NS_PREFIX") ""))
 
 (defn- trim-ns
   [^String ns-str]
-  (if (.startsWith ns-str ns-prefix)
+  (if (and (seq ns-prefix) (.startsWith ns-str ns-prefix))
     (.substring ns-str (count ns-prefix))
     ns-str))
 
