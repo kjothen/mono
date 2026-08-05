@@ -99,17 +99,23 @@
 
 (defn ->client
   "Build a `KeycloakIdentityProvider`. `config` carries `:base-url`,
-  `:realm`, `:admin-client-id`, `:admin-client-secret`, and an
+  `:realm`, `:admin-client-id`, one of `:admin-client-secret` or
+  `:admin-client-private-key-file` (the latter authenticating with
+  `private_key_jwt` and winning when both are present), and an
   optional `:expected-issuer` for token validation when the
   base-url and the token's `iss` claim disagree (e.g. internal
   Service URL for backchannel admin REST + public Keycloak
   hostname embedded as iss)."
-  [{:keys [base-url realm admin-client-id admin-client-secret expected-issuer]}]
-  (->KeycloakIdentityProvider
-   {:base-url base-url
-    :realm realm
-    :admin-client-id admin-client-id
-    :admin-client-secret admin-client-secret
-    :expected-issuer expected-issuer}
-   (atom nil)
-   (atom nil)))
+  [config]
+  (let [{:keys [base-url realm admin-client-id admin-client-secret
+                admin-client-private-key-file expected-issuer]}
+        config]
+    (->KeycloakIdentityProvider
+     {:base-url base-url
+      :realm realm
+      :admin-client-id admin-client-id
+      :admin-client-secret admin-client-secret
+      :admin-client-private-key-file admin-client-private-key-file
+      :expected-issuer expected-issuer}
+     (atom nil)
+     (atom nil))))

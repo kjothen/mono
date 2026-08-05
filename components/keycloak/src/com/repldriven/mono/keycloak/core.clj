@@ -8,9 +8,22 @@
     [com.repldriven.mono.error.interface :as error :refer [let-nom>]]
     [com.repldriven.mono.http-client.interface :as http]
     [com.repldriven.mono.json.interface :as json]
-    [com.repldriven.mono.utility.interface :as util]))
+    [com.repldriven.mono.utility.interface :as util]
+
+    [buddy.core.keys :as buddy-keys]
+    [buddy.sign.jwt :as jwt])
+  (:import
+    (java.net URLEncoder)))
 
 (def jwks-ttl-ms (* 10 60 1000))
+
+;; RFC 7523 client authentication. Keycloak pins the algorithm per client
+;; via `token.endpoint.auth.signing.alg`, so the `:rs256` below has to
+;; match whatever the realm declares.
+(def client-assertion-type
+  "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+
+(def client-assertion-ttl-ms (* 60 1000))
 
 ;; Internal accessor protocol — `KeycloakIdentityProvider` extends it
 ;; so these helpers can pull config / cached-token atoms off the
@@ -105,18 +118,73 @@
   [client creds]
   (exchange-client-credentials* (-config client) creds))
 
+(defn client-assertion-claims
+  "Claims for an RFC 7523 client assertion: the client authenticates as
+  itself — `iss` and `sub` are both its own client id — to the token
+  endpoint named by `aud`. The `jti` and a one-minute `exp` keep each
+  assertion single-use in practice."
+  [{:keys [client-id token-url jti now-ms]}]
+  {:iss client-id
+   :sub client-id
+   :aud token-url
+   :jti jti
+   :iat (quot now-ms 1000)
+   :exp (quot (+ now-ms client-assertion-ttl-ms) 1000)})
+
+(defn- exchange-client-assertion*
+  "Token endpoint via `private_key_jwt`: sign a short-lived assertion
+  with the client's own private key rather than sending a secret
+  Keycloak also holds. The key is read per call, so rotating the file
+  is picked up without a restart."
+  [config {:keys [client-id private-key-file scope]}]
+  (let [token-url (realm-url config "/protocol/openid-connect/token")]
+    (let-nom>
+      [assertion (error/try-nom
+                  :keycloak/client-assertion
+                  "Failed to sign the Keycloak client assertion"
+                  (jwt/sign (client-assertion-claims
+                             {:client-id client-id
+                              :token-url token-url
+                              :jti (str (random-uuid))
+                              :now-ms (util/now)})
+                            (buddy-keys/private-key private-key-file)
+                            {:alg :rs256}))
+       res (http/request
+            {:method :post
+             :url token-url
+             :headers {"content-type" "application/x-www-form-urlencoded"}
+             :body (cond-> (str "grant_type=client_credentials"
+                                "&client_id=" client-id
+                                "&client_assertion_type="
+                                (URLEncoder/encode client-assertion-type
+                                                   "UTF-8")
+                                "&client_assertion=" assertion)
+                           scope
+                           (str "&scope=" scope))})
+       body (http/res->edn res)]
+      body)))
+
 (defn- fetch-admin-token
   [config]
-  (let-nom>
-    [body (exchange-client-credentials*
-           config
-           {:client-id (:admin-client-id config)
-            :client-secret (:admin-client-secret config)})]
-    (or (some-> (parse-token-response body)
-                (assoc :fetched-at (util/now)))
-        (error/fail :keycloak/admin-token-malformed
-                    {:message
-                     "Keycloak admin token response missing access_token"}))))
+  (let [{:keys [admin-client-id admin-client-secret
+                admin-client-private-key-file]}
+        config]
+    (let-nom>
+      [body (if admin-client-private-key-file
+              (exchange-client-assertion*
+               config
+               {:client-id admin-client-id
+                :private-key-file admin-client-private-key-file})
+              (exchange-client-credentials*
+               config
+               {:client-id admin-client-id
+                :client-secret admin-client-secret}))]
+      (or (some-> (parse-token-response body)
+                  (assoc :fetched-at (util/now)))
+          (error/fail
+           :keycloak/admin-token-malformed
+           {:message
+            "Keycloak admin token response missing access_token"})))))
 
 (defn- admin-token!
   "Return a valid admin access token, refreshing if expired."

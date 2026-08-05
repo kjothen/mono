@@ -10,17 +10,46 @@
   Config:
   - `:base-url` — Keycloak base URL (no trailing `/realms/…`).
   - `:realm` — realm name.
-  - `:admin-client-id` / `:admin-client-secret` — credentials for
-    the service-account client this brick uses to call Admin REST.
+  - `:admin-client-id` — the service-account client this brick uses to
+    call Admin REST.
+  - `:admin-client-secret` — that client's secret, for `client_secret`
+    authentication.
+  - `:admin-client-private-key-file` — path to an RSA private key in
+    PEM form, for `private_key_jwt` authentication. Takes precedence
+    over `:admin-client-secret` when both are set. A path rather than
+    the PEM itself because a multi-line PEM does not survive an
+    environment variable intact, and because rotation is then a file
+    change rather than a restart.
   - `:expected-issuer` — optional. Override the iss claim the token
     verifier expects. When `:base-url` is an internal Service URL
     but Keycloak embeds its public hostname as iss, set this to
     `<public-hostname>/realms/<realm>`. Defaults to
-    `<base-url>/realms/<realm>`."
+    `<base-url>/realms/<realm>`.
+
+  Exactly one of `:admin-client-secret` or
+  `:admin-client-private-key-file` is required — neither can default,
+  because a defaulted credential is one everybody shares."
   {:system/start (fn [{:system/keys [config instance]}]
                    (or instance (kc-idp/->client config)))
    :system/config {:base-url system/required-component
                    :realm system/required-component
                    :admin-client-id system/required-component
-                   :admin-client-secret system/required-component}
+                   :admin-client-secret nil
+                   :admin-client-private-key-file nil}
+   :system/config-schema
+   [:and
+    [:map
+     [:base-url string?]
+     [:realm string?]
+     [:admin-client-id string?]
+     [:admin-client-secret {:optional true} [:maybe string?]]
+     [:admin-client-private-key-file {:optional true} [:maybe string?]]]
+    [:fn
+     {:error/message
+      (str "one of :admin-client-secret or :admin-client-private-key-file"
+           " is required")}
+     (fn [config]
+       (let [{:keys [admin-client-secret admin-client-private-key-file]}
+             config]
+         (boolean (or admin-client-secret admin-client-private-key-file))))]]
    :system/instance-schema some?})
