@@ -7,7 +7,8 @@
     [clojure.test :refer [deftest is testing]]))
 
 (def ^:private base
-  {:base-url "https://kc.invalid" :realm "queenswood"
+  {:base-url "https://kc.invalid"
+   :realm "queenswood"
    :admin-client-id "queenswood-admin"})
 
 (defn- valid?
@@ -22,14 +23,12 @@
     (is (valid? (assoc base
                        :admin-client-secret "s3cret"
                        :admin-client-private-key-file "/keys/kc.pem"))))
-  (testing "neither is rejected, rather than starting a client that
-           cannot authenticate"
+  (testing "neither is rejected, rather than starting unauthenticable"
     (is (not (valid? base)))
     (is (not (valid? (assoc base
                             :admin-client-secret nil
                             :admin-client-private-key-file nil)))))
-  (testing "an unrelated key passes through, so :expected-issuer still
-           reaches the client"
+  (testing "an unrelated key passes, so :expected-issuer still arrives"
     (is (valid? (assoc base
                        :admin-client-secret "s3cret"
                        :expected-issuer "https://public/realms/queenswood")))))

@@ -102,10 +102,11 @@
   `:realm`, `:admin-client-id`, one of `:admin-client-secret` or
   `:admin-client-private-key-file` (the latter authenticating with
   `private_key_jwt` and winning when both are present), and an
-  optional `:expected-issuer` for token validation when the
-  base-url and the token's `iss` claim disagree (e.g. internal
-  Service URL for backchannel admin REST + public Keycloak
-  hostname embedded as iss)."
+  optional `:expected-issuer` for when the base-url and the realm
+  URL Keycloak knows itself by disagree (e.g. internal Service URL
+  for backchannel admin REST + public Keycloak hostname embedded as
+  iss). That issuer is both the `iss` inbound token verification
+  expects and the audience an outbound client assertion claims."
   [config]
   (let [{:keys [base-url realm admin-client-id admin-client-secret
                 admin-client-private-key-file expected-issuer]}
