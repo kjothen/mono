@@ -20,11 +20,17 @@
     the PEM itself because a multi-line PEM does not survive an
     environment variable intact, and because rotation is then a file
     change rather than a restart.
-  - `:expected-issuer` — optional. Override the iss claim the token
-    verifier expects. When `:base-url` is an internal Service URL
-    but Keycloak embeds its public hostname as iss, set this to
-    `<public-hostname>/realms/<realm>`. Defaults to
+  - `:expected-issuer` — optional, and required in practice whenever
+    `:base-url` is an internal Service URL. Names the realm as Keycloak
+    itself sees it: `<public-hostname>/realms/<realm>`. Defaults to
     `<base-url>/realms/<realm>`.
+
+    It governs both directions. Inbound, it is the iss claim the token
+    verifier expects. Outbound, it is the audience a `private_key_jwt`
+    assertion claims — Keycloak validates that against its own frontend
+    URL, never against the address the request arrived on, so an
+    assertion built from an internal `:base-url` is refused with
+    `invalid_client` however the request is routed.
 
   Exactly one of `:admin-client-secret` or
   `:admin-client-private-key-file` is required — neither can default,

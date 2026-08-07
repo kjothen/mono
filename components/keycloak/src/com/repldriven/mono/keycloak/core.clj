@@ -41,6 +41,23 @@
   [{:keys [base-url realm]} & path-parts]
   (apply str base-url "/admin/realms/" realm path-parts))
 
+(def token-path "/protocol/openid-connect/token")
+
+(defn- token-url [config] (realm-url config token-path))
+
+(defn assertion-audience
+  "Audience to claim in a client assertion. Keycloak validates this
+  against its own frontend URL, never against the address the request
+  arrived on, so a `:base-url` pointing at an internal Service mints an
+  assertion Keycloak always refuses. `:expected-issuer` already names
+  the public realm URL for inbound `iss` checks — the same value is
+  what the outbound claim needs. Falls back to `:base-url` when the two
+  are the same host."
+  [config]
+  (if-let [issuer (:expected-issuer config)]
+    (str issuer token-path)
+    (token-url config)))
+
 (defn parse-token-response
   "Pull `{:access-token :expires-in}` out of a Keycloak token
   response. Returns nil on malformed input."
@@ -101,7 +118,7 @@
   (let-nom>
     [res (http/request
           {:method :post
-           :url (realm-url config "/protocol/openid-connect/token")
+           :url (token-url config)
            :headers {"content-type" "application/x-www-form-urlencoded"}
            :body (cond-> (str "grant_type=client_credentials"
                               "&client_id=" client-id
@@ -120,16 +137,29 @@
 
 (defn client-assertion-claims
   "Claims for an RFC 7523 client assertion: the client authenticates as
-  itself — `iss` and `sub` are both its own client id — to the token
-  endpoint named by `aud`. The `jti` and a one-minute `exp` keep each
-  assertion single-use in practice."
-  [{:keys [client-id token-url jti now-ms]}]
+  itself — `iss` and `sub` are both its own client id — to the audience
+  named by `aud`. That audience is not necessarily where the request is
+  posted; see `assertion-audience`. The `jti` and a one-minute `exp`
+  keep each assertion single-use in practice."
+  [{:keys [client-id audience jti now-ms]}]
   {:iss client-id
    :sub client-id
-   :aud token-url
+   :aud audience
    :jti jti
    :iat (quot now-ms 1000)
    :exp (quot (+ now-ms client-assertion-ttl-ms) 1000)})
+
+(defn token-error-detail
+  "Keycloak's own `error` / `error_description` from a failed token
+  response. Without these a refusal reads only as an absent
+  access_token, which says nothing about why."
+  [body]
+  (when (map? body)
+    (cond-> {}
+            (:error body)
+            (assoc :error (:error body))
+            (:error_description body)
+            (assoc :error-description (:error_description body)))))
 
 (defn- exchange-client-assertion*
   "Token endpoint via `private_key_jwt`: sign a short-lived assertion
@@ -137,21 +167,21 @@
   Keycloak also holds. The key is read per call, so rotating the file
   is picked up without a restart."
   [config {:keys [client-id private-key-file scope]}]
-  (let [token-url (realm-url config "/protocol/openid-connect/token")]
+  (let [url (token-url config)]
     (let-nom>
       [assertion (error/try-nom
                   :keycloak/client-assertion
                   "Failed to sign the Keycloak client assertion"
                   (jwt/sign (client-assertion-claims
                              {:client-id client-id
-                              :token-url token-url
+                              :audience (assertion-audience config)
                               :jti (str (random-uuid))
                               :now-ms (util/now)})
                             (buddy-keys/private-key private-key-file)
                             {:alg :rs256}))
        res (http/request
             {:method :post
-             :url token-url
+             :url url
              :headers {"content-type" "application/x-www-form-urlencoded"}
              :body (cond-> (str "grant_type=client_credentials"
                                 "&client_id=" client-id
@@ -183,8 +213,9 @@
                   (assoc :fetched-at (util/now)))
           (error/fail
            :keycloak/admin-token-malformed
-           {:message
-            "Keycloak admin token response missing access_token"})))))
+           (merge {:message
+                   "Keycloak admin token response missing access_token"}
+                  (token-error-detail body)))))))
 
 (defn- admin-token!
   "Return a valid admin access token, refreshing if expired."
